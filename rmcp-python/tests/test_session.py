@@ -1,6 +1,5 @@
 """Test RMCP session functionality."""
 
-import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
@@ -222,17 +221,18 @@ async def test_concurrent_requests():
     async def run_tool_call(i):
         result = await rmcp_session.call_tool(f"test_tool_{i}", {"arg": f"value_{i}"})
         return result
-    
+
     # Create and await coroutines concurrently using async nursery pattern
     results = []
     async with anyio.create_task_group() as tg:
+
         async def collect_result(i):
             result = await rmcp_session.call_tool(f"test_tool_{i}", {"arg": f"value_{i}"})
             results.append((i, result))
-        
+
         for i in range(5):
             tg.start_soon(collect_result, i)
-    
+
     # Sort results by index to maintain order
     results.sort(key=lambda x: x[0])
     results = [result for _, result in results]
