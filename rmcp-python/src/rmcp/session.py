@@ -305,10 +305,10 @@ class RMCPSession:
             with anyio.move_on_after(timeout_ms / 1000.0) as cancel_scope:
                 response = await self.mcp_session.send_request(request)
 
-                if cancel_scope.cancelled_caught:
-                    raise RMCPTimeoutError(f"Tool call timed out after {timeout_ms}ms", timeout_ms)
+            if cancel_scope.cancelled_caught:
+                raise RMCPTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
 
-                return response
+            return response
 
         except Exception as e:
             # Wrap network errors
@@ -323,10 +323,10 @@ class RMCPSession:
         with anyio.move_on_after(timeout_ms / 1000.0) as cancel_scope:
             response = await self.mcp_session.send_request(request)
 
-            if cancel_scope.cancelled_caught:
-                raise RMCPTimeoutError(f"Tool call timed out after {timeout_ms}ms", timeout_ms)
+        if cancel_scope.cancelled_caught:
+            raise RMCPTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
 
-            return response
+        return response
 
     def _should_retry(self, error: Exception, retry_policy: RetryPolicy) -> bool:
         """Determine if an error should trigger a retry."""
@@ -358,9 +358,17 @@ class RMCPSession:
             cutoff_time = current_time - timedelta(milliseconds=self.config.deduplication_window_ms)
 
             if timestamp >= cutoff_time:
-                # Mark as duplicate and return
-                cached_result.rmcp_meta.duplicate = True
-                return cached_result
+                # Return a copy with duplicate flag set to True
+                duplicate_response = RMCPResponse(
+                    ack=cached_result.rmcp_meta.ack,
+                    processed=cached_result.rmcp_meta.processed,
+                    duplicate=True,  # Mark as duplicate
+                    attempts=cached_result.rmcp_meta.attempts,
+                    final_status=cached_result.rmcp_meta.final_status,
+                    error_code=cached_result.rmcp_meta.error_code,
+                    error_message=cached_result.rmcp_meta.error_message,
+                )
+                return RMCPResult(result=cached_result.result, rmcp_meta=duplicate_response)
             else:
                 # Entry expired, remove it
                 del self._deduplication_cache[idempotency_key]
