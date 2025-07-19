@@ -9,6 +9,8 @@ import asyncio
 import logging
 from typing import Any, ClassVar
 
+import anyio
+
 from rmcp import RetryPolicy, RMCPConfig, RMCPSession
 
 
@@ -51,7 +53,7 @@ class MockMCPSession:
             raise Exception(f"Simulated network error for {tool_name}")
 
         # Simulate processing delay
-        await asyncio.sleep(0.1)
+        await anyio.sleep(0.1)
 
         return {
             "result": {

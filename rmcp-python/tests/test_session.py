@@ -1,9 +1,9 @@
 """Test RMCP session functionality."""
 
-import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
+import anyio
 import pytest
 
 from rmcp.session import RMCPSession
@@ -186,7 +186,7 @@ async def test_timeout_handling():
     original_send = mock_mcp.send_request
 
     async def slow_send_request(request):
-        await asyncio.sleep(0.2)  # 200ms delay
+        await anyio.sleep(0.2)  # 200ms delay
         return await original_send(request)
 
     mock_mcp.send_request = slow_send_request
@@ -218,13 +218,24 @@ async def test_concurrent_requests():
     await rmcp_session.initialize()
 
     # Launch multiple concurrent requests
-    tasks = []
-    for i in range(5):
-        task = rmcp_session.call_tool(f"test_tool_{i}", {"arg": f"value_{i}"})
-        tasks.append(task)
+    async def run_tool_call(i):
+        result = await rmcp_session.call_tool(f"test_tool_{i}", {"arg": f"value_{i}"})
+        return result
 
-    # Wait for all to complete
-    results = await asyncio.gather(*tasks)
+    # Create and await coroutines concurrently using async nursery pattern
+    results = []
+    async with anyio.create_task_group() as tg:
+
+        async def collect_result(i):
+            result = await rmcp_session.call_tool(f"test_tool_{i}", {"arg": f"value_{i}"})
+            results.append((i, result))
+
+        for i in range(5):
+            tg.start_soon(collect_result, i)
+
+    # Sort results by index to maintain order
+    results.sort(key=lambda x: x[0])
+    results = [result for _, result in results]
 
     # All should succeed
     for i, result in enumerate(results):
