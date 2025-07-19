@@ -280,3 +280,51 @@ async def test_session_close():
     # Verify cleanup
     assert len(rmcp_session.active_requests) == 0
     mock_mcp.close.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_input_validation():
+    """Test input validation for tool calls."""
+    mock_mcp = MockMCPSession(supports_rmcp=True)
+    rmcp_session = RMCPSession(mock_mcp)
+    await rmcp_session.initialize()
+    
+    # Test invalid tool names
+    with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
+        await rmcp_session.call_tool("", {})
+    
+    with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
+        await rmcp_session.call_tool("   ", {})
+    
+    with pytest.raises(ValueError, match="alphanumeric characters"):
+        await rmcp_session.call_tool("invalid@tool", {})
+    
+    # Test invalid arguments
+    with pytest.raises(ValueError, match="must be a dictionary"):
+        await rmcp_session.call_tool("test_tool", "invalid")
+    
+    # Test invalid timeout
+    with pytest.raises(ValueError, match="Timeout must be between"):
+        await rmcp_session.call_tool("test_tool", {}, timeout_ms=0)
+    
+    with pytest.raises(ValueError, match="Timeout must be between"):
+        await rmcp_session.call_tool("test_tool", {}, timeout_ms=700000)
+    
+    # Test invalid idempotency key
+    with pytest.raises(ValueError, match="non-empty string"):
+        await rmcp_session.call_tool("test_tool", {}, idempotency_key="")
+
+
+@pytest.mark.anyio
+async def test_async_context_manager():
+    """Test async context manager support."""
+    mock_mcp = MockMCPSession(supports_rmcp=True)
+    mock_mcp.close = AsyncMock()
+    
+    async with RMCPSession(mock_mcp) as rmcp_session:
+        await rmcp_session.initialize()
+        result = await rmcp_session.call_tool("test_tool", {})
+        assert result.ack is True
+    
+    # Session should be closed automatically
+    mock_mcp.close.assert_called_once()
