@@ -8,18 +8,9 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 
 import anyio
-
-# Define protocol for MCP session compatibility
-from typing import Protocol
-
-class BaseSession(Protocol):
-    """Protocol for MCP session compatibility."""
-    async def initialize(self, **kwargs: Any) -> Any: ...
-    async def send_request(self, request: dict[str, Any]) -> Any: ...
-    async def close(self) -> None: ...
 
 from .types import (
     MessageStatus,
@@ -37,6 +28,14 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
+class BaseSession(Protocol):
+    """Protocol for MCP session compatibility."""
+
+    async def initialize(self, **kwargs: Any) -> Any: ...
+    async def send_request(self, request: dict[str, Any]) -> Any: ...
+    async def close(self) -> None: ...
+
+
 class RMCPSession:
     """
     RMCP Session that wraps an existing MCP session with reliability features.
@@ -49,11 +48,7 @@ class RMCPSession:
     - 100% backward compatibility with MCP
     """
 
-    def __init__(
-        self,
-        mcp_session: BaseSession,
-        config: RMCPConfig | None = None
-    ):
+    def __init__(self, mcp_session: BaseSession, config: RMCPConfig | None = None):
         self.mcp_session = mcp_session
         self.config = config or RMCPConfig()
         self._rmcp_enabled = False
@@ -82,19 +77,20 @@ class RMCPSession:
 
         # Remove potentially sensitive information
         sensitive_patterns = [
-            r'password[=:]\s*\S+',
-            r'token[=:]\s*\S+',
-            r'key[=:]\s*\S+',
-            r'secret[=:]\s*\S+',
-            r'auth[=:]\s*\S+',
-            r'/Users/[^/\s]+',  # User paths
-            r'/home/[^/\s]+',   # User paths
-            r'file://[^\s]+',   # File URLs
+            r"password[=:]\s*\S+",
+            r"token[=:]\s*\S+",
+            r"key[=:]\s*\S+",
+            r"secret[=:]\s*\S+",
+            r"auth[=:]\s*\S+",
+            r"/Users/[^/\s]+",  # User paths
+            r"/home/[^/\s]+",  # User paths
+            r"file://[^\s]+",  # File URLs
         ]
 
         import re
+
         for pattern in sensitive_patterns:
-            error_str = re.sub(pattern, '[REDACTED]', error_str, flags=re.IGNORECASE)
+            error_str = re.sub(pattern, "[REDACTED]", error_str, flags=re.IGNORECASE)
 
         # Limit error message length
         if len(error_str) > 200:
@@ -116,7 +112,7 @@ class RMCPSession:
         # Advertise RMCP capabilities
         kwargs["capabilities"]["experimental"]["rmcp"] = {
             "version": "0.1.0",
-            "features": ["ack", "retry", "idempotency", "transactions"]
+            "features": ["ack", "retry", "idempotency", "transactions"],
         }
 
         logger.debug("Initializing MCP session with RMCP capabilities")
@@ -144,7 +140,7 @@ class RMCPSession:
         *,
         idempotency_key: str | None = None,
         timeout_ms: int | None = None,
-        retry_policy: RetryPolicy | None = None
+        retry_policy: RetryPolicy | None = None,
     ) -> RMCPResult:
         """
         Call a tool with RMCP reliability guarantees.
@@ -166,7 +162,7 @@ class RMCPSession:
         if not name or not name.strip():
             raise ValueError("Tool name must be a non-empty string")
 
-        if not name.replace('_', 'a').replace('-', 'a').isalnum():
+        if not name.replace("_", "a").replace("-", "a").isalnum():
             raise ValueError("Tool name must contain only alphanumeric characters, hyphens, and underscores")
 
         if arguments is not None and not isinstance(arguments, dict):
@@ -192,11 +188,7 @@ class RMCPSession:
         # Acquire semaphore for concurrency control
         async with self._request_semaphore:
             return await self._call_tool_with_retry(
-                name,
-                arguments,
-                idempotency_key,
-                effective_timeout,
-                effective_retry_policy
+                name, arguments, idempotency_key, effective_timeout, effective_retry_policy
             )
 
     async def _call_tool_with_retry(
@@ -205,13 +197,10 @@ class RMCPSession:
         arguments: dict[str, Any] | None,
         idempotency_key: str | None,
         timeout_ms: int,
-        retry_policy: RetryPolicy
+        retry_policy: RetryPolicy,
     ) -> RMCPResult:
         """Execute tool call with retry logic."""
-        rmcp_meta = RMCPMeta(
-            idempotency_key=idempotency_key,
-            timeout_ms=timeout_ms
-        )
+        rmcp_meta = RMCPMeta(idempotency_key=idempotency_key, timeout_ms=timeout_ms)
 
         # Track request
         tracker = RequestTracker(
@@ -219,7 +208,7 @@ class RMCPSession:
             transaction_id=rmcp_meta.transaction_id,
             status=MessageStatus.PENDING,
             created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            updated_at=datetime.utcnow(),
         )
         self._active_requests[rmcp_meta.request_id] = tracker
 
@@ -233,14 +222,11 @@ class RMCPSession:
                 try:
                     tracker.update_status(MessageStatus.SENT)
                     logger.debug(
-                        "Attempting tool call %s (attempt %d/%d)",
-                        name, attempt + 1, retry_policy.max_attempts
+                        "Attempting tool call %s (attempt %d/%d)", name, attempt + 1, retry_policy.max_attempts
                     )
 
                     # Call tool with timeout
-                    result = await self._execute_tool_call(
-                        name, arguments, rmcp_meta, timeout_ms
-                    )
+                    result = await self._execute_tool_call(name, arguments, rmcp_meta, timeout_ms)
 
                     # Success - update tracker and cache result
                     tracker.update_status(MessageStatus.ACKNOWLEDGED)
@@ -248,12 +234,8 @@ class RMCPSession:
                     rmcp_result = RMCPResult(
                         result=result,
                         rmcp_meta=RMCPResponse(
-                            ack=True,
-                            processed=True,
-                            duplicate=False,
-                            attempts=attempt + 1,
-                            final_status="completed"
-                        )
+                            ack=True, processed=True, duplicate=False, attempts=attempt + 1, final_status="completed"
+                        ),
                     )
 
                     # Cache result if idempotency key provided
@@ -266,17 +248,12 @@ class RMCPSession:
                     last_error = e
                     tracker.update_status(MessageStatus.FAILED, self._sanitize_error_message(e))
 
-                    logger.warning(
-                        "Tool call attempt %d/%d failed: %s",
-                        attempt + 1, retry_policy.max_attempts, str(e)
-                    )
+                    logger.warning("Tool call attempt %d/%d failed: %s", attempt + 1, retry_policy.max_attempts, str(e))
 
                     # Check if we should retry
                     if attempt < retry_policy.max_attempts - 1:
                         if self._should_retry(e, retry_policy):
-                            delay = self._calculate_retry_delay(
-                                attempt, retry_policy
-                            )
+                            delay = self._calculate_retry_delay(attempt, retry_policy)
                             logger.debug("Retrying in %d ms", delay)
                             await asyncio.sleep(delay / 1000.0)
                             continue
@@ -305,16 +282,12 @@ class RMCPSession:
                 attempts=retry_policy.max_attempts,
                 final_status="failed",
                 error_code=error_code,
-                error_message=sanitized_error
-            )
+                error_message=sanitized_error,
+            ),
         )
 
     async def _execute_tool_call(
-        self,
-        name: str,
-        arguments: dict[str, Any] | None,
-        rmcp_meta: RMCPMeta,
-        timeout_ms: int
+        self, name: str, arguments: dict[str, Any] | None, rmcp_meta: RMCPMeta, timeout_ms: int
     ) -> Any:
         """Execute the actual tool call with RMCP metadata."""
         if not self._rmcp_enabled:
@@ -324,13 +297,7 @@ class RMCPSession:
         # Enhanced MCP call with RMCP metadata
         request = {
             "method": "tools/call",
-            "params": {
-                "name": name,
-                "arguments": arguments or {},
-                "_meta": {
-                    "rmcp": rmcp_meta.to_dict()
-                }
-            }
+            "params": {"name": name, "arguments": arguments or {}, "_meta": {"rmcp": rmcp_meta.to_dict()}},
         }
 
         # Execute with timeout
@@ -339,10 +306,7 @@ class RMCPSession:
                 response = await self.mcp_session.send_request(request)
 
                 if cancel_scope.cancelled_caught:
-                    raise RMCPTimeoutError(
-                        f"Tool call timed out after {timeout_ms}ms",
-                        timeout_ms
-                    )
+                    raise RMCPTimeoutError(f"Tool call timed out after {timeout_ms}ms", timeout_ms)
 
                 return response
 
@@ -352,29 +316,15 @@ class RMCPSession:
                 raise RMCPNetworkError(f"Network error during tool call: {e!s}", e)
             raise
 
-    async def _execute_standard_mcp_call(
-        self,
-        name: str,
-        arguments: dict[str, Any] | None,
-        timeout_ms: int
-    ) -> Any:
+    async def _execute_standard_mcp_call(self, name: str, arguments: dict[str, Any] | None, timeout_ms: int) -> Any:
         """Execute standard MCP tool call without RMCP enhancements."""
-        request = {
-            "method": "tools/call",
-            "params": {
-                "name": name,
-                "arguments": arguments or {}
-            }
-        }
+        request = {"method": "tools/call", "params": {"name": name, "arguments": arguments or {}}}
 
         with anyio.move_on_after(timeout_ms / 1000.0) as cancel_scope:
             response = await self.mcp_session.send_request(request)
 
             if cancel_scope.cancelled_caught:
-                raise RMCPTimeoutError(
-                    f"Tool call timed out after {timeout_ms}ms",
-                    timeout_ms
-                )
+                raise RMCPTimeoutError(f"Tool call timed out after {timeout_ms}ms", timeout_ms)
 
             return response
 
@@ -384,17 +334,11 @@ class RMCPSession:
             return error.retryable
 
         error_str = str(error).upper()
-        return any(
-            retryable_error in error_str
-            for retryable_error in retry_policy.retryable_errors
-        )
+        return any(retryable_error in error_str for retryable_error in retry_policy.retryable_errors)
 
     def _calculate_retry_delay(self, attempt: int, retry_policy: RetryPolicy) -> int:
         """Calculate delay for retry attempt with exponential backoff and jitter."""
-        delay = min(
-            retry_policy.base_delay_ms * (retry_policy.backoff_multiplier ** attempt),
-            retry_policy.max_delay_ms
-        )
+        delay = min(retry_policy.base_delay_ms * (retry_policy.backoff_multiplier**attempt), retry_policy.max_delay_ms)
 
         if retry_policy.jitter:
             # Add ±20% jitter
@@ -430,10 +374,7 @@ class RMCPSession:
 
         # Clean up expired entries
         cutoff_time = current_time - timedelta(milliseconds=self.config.deduplication_window_ms)
-        expired_keys = [
-            key for key, (_, timestamp) in self._deduplication_cache.items()
-            if timestamp < cutoff_time
-        ]
+        expired_keys = [key for key, (_, timestamp) in self._deduplication_cache.items() if timestamp < cutoff_time]
         for key in expired_keys:
             del self._deduplication_cache[key]
 
@@ -442,7 +383,7 @@ class RMCPSession:
             # Sort by timestamp and remove oldest 100 entries
             sorted_entries = sorted(
                 self._deduplication_cache.items(),
-                key=lambda x: x[1][1]  # Sort by timestamp
+                key=lambda x: x[1][1],  # Sort by timestamp
             )
             for key, _ in sorted_entries[:100]:
                 del self._deduplication_cache[key]

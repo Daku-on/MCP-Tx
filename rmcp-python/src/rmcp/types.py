@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 class MessageStatus(str, Enum):
     """Status of an RMCP message."""
+
     PENDING = "pending"
     SENT = "sent"
     ACKNOWLEDGED = "acknowledged"
@@ -24,6 +25,7 @@ class MessageStatus(str, Enum):
 
 class TransactionStatus(str, Enum):
     """Status of an RMCP transaction."""
+
     INITIATED = "initiated"
     IN_PROGRESS = "in_progress"
     WAITING_ACK = "waiting_ack"
@@ -36,6 +38,7 @@ class TransactionStatus(str, Enum):
 @dataclass
 class RMCPMeta:
     """RMCP metadata for message enhancement."""
+
     version: str = "0.1.0"
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     transaction_id: str | None = None
@@ -48,15 +51,13 @@ class RMCPMeta:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
-            k: v for k, v in self.__dict__.items()
-            if v is not None
-        }
+        return {k: v for k, v in self.__dict__.items() if v is not None}
 
 
 @dataclass
 class RMCPResponse:
     """RMCP response metadata."""
+
     ack: bool
     processed: bool
     duplicate: bool = False
@@ -67,29 +68,25 @@ class RMCPResponse:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
-        return {
-            k: v for k, v in self.__dict__.items()
-            if v is not None
-        }
+        return {k: v for k, v in self.__dict__.items() if v is not None}
 
 
 class RetryPolicy(BaseModel):
     """Configuration for retry behavior."""
+
     max_attempts: int = Field(default=3, ge=1, le=10)
     base_delay_ms: int = Field(default=1000, ge=100)
     max_delay_ms: int = Field(default=30000, ge=1000)
     backoff_multiplier: float = Field(default=2.0, ge=1.0, le=10.0)
     jitter: bool = Field(default=True)
-    retryable_errors: list[str] = Field(default_factory=lambda: [
-        "CONNECTION_ERROR",
-        "TIMEOUT",
-        "NETWORK_ERROR",
-        "TEMPORARY_FAILURE"
-    ])
+    retryable_errors: list[str] = Field(
+        default_factory=lambda: ["CONNECTION_ERROR", "TIMEOUT", "NETWORK_ERROR", "TEMPORARY_FAILURE"]
+    )
 
 
 class RMCPConfig(BaseModel):
     """Configuration for RMCP session."""
+
     enabled: bool = Field(default=True)
     retry_policy: RetryPolicy = Field(default_factory=RetryPolicy)
     default_timeout_ms: int = Field(default=30000, ge=1000, le=600000)  # 1s to 10min
@@ -102,6 +99,7 @@ class RMCPConfig(BaseModel):
 @dataclass
 class RMCPResult:
     """Result wrapper containing both MCP result and RMCP metadata."""
+
     result: Any
     rmcp_meta: RMCPResponse
 
@@ -134,7 +132,7 @@ class RMCPError(Exception):
         message: str,
         error_code: str = "RMCP_ERROR",
         retryable: bool = False,
-        details: dict[str, Any] | None = None
+        details: dict[str, Any] | None = None,
     ):
         super().__init__(message)
         self.message = message
@@ -147,12 +145,7 @@ class RMCPTimeoutError(RMCPError):
     """Timeout error for RMCP operations."""
 
     def __init__(self, message: str, timeout_ms: int):
-        super().__init__(
-            message,
-            error_code="RMCP_TIMEOUT",
-            retryable=True,
-            details={"timeout_ms": timeout_ms}
-        )
+        super().__init__(message, error_code="RMCP_TIMEOUT", retryable=True, details={"timeout_ms": timeout_ms})
 
 
 class RMCPNetworkError(RMCPError):
@@ -163,7 +156,7 @@ class RMCPNetworkError(RMCPError):
             message,
             error_code="RMCP_NETWORK_ERROR",
             retryable=True,
-            details={"original_error": str(original_error) if original_error else None}
+            details={"original_error": str(original_error) if original_error else None},
         )
 
 
@@ -175,13 +168,14 @@ class RMCPSequenceError(RMCPError):
             message,
             error_code="RMCP_SEQUENCE_ERROR",
             retryable=False,
-            details={"expected": expected, "received": received}
+            details={"expected": expected, "received": received},
         )
 
 
 @dataclass
 class RequestTracker:
     """Tracks the lifecycle of an RMCP request."""
+
     request_id: str
     transaction_id: str | None
     status: MessageStatus

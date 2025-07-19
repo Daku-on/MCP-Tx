@@ -38,11 +38,7 @@ class MockMCPSession:
             raise Exception("Network error")
 
         # Mock successful response
-        return {
-            "result": {
-                "content": [{"type": "text", "text": "Tool executed successfully"}]
-            }
-        }
+        return {"result": {"content": [{"type": "text", "text": "Tool executed successfully"}]}}
 
 
 @pytest.mark.anyio
@@ -106,15 +102,11 @@ async def test_tool_call_with_retry():
     retry_policy = RetryPolicy(
         max_attempts=3,
         base_delay_ms=100,  # Short delay for testing
-        backoff_multiplier=1.0  # No backoff for testing
+        backoff_multiplier=1.0,  # No backoff for testing
     )
 
     # Call tool (should succeed on 3rd attempt)
-    result = await rmcp_session.call_tool(
-        "test_tool",
-        {"arg": "value"},
-        retry_policy=retry_policy
-    )
+    result = await rmcp_session.call_tool("test_tool", {"arg": "value"}, retry_policy=retry_policy)
 
     # Verify result
     assert result.ack is True
@@ -137,15 +129,11 @@ async def test_tool_call_exhausted_retries():
     # Configure retry policy with fewer attempts
     retry_policy = RetryPolicy(
         max_attempts=2,
-        base_delay_ms=100  # Minimum allowed delay
+        base_delay_ms=100,  # Minimum allowed delay
     )
 
     # Call tool (should fail after exhausting retries)
-    result = await rmcp_session.call_tool(
-        "test_tool",
-        {"arg": "value"},
-        retry_policy=retry_policy
-    )
+    result = await rmcp_session.call_tool("test_tool", {"arg": "value"}, retry_policy=retry_policy)
 
     # Verify failure result
     assert result.ack is False
@@ -166,17 +154,13 @@ async def test_idempotency_key_deduplication():
     idempotency_key = "test-duplicate-key"
 
     # First call
-    result1 = await rmcp_session.call_tool(
-        "test_tool",
-        {"arg": "value1"},
-        idempotency_key=idempotency_key
-    )
+    result1 = await rmcp_session.call_tool("test_tool", {"arg": "value1"}, idempotency_key=idempotency_key)
 
     # Second call with same idempotency key
     result2 = await rmcp_session.call_tool(
         "test_tool",
         {"arg": "value2"},  # Different args, but same key
-        idempotency_key=idempotency_key
+        idempotency_key=idempotency_key,
     )
 
     # Verify first call succeeded
@@ -200,9 +184,11 @@ async def test_timeout_handling():
 
     # Make the mock session slow
     original_send = mock_mcp.send_request
+
     async def slow_send_request(request):
         await asyncio.sleep(0.2)  # 200ms delay
         return await original_send(request)
+
     mock_mcp.send_request = slow_send_request
 
     rmcp_session = RMCPSession(mock_mcp)
@@ -212,7 +198,7 @@ async def test_timeout_handling():
     result = await rmcp_session.call_tool(
         "test_tool",
         {"arg": "value"},
-        timeout_ms=50  # 50ms timeout, should fail
+        timeout_ms=50,  # 50ms timeout, should fail
     )
 
     # Should have timed out
@@ -252,11 +238,7 @@ async def test_concurrent_requests():
 
 def test_rmcp_config_custom():
     """Test custom RMCP configuration."""
-    config = RMCPConfig(
-        default_timeout_ms=60000,
-        max_concurrent_requests=20,
-        retry_policy=RetryPolicy(max_attempts=5)
-    )
+    config = RMCPConfig(default_timeout_ms=60000, max_concurrent_requests=20, retry_policy=RetryPolicy(max_attempts=5))
 
     mock_mcp = MockMCPSession()
     rmcp_session = RMCPSession(mock_mcp, config)
@@ -332,4 +314,3 @@ async def test_async_context_manager():
 
     # Session should be closed automatically
     mock_mcp.close.assert_called_once()
-
