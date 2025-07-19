@@ -4,15 +4,44 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write  # For potential future auto-comments
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate-config:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+      
+      - name: Validate required configuration files
+        run: |
+          # Check for required config files
+          if [[ ! -f pyproject.toml ]]; then
+            echo "::error::pyproject.toml not found"
+            exit 1
+          fi
+          
+          if [[ ! -f uv.lock ]]; then
+            echo "::error::uv.lock not found"
+            exit 1
+          fi
+          
+          echo "✅ All required configuration files present"
+
   ruff-check:
     name: Ruff Check
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    needs: validate-config
 
     steps:
       - name: Checkout code
@@ -28,6 +57,7 @@ jobs:
     name: Ruff Format
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    needs: validate-config
 
     steps:
       - name: Checkout code
@@ -43,6 +73,8 @@ jobs:
     name: Mypy static type check
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: validate-config
+    # Using Python 3.12 as pinned version
 
     steps:
       - name: Checkout
@@ -53,13 +85,16 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
+          python-version: "3.12"
 
       - name: Restore virtual environment
         id: cache-venv
         uses: actions/cache@v4
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+          key: venv-${{ runner.os }}-py3.12-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-py3.12-
 
       - name: Install the project
         if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -69,7 +104,66 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .mypy_cache
-          key: mypy-${{ runner.os }}-${{ hashFiles('**/*.py') }}
+          key: mypy-${{ runner.os }}-py3.12-${{ hashFiles('src/**/*.py', 'pyproject.toml') }}
+          restore-keys: |
+            mypy-${{ runner.os }}-py3.12-
       
       - name: Run mypy on app and tests directories
         run: uv run mypy .
+      
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mypy-logs-${{ runner.os }}-py3.12
+          path: |
+            .mypy_cache/
+            *.log
+          retention-days: 7
+
+  test-coverage:
+    name: Test Coverage Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: validate-config
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          python-version: "3.12"
+      
+      - name: Restore virtual environment
+        id: cache-venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-test-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            venv-test-${{ runner.os }}-
+      
+      - name: Install the project
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: uv sync --locked --all-extras --dev
+      
+      - name: Run tests with coverage
+        run: |
+          uv run pytest --cov=src --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+      
+      - name: Coverage comment (if enabled)
+        # This would require additional setup for PR comments
+        if: false  # Disabled for now
+        run: echo "Coverage reporting available in artifacts"
