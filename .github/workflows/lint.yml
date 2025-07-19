@@ -24,14 +24,14 @@ jobs:
       
       - name: Validate required configuration files
         run: |
-          # Check for required config files
-          if [[ ! -f pyproject.toml ]]; then
-            echo "::error::pyproject.toml not found"
+          # Check for required config files in rmcp-python directory
+          if [[ ! -f rmcp-python/pyproject.toml ]]; then
+            echo "::error::rmcp-python/pyproject.toml not found"
             exit 1
           fi
           
-          if [[ ! -f uv.lock ]]; then
-            echo "::error::uv.lock not found"
+          if [[ ! -f rmcp-python/uv.lock ]]; then
+            echo "::error::rmcp-python/uv.lock not found"
             exit 1
           fi
           
@@ -51,7 +51,7 @@ jobs:
         uses: astral-sh/ruff-action@v3
         with:
           version: "0.11.10"
-          args: check --no-cache # NOTE: ローカルと動作環境を合わせるために --no-cache を指定している
+          args: check --no-cache rmcp-python # NOTE: ローカルと動作環境を合わせるために --no-cache を指定している
 
   ruff-format:
     name: Ruff Format
@@ -67,7 +67,7 @@ jobs:
         uses: astral-sh/ruff-action@v3
         with:
           version: "0.11.10"
-          args: format --check --no-cache # NOTE: ローカルと動作環境を合わせるために --no-cache を指定している
+          args: format --check --no-cache rmcp-python # NOTE: ローカルと動作環境を合わせるために --no-cache を指定している
 
   mypy:
     name: Mypy static type check
@@ -75,6 +75,9 @@ jobs:
     timeout-minutes: 10
     needs: validate-config
     # Using Python 3.12 as pinned version
+    defaults:
+      run:
+        working-directory: rmcp-python
 
     steps:
       - name: Checkout
@@ -84,15 +87,15 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "rmcp-python/uv.lock"
           python-version: "3.12"
 
       - name: Restore virtual environment
         id: cache-venv
         uses: actions/cache@v4
         with:
-          path: .venv
-          key: venv-${{ runner.os }}-py3.12-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          path: rmcp-python/.venv
+          key: venv-${{ runner.os }}-py3.12-${{ hashFiles('rmcp-python/pyproject.toml', 'rmcp-python/uv.lock') }}
           restore-keys: |
             venv-${{ runner.os }}-py3.12-
 
@@ -103,8 +106,8 @@ jobs:
       - name: Restore mypy cache
         uses: actions/cache@v4
         with:
-          path: .mypy_cache
-          key: mypy-${{ runner.os }}-py3.12-${{ hashFiles('src/**/*.py', 'pyproject.toml') }}
+          path: rmcp-python/.mypy_cache
+          key: mypy-${{ runner.os }}-py3.12-${{ hashFiles('rmcp-python/src/**/*.py', 'rmcp-python/pyproject.toml') }}
           restore-keys: |
             mypy-${{ runner.os }}-py3.12-
       
@@ -117,8 +120,8 @@ jobs:
         with:
           name: mypy-logs-${{ runner.os }}-py3.12
           path: |
-            .mypy_cache/
-            *.log
+            rmcp-python/.mypy_cache/
+            rmcp-python/*.log
           retention-days: 7
 
   test-coverage:
@@ -126,6 +129,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: validate-config
+    defaults:
+      run:
+        working-directory: rmcp-python
     
     steps:
       - name: Checkout
@@ -135,15 +141,15 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
+          cache-dependency-glob: "rmcp-python/uv.lock"
           python-version: "3.12"
       
       - name: Restore virtual environment
         id: cache-venv
         uses: actions/cache@v4
         with:
-          path: .venv
-          key: venv-test-${{ runner.os }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          path: rmcp-python/.venv
+          key: venv-test-${{ runner.os }}-${{ hashFiles('rmcp-python/pyproject.toml', 'rmcp-python/uv.lock') }}
           restore-keys: |
             venv-test-${{ runner.os }}-
       
@@ -160,7 +166,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.xml
+          path: rmcp-python/coverage.xml
           retention-days: 7
       
       - name: Coverage comment (if enabled)
