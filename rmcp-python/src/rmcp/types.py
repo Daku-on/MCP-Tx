@@ -92,9 +92,9 @@ class RMCPConfig(BaseModel):
     """Configuration for RMCP session."""
     enabled: bool = Field(default=True)
     retry_policy: RetryPolicy = Field(default_factory=RetryPolicy)
-    default_timeout_ms: int = Field(default=30000, ge=1000)
+    default_timeout_ms: int = Field(default=30000, ge=1000, le=600000)  # 1s to 10min
     max_concurrent_requests: int = Field(default=10, ge=1, le=100)
-    deduplication_window_ms: int = Field(default=300000, ge=10000)  # 5 minutes
+    deduplication_window_ms: int = Field(default=300000, ge=10000, le=3600000)  # 10s to 1hr
     enable_transactions: bool = Field(default=True)
     enable_monitoring: bool = Field(default=True)
 
