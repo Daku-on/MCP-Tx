@@ -1,135 +1,180 @@
 # Reliable MCP (RMCP)
 
-> **A trust layer for agent operations.**  
-> MCP opens the connection. RMCP guarantees it actually worked.
+> **A reliability layer for MCP tool calls**  
+> MCP opens the connection. RMCP guarantees the tools actually executed.
+
+## The Problem
+
+You know this pain point with MCP:
+
+```python
+# Standard MCP call
+result = await session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
+# Did it actually write? Is the file there? If it failed, do we retry?
+# What if the network dropped mid-write?
+```
+
+MCP gives you JSON-RPC with tools, but no **delivery guarantees**. For autonomous agents that need to coordinate multi-step workflows, this isn't enough.
+
+## The Solution
+
+RMCP adds exactly what MCP is missing:
+
+```python
+# RMCP call with guarantees
+result = await rmcp_session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
+
+# You now know:
+print(result.ack)          # True - server confirmed receipt
+print(result.processed)    # True - tool actually executed  
+print(result.final_status) # "completed" | "failed" | "timeout"
+print(result.attempts)     # How many retries were needed
+```
+
+## Core Features
+
+| MCP Pain Point | RMCP Solution | Implementation |
+|----------------|---------------|----------------|
+| **Silent failures** | Required ACK/NACK | `_meta.rmcp.ack: true/false` |
+| **Duplicate execution** | Request deduplication | `_meta.rmcp.request_id` + idempotency |
+| **No retry logic** | Automatic retry with backoff | Configurable retry policy |
+| **Can't track progress** | Request lifecycle tracking | Transaction IDs + status objects |
+
+## Quick Start
+
+RMCP uses MCP's `experimental` capabilities for backward compatibility:
+
+```typescript
+// Client capability negotiation
+const params = {
+  capabilities: {
+    experimental: {
+      rmcp: { version: "0.1.0", features: ["ack", "retry", "idempotency"] }
+    }
+  }
+}
+
+// RMCP-enhanced request
+const request = {
+  method: "tools/call",
+  params: {
+    name: "file_reader",
+    arguments: { path: "/data/input.txt" },
+    _meta: {
+      rmcp: {
+        expect_ack: true,
+        request_id: "rmcp-1234567890",
+        idempotency_key: "read_input_file_v1"
+      }
+    }
+  }
+}
+
+// Response with guarantees
+{
+  "result": { /* tool output */ },
+  "_meta": {
+    "rmcp": {
+      "ack": true,
+      "processed": true,
+      "duplicate": false,
+      "attempts": 1
+    }
+  }
+}
+```
+
+## Architecture
+
+RMCP wraps your existing MCP session:
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
+│   Agent     │────▶│   RMCP Wrapper   │────▶│    Tool     │
+│   (Client)  │◀────│  + MCP Session   │◀────│  (Server)   │
+└─────────────┘     └──────────────────┘     └─────────────┘
+                           │
+                    ┌──────▼──────┐
+                    │   Reliability  │
+                    │ • ACK tracking │
+                    │ • Retry logic  │
+                    │ • Deduplication│
+                    └─────────────────┘
+```
+
+## Backward Compatibility
+
+- **100% MCP compatible**: Falls back to standard MCP when RMCP isn't supported
+- **Opt-in only**: RMCP features activate only when both sides support it
+- **No breaking changes**: Existing MCP tools work unchanged
+
+```python
+# Same code works with both MCP and RMCP servers
+session = RMCPSession(mcp_session)  # Wraps existing session
+result = await session.call_tool("any_tool", args)  # Auto-detects capabilities
+```
+
+## Implementation Status
+
+- **P0 (MVP)**: ✅ ACK/NACK + basic retry + request deduplication  
+- **P1**: 🚧 Advanced retry policies + transaction management
+- **P2**: 📋 Large file chunking + monitoring + production features
+
+[View full specification →](./mvp-spec.md)
+
+## Why You Need This
+
+Autonomous agents require **step-by-step reliability**:
+
+1. **File operations**: "Did the file actually get written?"
+2. **External APIs**: "Did the webhook actually fire?"  
+3. **Multi-step workflows**: "Which steps completed? Which failed?"
+4. **Error recovery**: "Should I retry this operation?"
+
+RMCP makes these questions answerable at the protocol level.
 
 ---
 
-## Overview
-
-**Reliable MCP (RMCP)** adds a trust layer on top of the Model Context Protocol.  
-It ensures that when an agent issues a request to an external tool, **we know if it worked.**
-
-### What it fixes
-
-MCP is great for connecting things, but not for trusting what happened.
-
-| Issue                         | RMCP Solution                                |
-|------------------------------|----------------------------------------------|
-| Message order                | Sequence numbers                             |
-| Silent failure               | ACK/NACK required                            |
-| No retry built-in            | Retry strategy configurable                  |
-| No tracking                  | Transaction IDs and final status objects     |
-| Agent can't know result      | RMCP makes it observable                     |
+**MCP opened the door to tools. RMCP makes sure you can trust what happened next.**
 
 ---
 
-### Relationship to A2A
+## 日本語概要
 
-- A2A is about connecting agents to each other  
-- RMCP is about **guaranteeing that what was said actually happened**
+**Reliable MCP (RMCP)** は、MCPツール呼び出しに信頼性を追加するプロトコル拡張です。
 
-| Area         | A2A                                        | RMCP                                    |
-|--------------|---------------------------------------------|------------------------------------------|
-| Scope        | Agent ↔ Agent                               | Agent ↔ Tool                             |
-| Purpose      | Inter-agent comms and capability discovery  | Step-wise trust, retries, observability |
-| Layer type   | Dialogue protocol                           | Transport-level reliability              |
+### 解決する問題
 
----
+MCPでツールを呼び出しても「本当に実行されたか」「失敗した場合の対処」が分からない：
 
-### Why RMCP?
+```python
+# 標準MCPの問題
+result = await session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
+# ファイルは書けた？ネットワークエラーで途中で落ちた？再実行すべき？
+```
 
-Future LLM-based agents will be:
+### RMCPの解決策
 
-- Not just responders
-- But autonomous task executors
-- Coordinating across tools with retry logic and state awareness
+```python
+# RMCP - 実行保証付き
+result = await rmcp_session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
 
-RMCP is how they can do that **safely and observably**.
+print(result.ack)          # True - サーバーが受信確認
+print(result.processed)    # True - ツールが実際に実行された
+print(result.final_status) # "completed" | "failed" | "timeout"
+```
 
----
+### 主要機能
 
-### Status
+- **ACK/NACK必須**: 受信・処理の明示的確認
+- **重複実行防止**: `request_id`による冪等性保証  
+- **自動再送**: 設定可能な再送ポリシー
+- **実行追跡**: トランザクションID + ステータス管理
 
-- Draft stage  
-- RFC open  
-- Prototype server in development
+### MCP互換性
 
----
+- 既存MCPコードはそのまま動作
+- RMCP対応時のみ信頼性機能が有効化
+- `experimental`フィールドでの機能ネゴシエーション
 
-### TL;DR
-
-**MCP opened the pipe.**  
-**RMCP makes sure what went in actually came out the other side—and worked.**
-
----
-
-## 概要（Overview）
-
-Reliable MCP（RMCP）は、LLMが外部ツール・データソースとやり取りを行う際に「通ったつもり」で終わらせず、  
-**「実際に通った・完了した」ことをプロトコルレベルで保証する**ための拡張仕様です。
-
-## 背景：MCPの限界
-
-MCP（Model Context Protocol）は JSON-RPC 2.0ベースで設計されており、  
-構文的には整っていて、「tool call」や「外部ファイル参照」もできる。  
-でも、通信の成否に関しては以下が**保証されていない**：
-
-| 欠落している保証               | 結果                                                |
-|------------------------------|-----------------------------------------------------|
-| メッセージ順序                | 並列実行がズレても検出できない                    |
-| 成功/失敗の確認（ACK/NACK）   | 相手が「やった」と言っても、信じるしかない         |
-| 再送戦略                      | 途中で落ちても再実行されない                      |
-| 完了ステータス                | 「いつ完了したか」「失敗したか」が追えない        |
-| トランザクションの整合性      | tool callが途中で止まっても、次に進んでしまう     |
-
----
-
-## RMCPが追加するTCP的レイヤー
-
-| 機能                         | 説明                                                                 |
-|------------------------------|----------------------------------------------------------------------|
-| 順序制御（Ordering）        | ステップの実行順序を保証                                             |
-| 再送（Retry）               | タイムアウトや失敗時に自動再送                                       |
-| ACK/NACK                    | 完了確認が返ってくるまで次に進まない                                 |
-| フロー制御（Flow Control） | トークン数/API制限に応じて送信を調整                                 |
-| 再送戦略（Retransmit Policy）| 複数経路や回避手段の選択ロジックを定義                              |
-
-→ つまり、**これはTCP for agents。**
-
----
-
-## RMCPとA2Aの関係性
-
-- **A2A（Agent2Agent Protocol）**：Agent間の接続・発話・メタ情報の交換を担う（≒通訳）  
-- **RMCP**：その会話の**実行結果が“本当に成功したか”を保証する通信制御レイヤー**（≒配達＋配達確認）
-
-| 領域         | A2A                                             | RMCP                                             |
-|--------------|--------------------------------------------------|--------------------------------------------------|
-| 通信対象     | Agent ⇔ Agent                                    | Agent ⇔ Tool                                     |
-| 目的         | 接続、発話、能力発見                             | ステップ実行の信頼性・再送・完了追跡              |
-| 層の性質     | 会話・発話のプロトコル                           | 通信信頼性のトランスポートレイヤー               |
-
----
-
-## RMCPが必要な理由
-
-未来のLLM/エージェントは：
-
-- 単発のレスポンスだけでなく  
-- 外部システムとの連携を前提とした構成を取り  
-- ステップを踏んで作業し、途中失敗もリカバリする
-
-これを**通信として正しく支える構成**が、RMCP。
-
----
-
-## 状態（Status）
-
-- 🚧 設計草案フェーズ  
-- 🔁 MCP互換の試作サーバ実装中  
-- ✉️ コミュニティフィードバック歓迎
-
----
-
-**MCPは道を開いた。RMCPはその道が本当に通ったかを確かめる。**
+**MCPがツールへの道を開いた。RMCPはそのツールが確実に動作したことを保証する。**
