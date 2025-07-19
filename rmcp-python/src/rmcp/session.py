@@ -8,21 +8,9 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Protocol
 
 import anyio
-
-# Define protocol for MCP session compatibility
-from typing import Protocol
-
-
-class BaseSession(Protocol):
-    """Protocol for MCP session compatibility."""
-
-    async def initialize(self, **kwargs: Any) -> Any: ...
-    async def send_request(self, request: dict[str, Any]) -> Any: ...
-    async def close(self) -> None: ...
-
 
 from .types import (
     MessageStatus,
@@ -38,6 +26,14 @@ from .types import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class BaseSession(Protocol):
+    """Protocol for MCP session compatibility."""
+
+    async def initialize(self, **kwargs: Any) -> Any: ...
+    async def send_request(self, request: dict[str, Any]) -> Any: ...
+    async def close(self) -> None: ...
 
 
 class RMCPSession:
