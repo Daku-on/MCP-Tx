@@ -4,7 +4,6 @@ RMCP Session - Wraps MCP sessions with reliability features.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
@@ -255,7 +254,7 @@ class RMCPSession:
                         if self._should_retry(e, retry_policy):
                             delay = self._calculate_retry_delay(attempt, retry_policy)
                             logger.debug("Retrying in %d ms", delay)
-                            await asyncio.sleep(delay / 1000.0)
+                            await anyio.sleep(delay / 1000.0)
                             continue
                         else:
                             logger.debug("Error not retryable: %s", str(e))
@@ -414,7 +413,7 @@ class RMCPSession:
         if self._active_requests:
             logger.info("Waiting for %d active requests to complete", len(self._active_requests))
             # Give requests a chance to complete
-            await asyncio.sleep(0.1)
+            await anyio.sleep(0.1)
 
         # Close underlying MCP session
         if hasattr(self.mcp_session, "close"):
