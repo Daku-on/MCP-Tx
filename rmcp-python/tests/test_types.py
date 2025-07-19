@@ -37,12 +37,7 @@ def test_rmcp_meta_creation():
 
 def test_rmcp_response():
     """Test RMCPResponse creation."""
-    response = RMCPResponse(
-        ack=True,
-        processed=True,
-        attempts=2,
-        final_status="completed"
-    )
+    response = RMCPResponse(ack=True, processed=True, attempts=2, final_status="completed")
 
     assert response.ack is True
     assert response.processed is True
@@ -59,17 +54,9 @@ def test_rmcp_response():
 
 def test_rmcp_result():
     """Test RMCPResult wrapper."""
-    response_meta = RMCPResponse(
-        ack=True,
-        processed=True,
-        attempts=1,
-        final_status="completed"
-    )
+    response_meta = RMCPResponse(ack=True, processed=True, attempts=1, final_status="completed")
 
-    result = RMCPResult(
-        result={"data": "test"},
-        rmcp_meta=response_meta
-    )
+    result = RMCPResult(result={"data": "test"}, rmcp_meta=response_meta)
 
     # Test convenience properties
     assert result.ack is True
@@ -95,12 +82,7 @@ def test_retry_policy_defaults():
 def test_retry_policy_validation():
     """Test RetryPolicy validation."""
     # Valid policy
-    policy = RetryPolicy(
-        max_attempts=5,
-        base_delay_ms=500,
-        max_delay_ms=60000,
-        backoff_multiplier=1.5
-    )
+    policy = RetryPolicy(max_attempts=5, base_delay_ms=500, max_delay_ms=60000, backoff_multiplier=1.5)
     assert policy.max_attempts == 5
     assert policy.base_delay_ms == 500
 
@@ -132,7 +114,7 @@ def test_request_tracker():
         transaction_id="tx-456",
         status=MessageStatus.PENDING,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
 
     assert tracker.request_id == "test-123"

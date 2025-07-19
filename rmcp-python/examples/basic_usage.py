@@ -46,6 +46,7 @@ class MockMCPSession:
 
         # Simulate random failures
         import random
+
         if random.random() < self.failure_rate:
             raise Exception(f"Simulated network error for {tool_name}")
 
@@ -54,12 +55,7 @@ class MockMCPSession:
 
         return {
             "result": {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Tool {tool_name} executed successfully! Data processed."
-                    }
-                ]
+                "content": [{"type": "text", "text": f"Tool {tool_name} executed successfully! Data processed."}]
             }
         }
 
@@ -75,13 +71,8 @@ async def basic_example():
     # Configure RMCP with custom settings
     config = RMCPConfig(
         default_timeout_ms=5000,
-        retry_policy=RetryPolicy(
-            max_attempts=3,
-            base_delay_ms=500,
-            backoff_multiplier=1.5,
-            jitter=True
-        ),
-        max_concurrent_requests=5
+        retry_policy=RetryPolicy(max_attempts=3, base_delay_ms=500, backoff_multiplier=1.5, jitter=True),
+        max_concurrent_requests=5,
     )
 
     # Wrap MCP session with RMCP
@@ -101,10 +92,7 @@ async def basic_example():
 
         # Example 1: Simple tool call
         print("\n1️⃣ Simple tool call:")
-        result1 = await rmcp_session.call_tool(
-            "file_reader",
-            {"path": "/tmp/data.json"}
-        )
+        result1 = await rmcp_session.call_tool("file_reader", {"path": "/tmp/data.json"})
         print(f"   ✅ ACK: {result1.ack}")
         print(f"   ✅ Processed: {result1.processed}")
         print(f"   🔁 Attempts: {result1.attempts}")
@@ -117,7 +105,7 @@ async def basic_example():
         result2a = await rmcp_session.call_tool(
             "file_writer",
             {"path": "/config/settings.json", "content": '{"mode": "production"}'},
-            idempotency_key=idempotency_key
+            idempotency_key=idempotency_key,
         )
         print(f"   First call - Duplicate: {result2a.rmcp_meta.duplicate}")
 
@@ -125,23 +113,19 @@ async def basic_example():
         result2b = await rmcp_session.call_tool(
             "file_writer",
             {"path": "/config/settings.json", "content": '{"mode": "staging"}'},  # Different content!
-            idempotency_key=idempotency_key  # Same key
+            idempotency_key=idempotency_key,  # Same key
         )
         print(f"   Second call - Duplicate: {result2b.rmcp_meta.duplicate}")
 
         # Example 3: Tool call with custom timeout and retry
         print("\n3️⃣ Tool call with custom retry policy:")
-        custom_retry = RetryPolicy(
-            max_attempts=5,
-            base_delay_ms=200,
-            backoff_multiplier=2.0
-        )
+        custom_retry = RetryPolicy(max_attempts=5, base_delay_ms=200, backoff_multiplier=2.0)
 
         result3 = await rmcp_session.call_tool(
             "api_caller",
             {"url": "https://api.example.com/data", "method": "GET"},
             timeout_ms=3000,
-            retry_policy=custom_retry
+            retry_policy=custom_retry,
         )
         print(f"   🔁 Total attempts: {result3.attempts}")
         print(f"   📊 Final status: {result3.final_status}")
@@ -150,10 +134,7 @@ async def basic_example():
         print("\n4️⃣ Concurrent tool calls:")
         tasks = []
         for i in range(3):
-            task = rmcp_session.call_tool(
-                f"processor_{i}",
-                {"data": f"batch_{i}", "index": i}
-            )
+            task = rmcp_session.call_tool(f"processor_{i}", {"data": f"batch_{i}", "index": i})
             tasks.append(task)
 
         results = await asyncio.gather(*tasks)
@@ -189,7 +170,7 @@ async def retry_demonstration():
             max_attempts=5,
             base_delay_ms=100,
             backoff_multiplier=1.2,
-            jitter=False  # Disable jitter for predictable demo
+            jitter=False,  # Disable jitter for predictable demo
         )
     )
 
@@ -199,10 +180,7 @@ async def retry_demonstration():
         await rmcp_session.initialize()
         print(f"🎯 Calling unreliable tool with {config.retry_policy.max_attempts} max attempts...")
 
-        result = await rmcp_session.call_tool(
-            "unreliable_tool",
-            {"operation": "risky_operation"}
-        )
+        result = await rmcp_session.call_tool("unreliable_tool", {"operation": "risky_operation"})
 
         if result.ack:
             print(f"✅ Success after {result.attempts} attempts!")
@@ -218,10 +196,7 @@ async def retry_demonstration():
 async def main():
     """Run all examples."""
     # Set up logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     try:
         await basic_example()

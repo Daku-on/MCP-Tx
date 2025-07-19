@@ -62,7 +62,7 @@ async def session_1_demo():
             max_attempts=4,
             base_delay_ms=100,
             backoff_multiplier=1.5,
-            jitter=False  # Disable for predictable demo
+            jitter=False,  # Disable for predictable demo
         )
     )
     rmcp_session = RMCPSession(mock_mcp, config)
@@ -88,9 +88,7 @@ async def session_1_demo():
 
     # First call with idempotency key
     result1 = await rmcp_session.call_tool(
-        "write_file",
-        {"path": "/tmp/test.txt", "content": "original"},
-        idempotency_key="write_test_file_v1"
+        "write_file", {"path": "/tmp/test.txt", "content": "original"}, idempotency_key="write_test_file_v1"
     )
     print(f"   First call - Duplicate: {result1.rmcp_meta.duplicate}")
     print(f"   MCP calls so far: {mock_mcp.call_count}")
@@ -99,7 +97,7 @@ async def session_1_demo():
     result2 = await rmcp_session.call_tool(
         "write_file",
         {"path": "/tmp/test.txt", "content": "modified"},  # Different content
-        idempotency_key="write_test_file_v1"  # Same key
+        idempotency_key="write_test_file_v1",  # Same key
     )
     print(f"   Second call - Duplicate: {result2.rmcp_meta.duplicate}")
     print(f"   MCP calls so far: {mock_mcp.call_count}")  # Should still be 1
