@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -38,23 +38,23 @@ class RMCPMeta:
     """RMCP metadata for message enhancement."""
     version: str = "0.1.0"
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    transaction_id: Optional[str] = None
-    idempotency_key: Optional[str] = None
+    transaction_id: str | None = None
+    idempotency_key: str | None = None
     expect_ack: bool = True
     retry_count: int = 0
     timeout_ms: int = 30000
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    correlation_id: Optional[str] = None
+    correlation_id: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
-            k: v for k, v in self.__dict__.items() 
+            k: v for k, v in self.__dict__.items()
             if v is not None
         }
 
 
-@dataclass 
+@dataclass
 class RMCPResponse:
     """RMCP response metadata."""
     ack: bool
@@ -62,10 +62,10 @@ class RMCPResponse:
     duplicate: bool = False
     attempts: int = 1
     final_status: str = "completed"
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
+    error_code: str | None = None
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
             k: v for k, v in self.__dict__.items()
@@ -104,22 +104,22 @@ class RMCPResult:
     """Result wrapper containing both MCP result and RMCP metadata."""
     result: Any
     rmcp_meta: RMCPResponse
-    
+
     @property
     def ack(self) -> bool:
         """Whether the request was acknowledged."""
         return self.rmcp_meta.ack
-    
-    @property 
+
+    @property
     def processed(self) -> bool:
         """Whether the tool was actually executed."""
         return self.rmcp_meta.processed
-    
+
     @property
     def final_status(self) -> str:
         """Final status of the operation."""
         return self.rmcp_meta.final_status
-    
+
     @property
     def attempts(self) -> int:
         """Number of retry attempts made."""
@@ -128,13 +128,13 @@ class RMCPResult:
 
 class RMCPError(Exception):
     """Base exception for RMCP errors."""
-    
+
     def __init__(
         self,
         message: str,
         error_code: str = "RMCP_ERROR",
         retryable: bool = False,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         super().__init__(message)
         self.message = message
@@ -145,10 +145,10 @@ class RMCPError(Exception):
 
 class RMCPTimeoutError(RMCPError):
     """Timeout error for RMCP operations."""
-    
+
     def __init__(self, message: str, timeout_ms: int):
         super().__init__(
-            message, 
+            message,
             error_code="RMCP_TIMEOUT",
             retryable=True,
             details={"timeout_ms": timeout_ms}
@@ -157,11 +157,11 @@ class RMCPTimeoutError(RMCPError):
 
 class RMCPNetworkError(RMCPError):
     """Network error for RMCP operations."""
-    
-    def __init__(self, message: str, original_error: Optional[Exception] = None):
+
+    def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(
             message,
-            error_code="RMCP_NETWORK_ERROR", 
+            error_code="RMCP_NETWORK_ERROR",
             retryable=True,
             details={"original_error": str(original_error) if original_error else None}
         )
@@ -169,7 +169,7 @@ class RMCPNetworkError(RMCPError):
 
 class RMCPSequenceError(RMCPError):
     """Sequence/ordering error for RMCP operations."""
-    
+
     def __init__(self, message: str, expected: int, received: int):
         super().__init__(
             message,
@@ -183,14 +183,14 @@ class RMCPSequenceError(RMCPError):
 class RequestTracker:
     """Tracks the lifecycle of an RMCP request."""
     request_id: str
-    transaction_id: Optional[str]
+    transaction_id: str | None
     status: MessageStatus
     created_at: datetime
     updated_at: datetime
     attempts: int = 0
-    last_error: Optional[str] = None
-    
-    def update_status(self, status: MessageStatus, error: Optional[str] = None) -> None:
+    last_error: str | None = None
+
+    def update_status(self, status: MessageStatus, error: str | None = None) -> None:
         """Update request status and timestamp."""
         self.status = status
         self.updated_at = datetime.utcnow()

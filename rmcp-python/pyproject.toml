@@ -22,18 +22,12 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "anyio>=4.0.0",
-    "pydantic>=2.0.0",
+    "anyio>=4.9.0",
+    "pydantic>=2.11.7",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-anyio>=0.7.0",
-    "ruff>=0.1.0",
-    "pyright>=1.1.0",
-    "pre-commit>=3.0.0",
-]
+dev = []
 
 [project.urls]
 Homepage = "https://github.com/reliable-mcp-draft"
@@ -74,7 +68,17 @@ addopts = [
     "--strict-markers",
     "--disable-warnings",
 ]
+anyio_backends = ["asyncio"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pytest>=8.4.1",
+    "pytest-anyio>=0.0.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.4",
 ]
