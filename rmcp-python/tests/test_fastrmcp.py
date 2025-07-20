@@ -340,3 +340,99 @@ class TestFastRMCP:
         # Should only include tools with non-None info
         assert "test_tool" in all_info
         assert len(all_info) == 1
+
+    @pytest.mark.anyio
+    async def test_concurrent_tool_calls(self, fastrmcp_app):
+        """Test concurrent tool calls for thread safety."""
+
+        @fastrmcp_app.tool()
+        def concurrent_tool(value: int) -> int:
+            return value * 2
+
+        # Mock RMCP session response
+        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
+            side_effect=lambda name, arguments, **kwargs: RMCPResult(
+                result={"output": arguments["value"] * 2},
+                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
+            )
+        )
+
+        # Execute multiple concurrent tool calls
+        async def make_concurrent_call(value: int):
+            return await fastrmcp_app.call_tool("concurrent_tool", {"value": value})
+
+        # Start 10 concurrent calls
+        async with anyio.create_task_group() as tg:
+            for i in range(10):
+                tg.start_soon(make_concurrent_call, i)
+
+        # Verify RMCP session was called for each task
+        assert fastrmcp_app._rmcp_session.call_tool.call_count == 10
+
+    @pytest.mark.anyio
+    async def test_deep_copy_protection(self, fastrmcp_app):
+        """Test that tool configurations are protected from mutation."""
+
+        @fastrmcp_app.tool(timeout_ms=5000)
+        def protected_tool() -> str:
+            return "protected"
+
+        # Get tool config twice
+        config1 = fastrmcp_app._registry.get_tool("protected_tool")
+        config2 = fastrmcp_app._registry.get_tool("protected_tool")
+
+        # They should be separate objects
+        assert config1 is not config2
+
+        # Modifying one shouldn't affect the other
+        if config1:
+            config1["timeout_ms"] = 9999
+
+        if config2:
+            assert config2["timeout_ms"] == 5000  # Should remain unchanged
+
+    def test_optimized_get_all_tools_info_performance(self, mock_mcp_session):
+        """Test that get_all_tools_info is efficiently implemented."""
+        app = FastRMCP(mock_mcp_session)
+
+        # Register multiple tools
+        for i in range(100):
+
+            @app.tool(name=f"tool_{i}", timeout_ms=1000 + i)
+            def test_tool() -> str:
+                return f"tool_{i}"
+
+        # This should be efficient (single dict iteration, not multiple lookups)
+        all_info = app.get_all_tools_info()
+
+        assert len(all_info) == 100
+        for i in range(100):
+            tool_name = f"tool_{i}"
+            assert tool_name in all_info
+            assert all_info[tool_name]["timeout_ms"] == 1000 + i
+
+    @pytest.mark.anyio
+    async def test_input_validation(self, fastrmcp_app):
+        """Test input validation for call_tool method."""
+
+        @fastrmcp_app.tool()
+        def test_tool(x: int) -> str:
+            return str(x)
+
+        # Test invalid tool name
+        with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
+            await fastrmcp_app.call_tool("", {"x": 1})
+
+        with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
+            await fastrmcp_app.call_tool("   ", {"x": 1})
+
+        # Test invalid arguments
+        with pytest.raises(ValueError, match="Arguments must be a dictionary"):
+            await fastrmcp_app.call_tool("test_tool", "not a dict")  # type: ignore
+
+        with pytest.raises(ValueError, match="Arguments must be a dictionary"):
+            await fastrmcp_app.call_tool("test_tool", None)  # type: ignore
+
+        # Test invalid idempotency key
+        with pytest.raises(ValueError, match="Idempotency key must be a string or None"):
+            await fastrmcp_app.call_tool("test_tool", {"x": 1}, idempotency_key=123)  # type: ignore
