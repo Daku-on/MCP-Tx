@@ -1,4 +1,4 @@
-FastMCPTx - Decorator-based API for MCP-Tx reliability features.
+"""FastMCPTx - Decorator-based API for MCP-Tx reliability features.
 
 FastMCPTx provides a decorator-based interface similar to FastMCP, allowing developers
 to easily add MCP-Tx reliability features (retry, idempotency, ACK/NACK) to their tools.
