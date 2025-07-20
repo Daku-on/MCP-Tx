@@ -1,12 +1,12 @@
-# RMCP信頼性機能
+# MCP-Tx信頼性機能
 
-このドキュメントでは、RMCPが標準MCPに追加する信頼性機能について詳しく解説します。
+このドキュメントでは、MCP-Txが標準MCPに追加する信頼性機能について詳しく解説します。
 
 ## コア信頼性保証
 
 ### 1. ACK/NACK確認応答
 
-RMCPはすべてのツール呼び出しに対して明示的な確認応答を要求します：
+MCP-Txはすべてのツール呼び出しに対して明示的な確認応答を要求します：
 
 ```python
 result = await rmcp_session.call_tool("my_tool", {})
@@ -25,10 +25,10 @@ else:
 
 ### 2. 指数バックオフ付き自動リトライ
 
-RMCPは失敗した操作を自動的にリトライします：
+MCP-Txは失敗した操作を自動的にリトライします：
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # リトライ動作を設定
 retry_policy = RetryPolicy(
@@ -103,14 +103,14 @@ await rmcp_session.call_tool(
 )
 ```
 
-## FastRMCPデコレータ機能
+## FastMCPTxデコレータ機能
 
 ### ツールレベル設定
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 
-app = FastRMCP(mcp_session)
+app = FastMCPTx(mcp_session)
 
 @app.tool(
     retry_policy=RetryPolicy(max_attempts=3),
@@ -124,7 +124,7 @@ async def process_data(id: str, data: dict) -> dict:
 
 ### 自動機能
 
-FastRMCPデコレータ使用時の自動機能：
+FastMCPTxデコレータ使用時の自動機能：
 - 入力検証
 - 型チェック
 - スレッドセーフ実行
@@ -135,10 +135,10 @@ FastRMCPデコレータ使用時の自動機能：
 
 ### プロトコルネゴシエーション
 
-RMCP機能は機能ネゴシエーションを通じて有効化：
+MCP-Tx機能は機能ネゴシエーションを通じて有効化：
 
 ```typescript
-// クライアントがRMCPサポートを宣言
+// クライアントがMCP-Txサポートを宣言
 {
   "capabilities": {
     "experimental": {
@@ -153,10 +153,10 @@ RMCP機能は機能ネゴシエーションを通じて有効化：
 
 ### メッセージ形式
 
-RMCPは標準MCPメッセージを拡張：
+MCP-Txは標準MCPメッセージを拡張：
 
 ```typescript
-// RMCPメタデータ付きリクエスト
+// MCP-Txメタデータ付きリクエスト
 {
   "method": "tools/call",
   "params": {
@@ -220,7 +220,7 @@ async def set_user_status(user_id: str, status: str):
     idempotency_key_generator=lambda args: f"status-{args['user_id']}-{args['status']}"
 )
 async def update_user_status(user_id: str, status: str):
-    # RMCPが重複更新を防止
+    # MCP-Txが重複更新を防止
     await db.update_user(user_id, {"status": status})
 ```
 
@@ -240,7 +240,7 @@ logger.info("操作完了", extra={
 
 ## 標準MCPとの比較
 
-| 機能 | 標準MCP | RMCP |
+| 機能 | 標準MCP | MCP-Tx |
 |---------|-------------|------|
 | 配信保証 | ベストエフォート | ACK必須 |
 | リトライロジック | クライアント実装 | 自動バックオフ |
@@ -250,7 +250,7 @@ logger.info("操作完了", extra={
 
 ## 関連ドキュメント
 
-- [アーキテクチャ概要](architecture_jp.md) - RMCPがMCPを強化する方法
+- [アーキテクチャ概要](architecture_jp.md) - MCP-TxがMCPを強化する方法
 - [はじめに](getting-started_jp.md) - クイックスタートガイド
 - [API リファレンス](api/rmcp-session_jp.md) - 詳細なAPI仕様
 

@@ -1,12 +1,12 @@
-# RMCP Reliability Features
+# MCP-Tx Reliability Features
 
-This document provides a deep dive into the reliability features that RMCP adds to standard MCP.
+This document provides a deep dive into the reliability features that MCP-Tx adds to standard MCP.
 
 ## Core Reliability Guarantees
 
 ### 1. ACK/NACK Acknowledgments
 
-RMCP requires explicit acknowledgment for every tool call:
+MCP-Tx requires explicit acknowledgment for every tool call:
 
 ```python
 result = await rmcp_session.call_tool("my_tool", {})
@@ -25,10 +25,10 @@ else:
 
 ### 2. Automatic Retry with Exponential Backoff
 
-RMCP automatically retries failed operations:
+MCP-Tx automatically retries failed operations:
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # Configure retry behavior
 retry_policy = RetryPolicy(
@@ -103,14 +103,14 @@ await rmcp_session.call_tool(
 )
 ```
 
-## FastRMCP Decorator Features
+## FastMCP-Tx Decorator Features
 
 ### Tool-Level Configuration
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 
-app = FastRMCP(mcp_session)
+app = FastMCP-Tx(mcp_session)
 
 @app.tool(
     retry_policy=RetryPolicy(max_attempts=3),
@@ -124,7 +124,7 @@ async def process_data(id: str, data: dict) -> dict:
 
 ### Automatic Features
 
-When using FastRMCP decorators:
+When using FastMCP-Tx decorators:
 - Input validation
 - Type checking
 - Thread-safe execution
@@ -135,10 +135,10 @@ When using FastRMCP decorators:
 
 ### Protocol Negotiation
 
-RMCP features activate through capability negotiation:
+MCP-Tx features activate through capability negotiation:
 
 ```typescript
-// Client announces RMCP support
+// Client announces MCP-Tx support
 {
   "capabilities": {
     "experimental": {
@@ -153,10 +153,10 @@ RMCP features activate through capability negotiation:
 
 ### Message Format
 
-RMCP extends standard MCP messages:
+MCP-Tx extends standard MCP messages:
 
 ```typescript
-// Request with RMCP metadata
+// Request with MCP-Tx metadata
 {
   "method": "tools/call",
   "params": {
@@ -220,7 +220,7 @@ async def set_user_status(user_id: str, status: str):
     idempotency_key_generator=lambda args: f"status-{args['user_id']}-{args['status']}"
 )
 async def update_user_status(user_id: str, status: str):
-    # RMCP prevents duplicate updates
+    # MCP-Tx prevents duplicate updates
     await db.update_user(user_id, {"status": status})
 ```
 
@@ -240,7 +240,7 @@ logger.info("Operation completed", extra={
 
 ## Comparison with Standard MCP
 
-| Feature | Standard MCP | RMCP |
+| Feature | Standard MCP | MCP-Tx |
 |---------|-------------|------|
 | Delivery Guarantee | Best effort | ACK required |
 | Retry Logic | Client implements | Automatic with backoff |
@@ -250,9 +250,9 @@ logger.info("Operation completed", extra={
 
 ## See Also
 
-- [Architecture Overview](architecture.md) - How RMCP enhances MCP
+- [Architecture Overview](architecture.md) - How MCP-Tx enhances MCP
 - [Getting Started](getting-started.md) - Quick start guide
-- [API Reference](api/rmcp-session.md) - Detailed API documentation
+- [API Reference](api/mcp-tx-session.md) - Detailed API documentation
 
 ---
 

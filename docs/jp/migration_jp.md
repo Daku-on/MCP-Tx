@@ -1,6 +1,6 @@
-# MCPからRMCPへの移行
+# MCPからMCP-Txへの移行
 
-標準MCPからRMCPへ信頼性保証付きでアップグレードするためのステップバイステップガイド。
+標準MCPからMCP-Txへ信頼性保証付きでアップグレードするためのステップバイステップガイド。
 
 ## 移行する理由
 
@@ -11,7 +11,7 @@
 - ❌ 限定的なエラーハンドリングと復旧
 - ❌ リクエストライフサイクルの可視性なし
 
-**RMCPの利点**：
+**MCP-Txの利点**：
 - ✅ **配信保証** ACK/NACK付き
 - ✅ **自動リトライ** 指数バックオフ付き
 - ✅ **冪等性** 重複実行を防ぐ
@@ -49,20 +49,20 @@ async def mcp_example():
     await session.close()
 ```
 
-#### 移行後（RMCPラッパー）
+#### 移行後（MCP-Txラッパー）
 ```python
 import asyncio
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
-from rmcp import RMCPSession  # RMCPインポート追加
+from mcp_tx import MCPTxSession  # MCP-Txインポート追加
 
 async def rmcp_example():
     # 同じMCPセットアップ
     transport = StdioClientTransport(...)
     mcp_session = ClientSession(transport)
     
-    # 信頼性のためにRMCPでラップ
-    rmcp_session = RMCPSession(mcp_session)
+    # 信頼性のためにMCP-Txでラップ
+    rmcp_session = MCPTxSession(mcp_session)
     
     await rmcp_session.initialize()  # 同じインターフェース
     
@@ -84,22 +84,22 @@ async def rmcp_example():
 ```
 
 **移行ステップ**：
-1. ✅ RMCPをインストール: `uv add rmcp`
-2. ✅ RMCPSessionをインポート: `from rmcp import RMCPSession`
-3. ✅ MCPセッションをラップ: `rmcp_session = RMCPSession(mcp_session)`
+1. ✅ MCP-Txをインストール: `uv add mcp_tx`
+2. ✅ MCPTxSessionをインポート: `from mcp_tx import MCPTxSession`
+3. ✅ MCPセッションをラップ: `rmcp_session = MCPTxSession(mcp_session)`
 4. ✅ 結果処理を更新: `result.ack`と`result.result`を使用
-5. ✅ 既存サーバーでテスト（RMCP未サポート時自動フォールバック）
+5. ✅ 既存サーバーでテスト（MCP-Tx未サポート時自動フォールバック）
 
 ### 戦略 2: 段階的拡張
 
-**最適な用途**: RMCP機能を段階的に追加したい大規模アプリケーション。
+**最適な用途**: MCP-Tx機能を段階的に追加したい大規模アプリケーション。
 
 #### フェーズ 1: 基本ラッパー
 ```python
 class ApplicationClient:
     def __init__(self, mcp_session):
-        # フェーズ1: 基本RMCPでラップ
-        self.session = RMCPSession(mcp_session)
+        # フェーズ1: 基本MCP-Txでラップ
+        self.session = MCPTxSession(mcp_session)
         self.initialized = False
     
     async def initialize(self):
@@ -142,7 +142,7 @@ class ApplicationClient:
 ```python
     async def api_call(self, endpoint: str, data: dict = None) -> dict:
         """フェーズ3: 外部API用カスタムリトライ"""
-        from rmcp import RetryPolicy
+        from mcp_tx import RetryPolicy
         
         # 外部API用積極的リトライ
         api_retry = RetryPolicy(
@@ -174,29 +174,29 @@ class ApplicationClient:
 import os
 from typing import Union
 from mcp.client.session import ClientSession
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 
 class ConfigurableClient:
     def __init__(self, mcp_session: ClientSession):
         self.mcp_session = mcp_session
         
-        # RMCPのフィーチャーフラグ
-        use_rmcp = os.getenv("USE_RMCP", "false").lower() == "true"
+        # MCP-Txのフィーチャーフラグ
+        use_rmcp = os.getenv("USE_MCP-Tx", "false").lower() == "true"
         
         if use_rmcp:
-            print("🚀 拡張信頼性のためRMCPを使用")
-            self.session = RMCPSession(mcp_session)
+            print("🚀 拡張信頼性のためMCP-Txを使用")
+            self.session = MCPTxSession(mcp_session)
         else:
             print("📡 標準MCPを使用")
             self.session = mcp_session
         
-        self.is_rmcp = isinstance(self.session, RMCPSession)
+        self.is_rmcp = isinstance(self.session, MCPTxSession)
     
     async def call_tool_with_fallback(self, name: str, arguments: dict) -> dict:
-        """RMCP利用可能時使用、MCPエラーハンドリングにフォールバック"""
+        """MCP-Tx利用可能時使用、MCPエラーハンドリングにフォールバック"""
         
         if self.is_rmcp:
-            # RMCPパス - リッチエラーハンドリング
+            # MCP-Txパス - リッチエラーハンドリング
             result = await self.session.call_tool(name, arguments)
             
             if result.ack:
@@ -254,19 +254,19 @@ async def unreliable_operation():
                 raise e
 ```
 
-#### 移行後（RMCP）
+#### 移行後（MCP-Tx）
 ```python
 # リッチエラーハンドリング付き自動リトライ
 async def unreliable_operation():
-    from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+    from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
     
     try:
         result = await rmcp_session.call_tool("unreliable_api", {})
         return result.result if result.ack else None
-    except RMCPTimeoutError as e:
+    except MCP-TxTimeoutError as e:
         print(f"操作が{e.details['timeout_ms']}ms後にタイムアウト")
         return None
-    except RMCPNetworkError as e:
+    except MCP-TxNetworkError as e:
         print(f"ネットワークエラー: {e.message}")
         return None
 ```
@@ -292,7 +292,7 @@ async def idempotent_operation(operation_id: str, data: dict):
         raise e
 ```
 
-#### 移行後（RMCP）
+#### 移行後（MCP-Tx）
 ```python
 # 自動重複検出
 async def idempotent_operation(operation_id: str, data: dict):
@@ -322,14 +322,14 @@ class MCPClient:
         # 信頼性機能の手動実装
 ```
 
-#### 移行後（RMCP）
+#### 移行後（MCP-Tx）
 ```python
-# 宣言的RMCP設定
-from rmcp import RMCPConfig, RetryPolicy
+# 宣言的MCP-Tx設定
+from mcp_tx import MCPTxConfig, RetryPolicy
 
-class RMCPClient:
+class MCP-TxClient:
     def __init__(self):
-        config = RMCPConfig(
+        config = MCPTxConfig(
             default_timeout_ms=30000,
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -341,7 +341,7 @@ class RMCPClient:
             deduplication_window_ms=300000
         )
         
-        self.session = RMCPSession(mcp_session, config)
+        self.session = MCPTxSession(mcp_session, config)
         # 信頼性機能は自動処理
 ```
 
@@ -352,26 +352,26 @@ class RMCPClient:
 - [ ] **MCP使用状況の棚卸**: コードベース内のすべての`call_tool()`呼び出しをドキュメント化
 - [ ] **重要操作の特定**: 信頼性保証が必要な操作をマーク
 - [ ] **エラーハンドリングの確認**: 現在のエラーハンドリングパターンをドキュメント化
-- [ ] **MCPサーバーバージョン確認**: RMCPとの互換性を確認
+- [ ] **MCPサーバーバージョン確認**: MCP-Txとの互換性を確認
 - [ ] **テスト戦略の計画**: 移行検証用テストシナリオを定義
 
 ### 移行実行
 
-- [ ] **RMCPインストール**: `uv add rmcp`
-- [ ] **インポート更新**: `from rmcp import RMCPSession`を追加
-- [ ] **MCPセッションラップ**: 直接MCP使用をRMCPラッパーに置換
+- [ ] **MCP-Txインストール**: `uv add mcp_tx`
+- [ ] **インポート更新**: `from mcp_tx import MCPTxSession`を追加
+- [ ] **MCPセッションラップ**: 直接MCP使用をMCP-Txラッパーに置換
 - [ ] **結果処理更新**: `result.ack`と`result.result`パターンを使用
-- [ ] **RMCP設定**: 適切なタイムアウト、リトライポリシー、並行性制限を設定
+- [ ] **MCP-Tx設定**: 適切なタイムアウト、リトライポリシー、並行性制限を設定
 - [ ] **冪等性キー追加**: 冪等であるべき操作用
-- [ ] **エラーハンドリング拡張**: RMCP固有例外タイプを使用
+- [ ] **エラーハンドリング拡張**: MCP-Tx固有例外タイプを使用
 
 ### 移行後検証
 
-- [ ] **後方互換性テスト**: 非RMCPサーバーで動作確認
+- [ ] **後方互換性テスト**: 非MCP-Txサーバーで動作確認
 - [ ] **信頼性機能検証**: リトライ、冪等性、タイムアウトハンドリングをテスト
-- [ ] **パフォーマンステスト**: 標準MCPとのRMCPオーバーヘッドを測定
+- [ ] **パフォーマンステスト**: 標準MCPとのMCP-Txオーバーヘッドを測定
 - [ ] **エラー率監視**: 移行前後のエラー率を比較
-- [ ] **ドキュメント更新**: 新しいRMCP固有機能をドキュメント化
+- [ ] **ドキュメント更新**: 新しいMCP-Tx固有機能をドキュメント化
 
 ## 移行問題のトラブルシューティング
 
@@ -379,12 +379,12 @@ class RMCPClient:
 
 ```python
 # ❌ 問題
-from rmcp import RMCPSession  # ModuleNotFoundError
+from mcp_tx import MCPTxSession  # ModuleNotFoundError
 
 # ✅ 解決  
-# 最初にRMCPをインストール
-# uv add rmcp
-# または pip install rmcp
+# 最初にMCP-Txをインストール
+# uv add mcp_tx
+# または pip install mcp_tx
 ```
 
 ### 問題: 結果アクセスエラー
@@ -392,7 +392,7 @@ from rmcp import RMCPSession  # ModuleNotFoundError
 ```python
 # ❌ 問題
 result = await rmcp_session.call_tool("test", {})
-print(result)  # RMCPResultオブジェクト、直接結果ではない
+print(result)  # MCP-TxResultオブジェクト、直接結果ではない
 
 # ✅ 解決
 result = await rmcp_session.call_tool("test", {})
@@ -406,37 +406,37 @@ else:
 
 ```python
 # ❌ 問題
-# サーバーがRMCP実験的機能をサポートしていない
+# サーバーがMCP-Tx実験的機能をサポートしていない
 
 # ✅ 解決 - 自動フォールバック
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()
 
 if rmcp_session.rmcp_enabled:
-    print("✅ RMCP機能アクティブ")
+    print("✅ MCP-Tx機能アクティブ")
 else:
     print("⚠️ 標準MCPにフォールバック")
-    # RMCPは動作するが、サーバーサイド機能なし
+    # MCP-Txは動作するが、サーバーサイド機能なし
 ```
 
 ### 問題: パフォーマンス懸念
 
 ```python
 # ❌ 問題
-# RMCPが単純操作にオーバーヘッドを追加
+# MCP-Txが単純操作にオーバーヘッドを追加
 
 # ✅ 解決 - 選択的使用
 class HybridClient:
     def __init__(self, mcp_session):
         self.mcp_session = mcp_session
-        self.rmcp_session = RMCPSession(mcp_session)
+        self.rmcp_session = MCPTxSession(mcp_session)
     
     async def simple_call(self, tool: str, args: dict):
         # 単純、非重要操作にはMCPを使用
         return await self.mcp_session.call_tool(tool, args)
     
     async def critical_call(self, tool: str, args: dict):
-        # 信頼性が必要な重要操作にはRMCPを使用
+        # 信頼性が必要な重要操作にはMCP-Txを使用
         result = await self.rmcp_session.call_tool(tool, args)
         return result.result if result.ack else None
 ```
@@ -459,12 +459,12 @@ async def read_file(path: str) -> str:
     
     return result.result["content"]
 
-# ❌ 悪い: 呼び出し元にRMCP詳細を強制
-async def read_file(path: str) -> RMCPResult:
+# ❌ 悪い: 呼び出し元にMCP-Tx詳細を強制
+async def read_file(path: str) -> MCP-TxResult:
     return await rmcp_session.call_tool("file_reader", {"path": path})
 ```
 
-### 3. RMCP機能を段階的に活用
+### 3. MCP-Tx機能を段階的に活用
 1. **フェーズ1**: 基本ラッパー（自動リトライ、エラーハンドリング）
 2. **フェーズ2**: 書き込み操作に冪等性を追加
 3. **フェーズ3**: 異なる操作タイプ用カスタムリトライポリシー
@@ -474,7 +474,7 @@ async def read_file(path: str) -> RMCPResult:
 - 信頼性メトリクス（成功率、リトライ回数）を追跡
 - パフォーマンス影響（レイテンシ、スループット）を監視
 - 移行前後のエラー率を比較
-- RMCP固有問題のアラートを設定
+- MCP-Tx固有問題のアラートを設定
 
 ---
 

@@ -1,10 +1,10 @@
-# Getting Started with RMCP
+# Getting Started with MCP-Tx
 
-Get up and running with the Reliable Model Context Protocol (RMCP) Python SDK in 5 minutes.
+Get up and running with the Reliable Model Context Protocol (MCP-Tx) Python SDK in 5 minutes.
 
-## What is RMCP?
+## What is MCP-Tx?
 
-RMCP is a **reliability layer** that wraps existing MCP (Model Context Protocol) sessions to provide:
+MCP-Tx is a **reliability layer** that wraps existing MCP (Model Context Protocol) sessions to provide:
 
 - 🔒 **Guaranteed delivery** - ACK/NACK for every tool call
 - 🔄 **Automatic retry** - Exponential backoff with jitter  
@@ -18,14 +18,14 @@ RMCP is a **reliability layer** that wraps existing MCP (Model Context Protocol)
 - Python 3.10+
 - Existing MCP setup (client and server)
 
-### Install RMCP
+### Install MCP-Tx
 
 ```bash
 # Using uv (recommended)
-uv add rmcp
+uv add mcp_tx
 
 # Using pip
-pip install rmcp
+pip install mcp_tx
 ```
 
 ### Development Installation
@@ -38,11 +38,11 @@ uv sync --dev
 
 ## 5-Minute Quick Start
 
-### Step 1: Import RMCP
+### Step 1: Import MCP-Tx
 
 ```python
 import asyncio
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 from mcp.client.session import ClientSession  # Your existing MCP client
 ```
 
@@ -53,8 +53,8 @@ async def main():
     # Your existing MCP session setup
     mcp_session = ClientSession(...)  # Configure as usual
     
-    # Wrap with RMCP for reliability
-    rmcp_session = RMCPSession(mcp_session)
+    # Wrap with MCP-Tx for reliability
+    rmcp_session = MCPTxSession(mcp_session)
     
     # Initialize (handles capability negotiation)
     await rmcp_session.initialize()
@@ -117,12 +117,12 @@ asyncio.run(main())
 ```python
 import asyncio
 import logging
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # Mock MCP session for demonstration
 class MockMCPSession:
     async def initialize(self, **kwargs):
-        # Mock server with RMCP support
+        # Mock server with MCP-Tx support
         class MockResult:
             class capabilities:
                 experimental = {"rmcp": {"version": "0.1.0"}}
@@ -145,8 +145,8 @@ async def complete_example():
     # Create mock MCP session (replace with real MCP session)
     mcp_session = MockMCPSession()
     
-    # Configure RMCP with custom settings
-    config = RMCPConfig(
+    # Configure MCP-Tx with custom settings
+    config = MCPTxConfig(
         default_timeout_ms=5000,
         retry_policy=RetryPolicy(
             max_attempts=3,
@@ -157,15 +157,15 @@ async def complete_example():
         max_concurrent_requests=10
     )
     
-    # Create RMCP session
-    async with RMCPSession(mcp_session, config) as rmcp:
+    # Create MCP-Tx session
+    async with MCPTxSession(mcp_session, config) as rmcp:
         await rmcp.initialize()
         
-        print(f"🚀 RMCP enabled: {rmcp.rmcp_enabled}")
+        print(f"🚀 MCP-Tx enabled: {rmcp.rmcp_enabled}")
         
         # Example 1: Basic tool call
         print("\\n📝 Example 1: Basic tool call")
-        result = await rmcp.call_tool("echo", {"message": "Hello RMCP!"})
+        result = await rmcp.call_tool("echo", {"message": "Hello MCP-Tx!"})
         print(f"   Result: {result.result}")
         print(f"   Status: {result.final_status}")
         
@@ -197,9 +197,9 @@ if __name__ == "__main__":
 ## What's Next?
 
 ### Learn Core Concepts
-- [Architecture Overview](architecture.md) - Understand how RMCP works
-- [Architecture Overview](architecture.md) - Deep dive into RMCP reliability features
-- [API Reference](api/rmcp-session.md) - Detailed API documentation
+- [Architecture Overview](architecture.md) - Understand how MCP-Tx works
+- [Architecture Overview](architecture.md) - Deep dive into MCP-Tx reliability features
+- [API Reference](api/mcp-tx-session.md) - Detailed API documentation
 
 ### Explore Examples
 - [Basic Usage Examples](examples/basic.md) - Common patterns and use cases
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 - 📖 Check the [FAQ](faq.md) for common questions
 - 🐛 Review [Troubleshooting](troubleshooting.md) for issues
 - 💬 [Open an issue](https://github.com/Daku-on/reliable-MCP-draft/issues) on GitHub
-- 📧 Read the [API Reference](api/rmcp-session.md) for detailed documentation
+- 📧 Read the [API Reference](api/mcp-tx-session.md) for detailed documentation
 
 ---
 

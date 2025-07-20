@@ -1,26 +1,26 @@
-# RMCP設定ガイド
+# MCP-Tx設定ガイド
 
-このガイドでは、基本設定から高度なチューニングまで、RMCPで利用可能なすべての設定オプションについて説明します。
+このガイドでは、基本設定から高度なチューニングまで、MCP-Txで利用可能なすべての設定オプションについて説明します。
 
 ## クイックスタート設定
 
 ### 基本セットアップ
 
 ```python
-from rmcp import RMCPConfig, RMCPSession
+from mcp_tx import MCPTxConfig, MCPTxSession
 
 # デフォルト設定（ほとんどのユースケースに推奨）
-config = RMCPConfig()
-session = RMCPSession(mcp_session, config)
+config = MCPTxConfig()
+session = MCPTxSession(mcp_session, config)
 ```
 
 ### 一般的なカスタマイズ
 
 ```python
-from rmcp import RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 # 本番対応の設定
-config = RMCPConfig(
+config = MCPTxConfig(
     # タイムアウト
     default_timeout_ms=30000,        # 30秒
     
@@ -45,7 +45,7 @@ config = RMCPConfig(
 
 ## 設定オプション
 
-### RMCPConfigパラメータ
+### MCPTxConfigパラメータ
 
 | パラメータ | 型 | デフォルト | 説明 |
 |-----------|------|---------|-------------|
@@ -69,20 +69,20 @@ config = RMCPConfig(
 | `jitter` | bool | True | サンダリングハード防止のためのランダム性追加 |
 | `retry_on_timeout` | bool | True | タイムアウトエラーをリトライ |
 
-## FastRMCP設定
+## FastMCPTx設定
 
 ### アプリレベル設定
 
 ```python
-from rmcp import FastRMCP, RMCPConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 
-# FastRMCPアプリを設定
-config = RMCPConfig(
+# FastMCPTxアプリを設定
+config = MCPTxConfig(
     default_timeout_ms=20000,
     enable_request_logging=True
 )
 
-app = FastRMCP(
+app = FastMCPTx(
     mcp_session,
     config=config,
     name="Production App",
@@ -117,13 +117,13 @@ async def critical_tool(id: str, data: dict) -> dict:
 
 ```python
 import os
-from rmcp import RMCPConfig
+from mcp_tx import MCPTxConfig
 
 # 環境から読み取り
-config = RMCPConfig(
-    default_timeout_ms=int(os.getenv("RMCP_TIMEOUT", "30000")),
-    max_concurrent_requests=int(os.getenv("RMCP_MAX_CONCURRENT", "10")),
-    enable_request_logging=os.getenv("RMCP_LOGGING", "false").lower() == "true"
+config = MCPTxConfig(
+    default_timeout_ms=int(os.getenv("MCP-Tx_TIMEOUT", "30000")),
+    max_concurrent_requests=int(os.getenv("MCP-Tx_MAX_CONCURRENT", "10")),
+    enable_request_logging=os.getenv("MCP-Tx_LOGGING", "false").lower() == "true"
 )
 ```
 
@@ -132,7 +132,7 @@ config = RMCPConfig(
 ```python
 import json
 from pathlib import Path
-from rmcp import RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 # JSONファイルから読み込み
 config_path = Path("rmcp_config.json")
@@ -140,13 +140,13 @@ if config_path.exists():
     with open(config_path) as f:
         config_data = json.load(f)
     
-    config = RMCPConfig(
+    config = MCPTxConfig(
         default_timeout_ms=config_data.get("timeout_ms", 30000),
         retry_policy=RetryPolicy(**config_data.get("retry", {})),
         **config_data.get("options", {})
     )
 else:
-    config = RMCPConfig()  # デフォルト
+    config = MCPTxConfig()  # デフォルト
 ```
 
 例 `rmcp_config.json`:
@@ -170,7 +170,7 @@ else:
 ### カスタムリトライ戦略
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # 異なるシナリオ用の異なる戦略
 AGGRESSIVE_RETRY = RetryPolicy(
@@ -198,11 +198,11 @@ async def expensive_operation(): ...
 ### 動的設定
 
 ```python
-class DynamicRMCPConfig:
+class DynamicMCPTxConfig:
     """実行時に更新可能な設定"""
     
     def __init__(self):
-        self._config = RMCPConfig()
+        self._config = MCPTxConfig()
         self._overrides = {}
     
     def update_timeout(self, operation: str, timeout_ms: int):
@@ -216,7 +216,7 @@ class DynamicRMCPConfig:
         return base
 
 # 使用例
-dynamic_config = DynamicRMCPConfig()
+dynamic_config = DynamicMCPTxConfig()
 dynamic_config.update_timeout("slow_operation", 120000)  # 2分
 ```
 
@@ -224,7 +224,7 @@ dynamic_config.update_timeout("slow_operation", 120000)  # 2分
 
 ```python
 # 高スループット設定
-high_throughput_config = RMCPConfig(
+high_throughput_config = MCPTxConfig(
     max_concurrent_requests=50,
     default_timeout_ms=10000,  # 高速失敗
     retry_policy=RetryPolicy(
@@ -236,7 +236,7 @@ high_throughput_config = RMCPConfig(
 )
 
 # 高信頼性設定
-high_reliability_config = RMCPConfig(
+high_reliability_config = MCPTxConfig(
     max_concurrent_requests=5,  # 負荷制限
     default_timeout_ms=60000,  # 忍耐強いタイムアウト
     retry_policy=RetryPolicy(
@@ -254,11 +254,11 @@ high_reliability_config = RMCPConfig(
 ### メトリクス収集
 
 ```python
-from rmcp import RMCPConfig
+from mcp_tx import MCPTxConfig
 import logging
 
 # メトリクス付き設定
-config = RMCPConfig(
+config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG"
 )
@@ -271,7 +271,7 @@ class MetricsHandler(logging.Handler):
             metrics = record.rmcp_metrics
             send_to_prometheus(metrics)
 
-# RMCPロガーに付加
+# MCP-Txロガーに付加
 logger = logging.getLogger('rmcp')
 logger.addHandler(MetricsHandler())
 ```
@@ -282,12 +282,12 @@ logger.addHandler(MetricsHandler())
 class HealthCheckConfig:
     """内蔵ヘルスモニタリング付き設定"""
     
-    def __init__(self, base_config: RMCPConfig):
+    def __init__(self, base_config: MCPTxConfig):
         self.base_config = base_config
         self.health_threshold = 0.95  # 95%成功率
         self.check_interval_ms = 30000  # 30秒
     
-    async def health_check(self, session: RMCPSession) -> bool:
+    async def health_check(self, session: MCPTxSession) -> bool:
         """セッションが健全かチェック"""
         try:
             result = await session.call_tool(
@@ -306,7 +306,7 @@ class HealthCheckConfig:
 
 ```python
 # 良い例: 特定の要件がない限りデフォルトを使用
-config = RMCPConfig()
+config = MCPTxConfig()
 
 # 必要なもののみカスタマイズ
 config.default_timeout_ms = 45000  # 特定の要件
@@ -316,14 +316,14 @@ config.default_timeout_ms = 45000  # 特定の要件
 
 ```python
 # 開発環境
-dev_config = RMCPConfig(
+dev_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     retry_policy=RetryPolicy(max_attempts=1)  # 開発では高速失敗
 )
 
 # 本番環境
-prod_config = RMCPConfig(
+prod_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="INFO",
     retry_policy=RetryPolicy(max_attempts=5),
@@ -335,7 +335,7 @@ prod_config = RMCPConfig(
 
 ```python
 # 高頻度取引システムの設定
-config = RMCPConfig(
+config = MCPTxConfig(
     # マーケットデータは時間に敏感なため低タイムアウト
     default_timeout_ms=500,
     
@@ -353,7 +353,7 @@ config = RMCPConfig(
 
 ```python
 # すべてのデバッグ機能を有効化
-debug_config = RMCPConfig(
+debug_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     # デバッグ用にリトライを遅く

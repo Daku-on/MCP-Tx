@@ -1,19 +1,19 @@
-# Advanced RMCP Examples
+# Advanced MCP-Tx Examples
 
-This guide demonstrates advanced usage patterns and production-ready implementations using RMCP.
+This guide demonstrates advanced usage patterns and production-ready implementations using MCP-Tx.
 
 ## Multi-Step Workflows with Transaction Tracking
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 import uuid
 
-app = FastRMCP(mcp_session)
+app = FastMCP-Tx(mcp_session)
 
 class WorkflowManager:
-    """Manage complex multi-step workflows with RMCP reliability."""
+    """Manage complex multi-step workflows with MCP-Tx reliability."""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.workflows = {}
     
@@ -105,7 +105,7 @@ class CircuitState(Enum):
     HALF_OPEN = "half_open"  # Testing recovery
 
 class CircuitBreaker:
-    """Circuit breaker pattern for RMCP tools."""
+    """Circuit breaker pattern for MCP-Tx tools."""
     
     def __init__(
         self,
@@ -152,7 +152,7 @@ class CircuitBreaker:
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
 
-# Usage with RMCP
+# Usage with MCP-Tx
 breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
 
 @app.tool()
@@ -171,10 +171,10 @@ from opentelemetry.trace import Status, StatusCode
 # Context variable for trace propagation
 trace_context = contextvars.ContextVar('trace_context', default=None)
 
-class TracedRMCP:
-    """RMCP with distributed tracing support."""
+class TracedMCP-Tx:
+    """MCP-Tx with distributed tracing support."""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.tracer = trace.get_tracer(__name__)
     
@@ -183,7 +183,7 @@ class TracedRMCP:
         name: str,
         arguments: dict,
         **kwargs
-    ) -> RMCPResult:
+    ) -> MCP-TxResult:
         """Call tool with distributed tracing."""
         with self.tracer.start_as_current_span(f"rmcp.{name}") as span:
             # Add trace context to arguments
@@ -213,7 +213,7 @@ class TracedRMCP:
                 raise
 
 # Usage
-traced_app = TracedRMCP(app)
+traced_app = TracedMCP-Tx(app)
 result = await traced_app.call_tool_traced("process_order", {"order_id": "12345"})
 ```
 
@@ -225,7 +225,7 @@ from collections import deque
 import time
 
 class RateLimiter:
-    """Token bucket rate limiter for RMCP calls."""
+    """Token bucket rate limiter for MCP-Tx calls."""
     
     def __init__(self, rate: int, burst: int):
         self.rate = rate  # Tokens per second
@@ -251,10 +251,10 @@ class RateLimiter:
                 wait_time = (tokens - self.tokens) / self.rate
                 await asyncio.sleep(wait_time)
 
-class ThrottledRMCP:
-    """RMCP with rate limiting."""
+class ThrottledMCP-Tx:
+    """MCP-Tx with rate limiting."""
     
-    def __init__(self, app: FastRMCP, requests_per_second: int = 10):
+    def __init__(self, app: FastMCP-Tx, requests_per_second: int = 10):
         self.app = app
         self.limiter = RateLimiter(requests_per_second, requests_per_second * 2)
     
@@ -264,7 +264,7 @@ class ThrottledRMCP:
         return await self.app.call_tool(name, arguments, **kwargs)
 
 # Usage
-throttled_app = ThrottledRMCP(app, requests_per_second=50)
+throttled_app = ThrottledMCP-Tx(app, requests_per_second=50)
 
 # Burst of requests will be rate limited
 tasks = [
@@ -299,7 +299,7 @@ class SagaStep:
 class DistributedSaga:
     """Implement saga pattern for distributed transactions."""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.logger = logging.getLogger(__name__)
     
@@ -384,7 +384,7 @@ from datetime import datetime
 import json
 
 class EventStore:
-    """Event store for RMCP operations."""
+    """Event store for MCP-Tx operations."""
     
     def __init__(self):
         self.events = []
@@ -397,10 +397,10 @@ class EventStore:
             "id": len(self.events)
         })
 
-class EventSourcedRMCP:
-    """RMCP with event sourcing."""
+class EventSourcedMCP-Tx:
+    """MCP-Tx with event sourcing."""
     
-    def __init__(self, app: FastRMCP, event_store: EventStore):
+    def __init__(self, app: FastMCP-Tx, event_store: EventStore):
         self.app = app
         self.event_store = event_store
     
@@ -409,7 +409,7 @@ class EventSourcedRMCP:
         name: str,
         arguments: dict,
         **kwargs
-    ) -> RMCPResult:
+    ) -> MCP-TxResult:
         """Call tool with event sourcing."""
         # Record command event
         await self.event_store.append({
@@ -473,10 +473,10 @@ class HealthMetrics:
         total = self.success_count + self.failure_count
         return self.success_count / total if total > 0 else 1.0
 
-class MonitoredRMCP:
-    """RMCP with comprehensive monitoring."""
+class MonitoredMCP-Tx:
+    """MCP-Tx with comprehensive monitoring."""
     
-    def __init__(self, app: FastRMCP, alert_threshold: float = 0.95):
+    def __init__(self, app: FastMCP-Tx, alert_threshold: float = 0.95):
         self.app = app
         self.alert_threshold = alert_threshold
         self.metrics = defaultdict(HealthMetrics)
@@ -487,7 +487,7 @@ class MonitoredRMCP:
         name: str,
         arguments: dict,
         **kwargs
-    ) -> RMCPResult:
+    ) -> MCP-TxResult:
         """Call tool with monitoring."""
         metrics = self.metrics[name]
         
@@ -546,7 +546,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 api = FastAPI()
-rmcp_app = FastRMCP(mcp_session)
+rmcp_app = FastMCP-Tx(mcp_session)
 
 class ToolRequest(BaseModel):
     tool_name: str
@@ -555,7 +555,7 @@ class ToolRequest(BaseModel):
 
 @api.post("/execute-tool")
 async def execute_tool(request: ToolRequest):
-    """Execute RMCP tool via REST API."""
+    """Execute MCP-Tx tool via REST API."""
     try:
         result = await rmcp_app.call_tool(
             request.tool_name,
@@ -577,7 +577,7 @@ async def execute_tool(request: ToolRequest):
 
 @api.get("/health")
 async def health_check():
-    """Check RMCP health."""
+    """Check MCP-Tx health."""
     tools = rmcp_app.list_tools()
     return {
         "status": "healthy",

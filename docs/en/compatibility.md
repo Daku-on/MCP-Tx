@@ -1,25 +1,25 @@
-# RMCP Compatibility Guide
+# MCP-Tx Compatibility Guide
 
-This guide covers compatibility between RMCP and standard MCP, version requirements, and migration considerations.
+This guide covers compatibility between MCP-Tx and standard MCP, version requirements, and migration considerations.
 
 ## MCP Compatibility
 
 ### Full Backward Compatibility
 
-RMCP is 100% backward compatible with standard MCP:
+MCP-Tx is 100% backward compatible with standard MCP:
 
 ```python
 # Works with any MCP server
 async def use_with_any_mcp_server(mcp_session):
-    # RMCP wraps existing sessions
-    rmcp_session = RMCPSession(mcp_session)
+    # MCP-Tx wraps existing sessions
+    rmcp_session = MCPTxSession(mcp_session)
     
-    # If server doesn't support RMCP, it works like standard MCP
+    # If server doesn't support MCP-Tx, it works like standard MCP
     result = await rmcp_session.call_tool("any_tool", {})
     
-    # RMCP features are optional
+    # MCP-Tx features are optional
     if hasattr(result, 'rmcp_meta'):
-        print(f"RMCP enabled: {result.rmcp_meta.ack}")
+        print(f"MCP-Tx enabled: {result.rmcp_meta.ack}")
     else:
         print("Standard MCP response")
 ```
@@ -28,8 +28,8 @@ async def use_with_any_mcp_server(mcp_session):
 
 ```python
 async def detect_rmcp_support(session):
-    """Check if server supports RMCP features."""
-    # During initialization, RMCP negotiates capabilities
+    """Check if server supports MCP-Tx features."""
+    # During initialization, MCP-Tx negotiates capabilities
     info = await session.initialize()
     
     if 'experimental' in info.capabilities:
@@ -47,7 +47,7 @@ async def detect_rmcp_support(session):
 
 ### Python Version Support
 
-| Python Version | RMCP Support | Notes |
+| Python Version | MCP-Tx Support | Notes |
 |---------------|--------------|-------|
 | 3.10+ | ✅ Full support | Recommended |
 | 3.9 | ✅ Full support | Supported |
@@ -56,7 +56,7 @@ async def detect_rmcp_support(session):
 
 ### MCP SDK Versions
 
-| MCP SDK Version | RMCP Compatibility | Notes |
+| MCP SDK Version | MCP-Tx Compatibility | Notes |
 |-----------------|-------------------|-------|
 | 1.0.0+ | ✅ Full support | Current standard |
 | 0.9.x | ✅ Compatible | Some features may be limited |
@@ -74,10 +74,10 @@ anyio = ">=3.0.0"  # For cross-platform async
 
 ## Protocol Compatibility
 
-### RMCP Protocol Versions
+### MCP-Tx Protocol Versions
 
 ```python
-# RMCP supports multiple protocol versions
+# MCP-Tx supports multiple protocol versions
 PROTOCOL_VERSIONS = {
     "0.1.0": {  # Current version
         "features": ["ack", "retry", "idempotency"],
@@ -124,18 +124,18 @@ PROTOCOL_VERSIONS = {
 ### Async Framework Support
 
 ```python
-# RMCP uses anyio for cross-platform async
+# MCP-Tx uses anyio for cross-platform async
 import anyio
 
 # Works with asyncio (default)
 import asyncio
-app = FastRMCP(mcp_session)  # Uses asyncio
+app = FastMCP-Tx(mcp_session)  # Uses asyncio
 
 # Also works with trio
 import trio
 async def with_trio():
     async with anyio.create_task_group() as tg:
-        app = FastRMCP(mcp_session)
+        app = FastMCP-Tx(mcp_session)
         tg.start_soon(app.initialize)
 ```
 
@@ -164,19 +164,19 @@ async def with_trio():
 
 ```python
 import sys
-from rmcp import RMCPConfig
+from mcp_tx import MCPTxConfig
 
-def get_platform_config() -> RMCPConfig:
+def get_platform_config() -> MCPTxConfig:
     """Get platform-optimized configuration."""
     if sys.platform == "win32":
         # Windows-specific optimizations
-        return RMCPConfig(
+        return MCPTxConfig(
             max_concurrent_requests=50,  # Windows has different limits
             use_uvloop=False  # Not available on Windows
         )
     else:
         # Unix-like systems
-        return RMCPConfig(
+        return MCPTxConfig(
             max_concurrent_requests=100,
             use_uvloop=True  # Better performance
         )
@@ -184,7 +184,7 @@ def get_platform_config() -> RMCPConfig:
 
 ## Breaking Changes and Migration
 
-### From RMCP 0.x to 1.0
+### From MCP-Tx 0.x to 1.0
 
 ```python
 # Old API (0.x)
@@ -258,7 +258,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
 
 ```python
 # Some MCP servers have message size limits
-config = RMCPConfig(
+config = MCPTxConfig(
     max_message_size=1024 * 1024,  # 1MB limit
     enable_compression=True  # Compress large messages
 )
@@ -278,21 +278,21 @@ async def safe_call_tool(app, name, arguments):
 
 ```python
 import pytest
-from rmcp import FastRMCP, RMCPSession
+from mcp_tx import FastMCP-Tx, MCPTxSession
 
 @pytest.mark.compatibility
 class TestCompatibility:
-    """Test RMCP compatibility with various configurations."""
+    """Test MCP-Tx compatibility with various configurations."""
     
     async def test_standard_mcp_fallback(self, standard_mcp_session):
-        """Test RMCP works with non-RMCP servers."""
-        rmcp = RMCPSession(standard_mcp_session)
+        """Test MCP-Tx works with non-MCP-Tx servers."""
+        rmcp = MCPTxSession(standard_mcp_session)
         
-        # Should work without RMCP features
+        # Should work without MCP-Tx features
         result = await rmcp.call_tool("echo", {"text": "hello"})
         assert result.result == {"text": "hello"}
         
-        # RMCP metadata should indicate fallback
+        # MCP-Tx metadata should indicate fallback
         assert not hasattr(result, 'rmcp_meta') or not result.rmcp_meta.ack
     
     async def test_version_negotiation(self, mock_server):
@@ -310,7 +310,7 @@ class TestCompatibility:
     async def test_feature_degradation(self, limited_server):
         """Test graceful feature degradation."""
         # Server only supports ACK, not retry
-        app = FastRMCP(limited_server)
+        app = FastMCP-Tx(limited_server)
         
         @app.tool(retry_policy=RetryPolicy(max_attempts=3))
         async def test_tool():
@@ -326,7 +326,7 @@ class TestCompatibility:
 ```python
 # rmcp_check.py
 async def check_compatibility(server_url: str):
-    """Check RMCP compatibility with a server."""
+    """Check MCP-Tx compatibility with a server."""
     try:
         # Connect to server
         session = await connect_to_mcp_server(server_url)
@@ -335,7 +335,7 @@ async def check_compatibility(server_url: str):
         rmcp_support = await detect_rmcp_support(session)
         
         print(f"Server: {server_url}")
-        print(f"RMCP Support: {'Yes' if rmcp_support['supported'] else 'No'}")
+        print(f"MCP-Tx Support: {'Yes' if rmcp_support['supported'] else 'No'}")
         
         if rmcp_support['supported']:
             print(f"Version: {rmcp_support['version']}")
@@ -351,9 +351,9 @@ async def check_compatibility(server_url: str):
         except:
             print("✗ Tool calls: Not supported")
         
-        # Test RMCP features if available
+        # Test MCP-Tx features if available
         if rmcp_support['supported']:
-            rmcp_session = RMCPSession(session)
+            rmcp_session = MCPTxSession(session)
             
             # Test ACK
             result = await rmcp_session.call_tool("ping", {})
@@ -377,11 +377,11 @@ if __name__ == "__main__":
 
 ### Planned Features
 
-RMCP is designed to be forward-compatible:
+MCP-Tx is designed to be forward-compatible:
 
 ```python
 # Future features will be optional
-future_config = RMCPConfig(
+future_config = MCPTxConfig(
     # Current features
     enable_retry=True,
     enable_deduplication=True,
@@ -401,7 +401,7 @@ future_config = RMCPConfig(
 
 ## See Also
 
-- [Migration Guide](migration.md) - Upgrading from MCP to RMCP
+- [Migration Guide](migration.md) - Upgrading from MCP to MCP-Tx
 - [Getting Started](getting-started.md) - Initial setup
 - [FAQ](faq.md) - Common compatibility questions
 

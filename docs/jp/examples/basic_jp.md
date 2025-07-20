@@ -1,6 +1,6 @@
 # 基本的な使用例
 
-一般的なRMCP使用パターンの実践的な例。
+一般的なMCP-Tx使用パターンの実践的な例。
 
 ## シンプルなツール呼び出し
 
@@ -8,13 +8,13 @@
 
 ```python
 import asyncio
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 
 async def file_operations_example():
-    """RMCP信頼性付き基本ファイル操作"""
+    """MCP-Tx信頼性付き基本ファイル操作"""
     
     # mcp_sessionは設定済みのMCPセッションと仮定
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # ファイル読み込み
@@ -34,7 +34,7 @@ async def file_operations_example():
             "file_writer",
             {
                 "path": "/path/to/output.txt",
-                "content": "Hello, RMCP!"
+                "content": "Hello, MCP-Tx!"
             },
             idempotency_key="write-hello-2024-01-15"
         )
@@ -50,12 +50,12 @@ asyncio.run(file_operations_example())
 ```python
 import asyncio
 import os
-from rmcp import RMCPSession, RetryPolicy
+from mcp_tx import MCPTxSession, RetryPolicy
 
 async def api_calls_example():
     """カスタムリトライポリシー付きAPI呼び出し"""
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 重要操作用積極的リトライ付きAPI呼び出し
@@ -95,8 +95,8 @@ asyncio.run(api_calls_example())
 ```python
 import asyncio
 import logging
-from rmcp import RMCPSession
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+from mcp_tx import MCPTxSession
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 async def error_handling_example():
     """堅牢なエラーハンドリングパターンのデモ"""
@@ -104,7 +104,7 @@ async def error_handling_example():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 例1: フォールバック付きタイムアウト処理
@@ -119,7 +119,7 @@ async def error_handling_example():
                 logger.info("操作が正常に完了")
                 return result.result
                 
-        except RMCPTimeoutError as e:
+        except MCP-TxTimeoutError as e:
             logger.warning(f"操作がタイムアウト: {e.message}")
             
             # フォールバック: より長いタイムアウトで試行
@@ -132,7 +132,7 @@ async def error_handling_example():
                 logger.info("フォールバック操作が成功")
                 return result.result
                 
-            except RMCPTimeoutError:
+            except MCP-TxTimeoutError:
                 logger.error("フォールバック操作もタイムアウト")
                 return None
         
@@ -140,7 +140,7 @@ async def error_handling_example():
         try:
             result = await rmcp.call_tool("external_api", {"endpoint": "/data"})
             
-        except RMCPNetworkError as e:
+        except MCP-TxNetworkError as e:
             logger.warning(f"ネットワークエラー: {e.message}")
             
             # 待ってから一度リトライ
@@ -150,7 +150,7 @@ async def error_handling_example():
                 result = await rmcp.call_tool("external_api", {"endpoint": "/data"})
                 logger.info("ネットワークエラー後のリトライが成功")
                 
-            except RMCPNetworkError:
+            except MCP-TxNetworkError:
                 logger.error("リトライ後もネットワークが利用不可")
                 return None
 
@@ -161,12 +161,12 @@ asyncio.run(error_handling_example())
 
 ```python
 import asyncio
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 
 async def validation_example():
     """入力検証とサニタイゼーションパターン"""
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         def validate_file_path(path: str) -> str:
@@ -252,12 +252,12 @@ asyncio.run(validation_example())
 
 ```python
 import asyncio
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 
 async def parallel_execution_example():
-    """RMCPで複数ツールを並行実行"""
+    """MCP-Txで複数ツールを並行実行"""
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 例1: 独立した並列操作
@@ -347,7 +347,7 @@ asyncio.run(parallel_execution_example())
 
 ```python
 import asyncio
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 
 class RateLimiter:
     """API呼び出し用シンプルレート制限器"""
@@ -367,12 +367,12 @@ class RateLimiter:
         self.last_call = asyncio.get_event_loop().time()
 
 async def rate_limited_example():
-    """RMCPでレート制限API呼び出し"""
+    """MCP-Txでレート制限API呼び出し"""
     
     # 毎秒2回の呼び出しに制限
     rate_limiter = RateLimiter(calls_per_second=2.0)
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         async def rate_limited_api_call(endpoint: str) -> dict:
@@ -407,15 +407,15 @@ asyncio.run(rate_limited_example())
 
 ```python
 import os
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
-def create_rmcp_config() -> RMCPConfig:
-    """環境固有のRMCP設定を作成"""
+def create_rmcp_config() -> MCPTxConfig:
+    """環境固有のMCP-Tx設定を作成"""
     
     environment = os.getenv("ENVIRONMENT", "development")
     
     if environment == "production":
-        return RMCPConfig(
+        return MCPTxConfig(
             default_timeout_ms=30000,  # 30秒
             retry_policy=RetryPolicy(
                 max_attempts=5,
@@ -430,7 +430,7 @@ def create_rmcp_config() -> RMCPConfig:
         )
     
     elif environment == "staging":
-        return RMCPConfig(
+        return MCPTxConfig(
             default_timeout_ms=15000,  # 15秒
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -443,7 +443,7 @@ def create_rmcp_config() -> RMCPConfig:
         )
     
     else:  # development
-        return RMCPConfig(
+        return MCPTxConfig(
             default_timeout_ms=5000,   # 5秒
             retry_policy=RetryPolicy(
                 max_attempts=2,
@@ -460,7 +460,7 @@ async def environment_config_example():
     
     config = create_rmcp_config()
     
-    async with RMCPSession(mcp_session, config) as rmcp:
+    async with MCPTxSession(mcp_session, config) as rmcp:
         await rmcp.initialize()
         
         print(f"環境: {os.getenv('ENVIRONMENT', 'development')}")
@@ -479,13 +479,13 @@ async def environment_config_example():
 
 ```python
 import asyncio
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 from typing import List, Tuple, Any
 
 async def batch_processing_example():
     """大量データの効率的バッチ処理"""
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         async def process_batch(items: List[dict], batch_id: int) -> Tuple[List[Any], List[Tuple[dict, str]]]:
@@ -547,14 +547,14 @@ asyncio.run(batch_processing_example())
 ### Webアプリケーション統合
 
 ```python
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 import asyncio
 
-class WebAppRMCPClient:
-    """Webアプリケーション用RMCPクライアント"""
+class WebAppMCP-TxClient:
+    """Webアプリケーション用MCP-Txクライアント"""
     
     def __init__(self, mcp_session):
-        self.rmcp_session = RMCPSession(mcp_session)
+        self.rmcp_session = MCPTxSession(mcp_session)
         self.initialized = False
     
     async def initialize(self):
@@ -600,7 +600,7 @@ class WebAppRMCPClient:
 
 # 使用例
 async def web_app_example():
-    web_client = WebAppRMCPClient(mcp_session)
+    web_client = WebAppMCP-TxClient(mcp_session)
     
     try:
         # ユーザーリクエストを処理

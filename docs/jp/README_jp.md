@@ -1,10 +1,10 @@
-# RMCP ドキュメント
+# MCP-Tx ドキュメント
 
-Reliable Model Context Protocol (RMCP) の完全なドキュメント
+Reliable Model Context Protocol (MCP-Tx) の完全なドキュメント
 
-## RMCPとは？
+## MCP-Txとは？
 
-**RMCP (Reliable Model Context Protocol)** は、既存のMCPセッションに信頼性レイヤーを提供するPythonライブラリです。配信保証、自動リトライ、リクエスト重複排除、トランザクション追跡を追加しながら、既存のMCPサーバーとの100%後方互換性を維持します。
+**MCP-Tx (Reliable Model Context Protocol)** は、既存のMCPセッションに信頼性レイヤーを提供するPythonライブラリです。配信保証、自動リトライ、リクエスト重複排除、トランザクション追跡を追加しながら、既存のMCPサーバーとの100%後方互換性を維持します。
 
 ## 主な機能
 
@@ -18,12 +18,12 @@ Reliable Model Context Protocol (RMCP) の完全なドキュメント
 ## クイックスタート
 
 ```python
-from rmcp import RMCPSession
+from mcp_tx import MCPTxSession
 from mcp.client.session import ClientSession
 
 # 既存のMCPセッションをラップ
 mcp_session = ClientSession(...)
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 
 await rmcp_session.initialize()
 
@@ -43,12 +43,12 @@ else:
 
 | ドキュメント | 説明 | 対象 |
 |-------------|------|------|
-| [**はじめる**](getting-started_jp.md) | 5分でRMCPを始める | 新規ユーザー |
+| [**はじめる**](getting-started_jp.md) | 5分でMCP-Txを始める | 新規ユーザー |
 | [**アーキテクチャ**](architecture_jp.md) | 技術的な深掘り | 開発者 |
 | [**信頼性機能**](reliability-features_jp.md) | ACK/NACK、リトライ、冪等性 | 開発者 |
 | [**設定ガイド**](configuration_jp.md) | 詳細設定オプション | 開発者・運用 |
 | [**パフォーマンス**](performance_jp.md) | 本番最適化ガイド | 運用チーム |
-| [**移行ガイド**](migration_jp.md) | MCPからRMCPへの移行 | 既存ユーザー |
+| [**移行ガイド**](migration_jp.md) | MCPからMCP-Txへの移行 | 既存ユーザー |
 | [**互換性**](compatibility_jp.md) | バージョン・プラットフォーム対応 | すべて |
 | [**FAQ**](faq_jp.md) | よくある質問と回答 | すべて |
 | [**トラブルシューティング**](troubleshooting_jp.md) | 問題解決ガイド | 運用チーム |
@@ -57,14 +57,14 @@ else:
 
 | API | 説明 |
 |-----|------|
-| [**RMCPSession**](api/rmcp-session_jp.md) | メインインターフェース |
+| [**MCPTxSession**](api/mcp-tx-session_jp.md) | メインインターフェース |
 
 ### 💡 実用的な例
 
 | 例 | 説明 |
 |----|------|
 | [**基本的な使用方法**](examples/basic_jp.md) | 一般的な使用パターン |
-| [**AIエージェント**](ai-agents_jp.md) | FastRMCPで信頼性の高いAIエージェント構築 |
+| [**AIエージェント**](ai-agents_jp.md) | FastMCPTxで信頼性の高いAIエージェント構築 |
 | [**高度な例**](examples/advanced_jp.md) | 複雑なワークフローと統合 |
 | [**フレームワーク統合**](examples/integration_jp.md) | Django、Flask、Celery統合 |
 
@@ -95,52 +95,52 @@ result = await rmcp_session.call_tool(
 ### ⚡ 高負荷システム
 ```python
 # 並行制御付き設定
-config = RMCPConfig(
+config = MCPTxConfig(
     max_concurrent_requests=20,
     default_timeout_ms=15000
 )
-rmcp_session = RMCPSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ## パフォーマンス概要
 
-| メトリック | 標準MCP | RMCP | オーバーヘッド |
+| メトリック | 標準MCP | MCP-Tx | オーバーヘッド |
 |------------|---------|------|-------------|
 | **レイテンシ** | ベースライン | +2-5% | < 1ms |
 | **メモリ** | ベースライン | +10-100KB | リクエスト追跡 |
-| **ネットワーク** | ベースライン | +200-500バイト | RMCPメタデータ |
+| **ネットワーク** | ベースライン | +200-500バイト | MCP-Txメタデータ |
 | **スループット** | ベースライン | 同等 | 最小限の影響 |
 
 ## インストール
 
 ```bash
 # uv（推奨）
-uv add rmcp
+uv add mcp_tx
 
 # pip
-pip install rmcp
+pip install mcp_tx
 ```
 
 ## 要件
 
 - **Python**: 3.9+
 - **依存関係**: `anyio`, `mcp` (既存のMCPライブラリ)
-- **互換性**: すべてのMCPサーバー（RMCP対応・非対応問わず）
+- **互換性**: すべてのMCPサーバー（MCP-Tx対応・非対応問わず）
 
 ## サポート
 
 ### 🆘 ヘルプが必要ですか？
 
-1. **[トラブルシューティングガイド](troubleshooting.jp.md)** をチェック
-2. **[FAQ](faq.jp.md)** で一般的な質問を確認
+1. **[トラブルシューティングガイド](troubleshooting_jp.md)** をチェック
+2. **[FAQ](faq_jp.md)** で一般的な質問を確認
 3. **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** で問題を報告
 
 ### 📚 詳細情報
 
-- **初心者**: [はじめる](getting-started.jp.md) から開始
-- **開発者**: [アーキテクチャ](architecture.jp.md) で技術詳細を確認
-- **既存ユーザー**: [移行ガイド](migration.jp.md) でアップグレード方法を確認
+- **初心者**: [はじめる](getting-started_jp.md) から開始
+- **開発者**: [アーキテクチャ](architecture_jp.md) で技術詳細を確認
+- **既存ユーザー**: [移行ガイド](migration_jp.md) でアップグレード方法を確認
 
 ---
 
-**🚀 今すぐ始める**: [はじめる](getting-started.jp.md) →
+**🚀 今すぐ始める**: [はじめる](getting-started_jp.md) →

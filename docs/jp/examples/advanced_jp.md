@@ -1,19 +1,19 @@
-# 高度なRMCP使用例
+# 高度なMCP-Tx使用例
 
-このガイドでは、RMCPを使用した高度な使用パターンと本番対応の実装を実演します。
+このガイドでは、MCP-Txを使用した高度な使用パターンと本番対応の実装を実演します。
 
 ## トランザクション追跡付きマルチステップワークフロー
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 import uuid
 
-app = FastRMCP(mcp_session)
+app = FastMCPTx(mcp_session)
 
 class WorkflowManager:
-    """RMCP信頼性を持つ複雑なマルチステップワークフローを管理"""
+    """MCP-Tx信頼性を持つ複雑なマルチステップワークフローを管理"""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.workflows = {}
     
@@ -105,7 +105,7 @@ class CircuitState(Enum):
     HALF_OPEN = "half_open"  # 回復テスト中
 
 class CircuitBreaker:
-    """RMCPツール用のサーキットブレーカーパターン"""
+    """MCP-Txツール用のサーキットブレーカーパターン"""
     
     def __init__(
         self,
@@ -152,7 +152,7 @@ class CircuitBreaker:
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
 
-# RMCPでの使用例
+# MCP-Txでの使用例
 breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
 
 @app.tool()
@@ -171,10 +171,10 @@ from opentelemetry.trace import Status, StatusCode
 # トレース伝播用のコンテキスト変数
 trace_context = contextvars.ContextVar('trace_context', default=None)
 
-class TracedRMCP:
-    """分散トレーシングサポート付きRMCP"""
+class TracedMCP-Tx:
+    """分散トレーシングサポート付きMCP-Tx"""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.tracer = trace.get_tracer(__name__)
     
@@ -183,7 +183,7 @@ class TracedRMCP:
         name: str,
         arguments: dict,
         **kwargs
-    ) -> RMCPResult:
+    ) -> MCP-TxResult:
         """分散トレーシング付きでツールを呼び出し"""
         with self.tracer.start_as_current_span(f"rmcp.{name}") as span:
             # トレースコンテキストを引数に追加
@@ -213,7 +213,7 @@ class TracedRMCP:
                 raise
 
 # 使用例
-traced_app = TracedRMCP(app)
+traced_app = TracedMCP-Tx(app)
 result = await traced_app.call_tool_traced("process_order", {"order_id": "12345"})
 ```
 
@@ -225,7 +225,7 @@ from collections import deque
 import time
 
 class RateLimiter:
-    """RMCP呼び出し用のトークンバケットレート制限器"""
+    """MCP-Tx呼び出し用のトークンバケットレート制限器"""
     
     def __init__(self, rate: int, burst: int):
         self.rate = rate  # 秒あたりトークン数
@@ -251,10 +251,10 @@ class RateLimiter:
                 wait_time = (tokens - self.tokens) / self.rate
                 await asyncio.sleep(wait_time)
 
-class ThrottledRMCP:
-    """レート制限付きRMCP"""
+class ThrottledMCP-Tx:
+    """レート制限付きMCP-Tx"""
     
-    def __init__(self, app: FastRMCP, requests_per_second: int = 10):
+    def __init__(self, app: FastMCPTx, requests_per_second: int = 10):
         self.app = app
         self.limiter = RateLimiter(requests_per_second, requests_per_second * 2)
     
@@ -264,7 +264,7 @@ class ThrottledRMCP:
         return await self.app.call_tool(name, arguments, **kwargs)
 
 # 使用例
-throttled_app = ThrottledRMCP(app, requests_per_second=50)
+throttled_app = ThrottledMCP-Tx(app, requests_per_second=50)
 
 # リクエストのバーストはレート制限される
 tasks = [
@@ -299,7 +299,7 @@ class SagaStep:
 class DistributedSaga:
     """分散トランザクション用Sagaパターンの実装"""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.logger = logging.getLogger(__name__)
     
@@ -382,11 +382,11 @@ result = await saga.execute(order_saga)
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from rmcp import FastRMCP, RMCPConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 
-class RMCPMiddleware:
-    """RMCP統合用Djangoミドルウェア"""
+class MCP-TxMiddleware:
+    """MCP-Tx統合用Djangoミドルウェア"""
     
     _instance = None
     
@@ -395,10 +395,10 @@ class RMCPMiddleware:
         self._setup_rmcp()
     
     def _setup_rmcp(self):
-        """RMCP接続を初期化"""
-        if not RMCPMiddleware._instance:
-            config = RMCPConfig(
-                default_timeout_ms=settings.RMCP_TIMEOUT,
+        """MCP-Tx接続を初期化"""
+        if not MCP-TxMiddleware._instance:
+            config = MCPTxConfig(
+                default_timeout_ms=settings.MCP-Tx_TIMEOUT,
                 enable_request_logging=settings.DEBUG
             )
             
@@ -407,13 +407,13 @@ class RMCPMiddleware:
             asyncio.set_event_loop(loop)
             
             mcp_session = self._create_mcp_session()
-            RMCPMiddleware._instance = FastRMCP(mcp_session, config)
+            MCP-TxMiddleware._instance = FastMCPTx(mcp_session, config)
             
-            loop.run_until_complete(RMCPMiddleware._instance.initialize())
+            loop.run_until_complete(MCP-TxMiddleware._instance.initialize())
     
     def __call__(self, request):
-        # リクエストにRMCPを付加
-        request.rmcp = RMCPMiddleware._instance
+        # リクエストにMCP-Txを付加
+        request.rmcp = MCP-TxMiddleware._instance
         response = self.get_response(request)
         return response
 
@@ -422,11 +422,11 @@ from django.http import JsonResponse
 from asgiref.sync import async_to_sync
 
 def process_with_rmcp(request):
-    """RMCPを使用するDjangoビュー"""
+    """MCP-Txを使用するDjangoビュー"""
     tool_name = request.POST.get('tool')
     arguments = request.POST.get('arguments', {})
     
-    # 同期コンテキストでRMCP呼び出しを実行
+    # 同期コンテキストでMCP-Tx呼び出しを実行
     result = async_to_sync(request.rmcp.call_tool)(
         tool_name,
         arguments
@@ -458,10 +458,10 @@ class HealthMetrics:
         total = self.success_count + self.failure_count
         return self.success_count / total if total > 0 else 1.0
 
-class MonitoredRMCP:
-    """包括的なモニタリング付きRMCP"""
+class MonitoredMCP-Tx:
+    """包括的なモニタリング付きMCP-Tx"""
     
-    def __init__(self, app: FastRMCP, alert_threshold: float = 0.95):
+    def __init__(self, app: FastMCPTx, alert_threshold: float = 0.95):
         self.app = app
         self.alert_threshold = alert_threshold
         self.metrics = defaultdict(HealthMetrics)
@@ -472,7 +472,7 @@ class MonitoredRMCP:
         name: str,
         arguments: dict,
         **kwargs
-    ) -> RMCPResult:
+    ) -> MCP-TxResult:
         """モニタリング付きでツールを呼び出し"""
         metrics = self.metrics[name]
         
@@ -529,7 +529,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 api = FastAPI()
-rmcp_app = FastRMCP(mcp_session)
+rmcp_app = FastMCPTx(mcp_session)
 
 class ToolRequest(BaseModel):
     tool_name: str
@@ -538,7 +538,7 @@ class ToolRequest(BaseModel):
 
 @api.post("/execute-tool")
 async def execute_tool(request: ToolRequest):
-    """REST API経由でRMCPツールを実行"""
+    """REST API経由でMCP-Txツールを実行"""
     try:
         result = await rmcp_app.call_tool(
             request.tool_name,
@@ -560,7 +560,7 @@ async def execute_tool(request: ToolRequest):
 
 @api.get("/health")
 async def health_check():
-    """RMCPヘルスをチェック"""
+    """MCP-Txヘルスをチェック"""
     tools = rmcp_app.list_tools()
     return {
         "status": "healthy",

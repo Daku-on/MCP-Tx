@@ -1,12 +1,12 @@
 # Troubleshooting Guide
 
-Common issues and solutions when using RMCP.
+Common issues and solutions when using MCP-Tx.
 
 ## Installation Issues
 
 ### "No module named 'rmcp'"
 
-**Problem**: Import error when trying to use RMCP
+**Problem**: Import error when trying to use MCP-Tx
 ```python
 ModuleNotFoundError: No module named 'rmcp'
 ```
@@ -14,10 +14,10 @@ ModuleNotFoundError: No module named 'rmcp'
 **Solutions**:
 ```bash
 # Install with uv (recommended)
-uv add rmcp
+uv add mcp_tx
 
 # Or install with pip
-pip install rmcp
+pip install mcp_tx
 
 # Verify installation
 python -c "import rmcp; print(rmcp.__version__)"
@@ -39,29 +39,29 @@ uv sync --upgrade
 uv venv --clear
 source .venv/bin/activate  # Linux/Mac
 # or .venv\Scripts\activate  # Windows
-uv add rmcp
+uv add mcp_tx
 ```
 
 ## Session Initialization Issues
 
-### "RMCP session not initialized"
+### "MCP-Tx session not initialized"
 
 **Problem**: Calling `call_tool()` without initializing session
 ```python
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # Error!
 ```
 
 **Solution**: Always call `initialize()` first
 ```python
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()  # Required!
 result = await rmcp_session.call_tool("test", {})
 ```
 
 ### Server Capability Negotiation Fails
 
-**Problem**: Server doesn't respond to RMCP capabilities
+**Problem**: Server doesn't respond to MCP-Tx capabilities
 
 **Symptoms**:
 - `rmcp_session.rmcp_enabled` is `False`
@@ -72,7 +72,7 @@ result = await rmcp_session.call_tool("test", {})
 # Check server capabilities after initialization
 await rmcp_session.initialize()
 if not rmcp_session.rmcp_enabled:
-    print("⚠️ Server doesn't support RMCP - using fallback mode")
+    print("⚠️ Server doesn't support MCP-Tx - using fallback mode")
     # This is normal and expected for many servers
 
 # Force debug logging to see negotiation
@@ -86,7 +86,7 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 **Bad Pattern**:
 ```python
-rmcp = RMCPSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 await rmcp.initialize()
 # ... use rmcp
 # Session never closed - resource leak!
@@ -95,13 +95,13 @@ await rmcp.initialize()
 **Good Patterns**:
 ```python
 # ✅ Best: Use async context manager
-async with RMCPSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... use rmcp
     # Automatically closed
 
 # ✅ Acceptable: Manual cleanup
-rmcp = RMCPSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... use rmcp
@@ -111,7 +111,7 @@ finally:
 
 ## Result Handling Issues
 
-### "RMCPResult object has no attribute 'content'"
+### "MCP-TxResult object has no attribute 'content'"
 
 **Problem**: Trying to access MCP result directly
 ```python
@@ -168,7 +168,7 @@ else:
 ```python
 # Times out after default 10 seconds
 result = await rmcp_session.call_tool("process_large_file", {"path": "/huge.csv"})
-# RMCPTimeoutError!
+# MCP-TxTimeoutError!
 ```
 
 **Solutions**:
@@ -181,8 +181,8 @@ result = await rmcp_session.call_tool(
 )
 
 # Solution 2: Configure session defaults
-config = RMCPConfig(default_timeout_ms=60000)  # 1 minute default
-rmcp_session = RMCPSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=60000)  # 1 minute default
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # Solution 3: Environment-specific configuration
 def get_timeout_for_environment():
@@ -194,7 +194,7 @@ def get_timeout_for_environment():
     else:
         return 5000   # 5 seconds (fast dev cycles)
 
-config = RMCPConfig(default_timeout_ms=get_timeout_for_environment())
+config = MCPTxConfig(default_timeout_ms=get_timeout_for_environment())
 ```
 
 ### Memory Usage Growing Over Time
@@ -209,7 +209,7 @@ config = RMCPConfig(default_timeout_ms=get_timeout_for_environment())
 **Solutions**:
 ```python
 # Reduce cache window
-config = RMCPConfig(
+config = MCPTxConfig(
     deduplication_window_ms=300000,  # 5 minutes instead of default 10
     max_concurrent_requests=5,       # Limit concurrent requests
 )
@@ -277,19 +277,19 @@ except Exception as e:
     return None  # Lost all error context!
 ```
 
-**Solution**: Handle specific RMCP exceptions
+**Solution**: Handle specific MCP-Tx exceptions
 ```python
 # ✅ Good: Specific exception handling
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 try:
     result = await rmcp_session.call_tool("api_call", {})
     
-except RMCPTimeoutError as e:
+except MCP-TxTimeoutError as e:
     print(f"Operation timed out after {e.details['timeout_ms']}ms")
     # Maybe retry with longer timeout or different approach
     
-except RMCPNetworkError as e:
+except MCP-TxNetworkError as e:
     print(f"Network error: {e.message}")
     # Maybe check network connectivity or retry later
     
@@ -322,7 +322,7 @@ async def call_tool_with_context(tool_name: str, arguments: dict):
         print(f"  Tool: {tool_name}")
         print(f"  Arguments: {arguments}")
         print(f"  Error: {e}")
-        print(f"  RMCP enabled: {rmcp_session.rmcp_enabled}")
+        print(f"  MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
         print(f"  Active requests: {len(rmcp_session.active_requests)}")
         raise
 ```
@@ -331,7 +331,7 @@ async def call_tool_with_context(tool_name: str, arguments: dict):
 
 ### Slow Tool Calls
 
-**Problem**: RMCP operations seem slower than expected
+**Problem**: MCP-Tx operations seem slower than expected
 
 **Debugging Steps**:
 ```python
@@ -348,7 +348,7 @@ async def benchmark_call(tool_name: str, arguments: dict):
     print(f"Tool: {tool_name}")
     print(f"Duration: {duration_ms:.1f}ms") 
     print(f"Attempts: {result.attempts}")
-    print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
+    print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
     
     return result
 
@@ -358,20 +358,20 @@ direct_result = await mcp_session.call_tool(tool_name, arguments)
 direct_duration = (time.time() - start_time) * 1000
 
 print(f"Direct MCP: {direct_duration:.1f}ms")
-print(f"RMCP overhead: {duration_ms - direct_duration:.1f}ms")
+print(f"MCP-Tx overhead: {duration_ms - direct_duration:.1f}ms")
 ```
 
 **Common Causes & Solutions**:
 ```python
 # High concurrency limit causing resource contention
-config = RMCPConfig(max_concurrent_requests=5)  # Reduce from default 10
+config = MCPTxConfig(max_concurrent_requests=5)  # Reduce from default 10
 
 # Unnecessary retry attempts
 quick_policy = RetryPolicy(max_attempts=1)  # No retries for simple operations
 result = await rmcp_session.call_tool("fast_op", {}, retry_policy=quick_policy)
 
 # Large deduplication cache causing memory pressure
-config = RMCPConfig(deduplication_window_ms=60000)  # 1 minute instead of 10
+config = MCPTxConfig(deduplication_window_ms=60000)  # 1 minute instead of 10
 ```
 
 ### High Retry Rates
@@ -412,7 +412,7 @@ print(f"Max attempts seen: {retry_stats['max_attempts']}")
 ```python
 import logging
 
-# Configure logging for RMCP internals
+# Configure logging for MCP-Tx internals
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -422,7 +422,7 @@ logging.basicConfig(
 rmcp_logger = logging.getLogger("rmcp")
 rmcp_logger.setLevel(logging.DEBUG)
 
-# Now RMCP will log:
+# Now MCP-Tx will log:
 # - Request ID generation
 # - Retry attempts and delays  
 # - Cache hits/misses
@@ -433,9 +433,9 @@ rmcp_logger.setLevel(logging.DEBUG)
 ### Session Introspection
 
 ```python
-async def debug_session_state(rmcp_session: RMCPSession):
-    print("=== RMCP Session Debug Info ===")
-    print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
+async def debug_session_state(rmcp_session: MCPTxSession):
+    print("=== MCP-Tx Session Debug Info ===")
+    print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
     print(f"Active requests: {len(rmcp_session.active_requests)}")
     
     for req_id, tracker in rmcp_session.active_requests.items():
@@ -500,14 +500,14 @@ When reporting issues, include:
 import sys
 import rmcp
 print(f"Python version: {sys.version}")
-print(f"RMCP version: {rmcp.__version__}")
+print(f"MCP-Tx version: {rmcp.__version__}")
 print(f"Platform: {sys.platform}")
 ```
 
 2. **Configuration**:
 ```python
-print(f"RMCP config: {rmcp_session.config}")
-print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
+print(f"MCP-Tx config: {rmcp_session.config}")
+print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
 ```
 
 3. **Error Details**:
@@ -532,4 +532,4 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 ---
 
-**Previous**: [FAQ](faq.md) | **Next**: [API Reference](api/rmcp-session.md)
+**Previous**: [FAQ](faq.md) | **Next**: [API Reference](api/mcp-tx-session.md)

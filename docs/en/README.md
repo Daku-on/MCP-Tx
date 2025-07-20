@@ -1,6 +1,6 @@
-# RMCP Python SDK Documentation
+# MCP-Tx Python SDK Documentation
 
-Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Python SDK.
+Comprehensive documentation for the Reliable Model Context Protocol (MCP-Tx) Python SDK.
 
 ## 📚 Documentation Index
 
@@ -8,14 +8,14 @@ Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Pytho
 - [**Quick Start Guide**](getting-started.md) - Get up and running in 5 minutes
 
 ### Core Concepts
-- [**Architecture Overview**](architecture.md) - How RMCP enhances MCP
+- [**Architecture Overview**](architecture.md) - How MCP-Tx enhances MCP
 
 ### API Reference
-- [**RMCPSession**](api/rmcp-session.md) - Main client interface
+- [**MCPTxSession**](api/mcp-tx-session.md) - Main client interface
 
 ### Usage Examples
 - [**Basic Examples**](examples/basic.md) - Simple tool calls and error handling
-- [**AI Agents**](ai-agents.md) - Building reliable AI agents with FastRMCP
+- [**AI Agents**](ai-agents.md) - Building reliable AI agents with FastMCP-Tx
 
 ### Migration & Compatibility
 - [**Migration from MCP**](migration.md) - Step-by-step upgrade guide
@@ -33,11 +33,11 @@ Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Pytho
 1. [Migration Guide](migration.md) → [Examples](examples/basic.md)
 
 ### For Developers
-1. [Architecture](architecture.md) → [API Reference](api/rmcp-session.md)
+1. [Architecture](architecture.md) → [API Reference](api/mcp-tx-session.md)
 
 ## 🔗 External Resources
 
-- [RMCP Specification](../../../mvp-spec.md) - Protocol specification
+- [MCP-Tx Specification](../../../mvp-spec.md) - Protocol specification
 - [Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk) - Underlying MCP implementation
 - [GitHub Repository](https://github.com/Daku-on/reliable-MCP-draft) - Source code and issues
 

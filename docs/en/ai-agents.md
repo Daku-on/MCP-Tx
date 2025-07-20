@@ -1,14 +1,14 @@
-# Building AI Agents with RMCP
+# Building AI Agents with MCP-Tx
 
-This guide demonstrates how to build reliable AI agents using FastRMCP decorators, focusing on multi-step workflows that require robust error handling and delivery guarantees.
+This guide demonstrates how to build reliable AI agents using FastMCP-Tx decorators, focusing on multi-step workflows that require robust error handling and delivery guarantees.
 
 ## Overview: Smart Research Assistant
 
-We'll build a **Smart Research Assistant** that performs comprehensive research by combining multiple AI tools with RMCP reliability features.
+We'll build a **Smart Research Assistant** that performs comprehensive research by combining multiple AI tools with MCP-Tx reliability features.
 
 ### Agent Capabilities
 
-| Tool | Purpose | RMCP Benefits |
+| Tool | Purpose | MCP-Tx Benefits |
 |------|---------|---------------|
 | **Web Search** | Find relevant sources | Retry on API failures |
 | **Content Analysis** | Summarize and extract insights | Idempotent processing |
@@ -16,7 +16,7 @@ We'll build a **Smart Research Assistant** that performs comprehensive research 
 | **Report Generation** | Create structured output | Transaction tracking |
 | **Knowledge Storage** | Persist research results | Duplicate prevention |
 
-### Why RMCP for AI Agents?
+### Why MCP-Tx for AI Agents?
 
 AI agents often involve:
 - **External API calls** that can fail unexpectedly
@@ -24,7 +24,7 @@ AI agents often involve:
 - **Expensive operations** that shouldn't be duplicated
 - **Complex state** that requires tracking
 
-RMCP addresses these challenges with automatic retry, idempotency, and delivery guarantees.
+MCP-Tx addresses these challenges with automatic retry, idempotency, and delivery guarantees.
 
 ## Architecture
 
@@ -32,11 +32,11 @@ RMCP addresses these challenges with automatic retry, idempotency, and delivery 
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  Research       │    │   Smart Research │    │   AI Services   │
 │  Request        │───▶│   Assistant      │───▶│   (OpenAI, etc) │
-└─────────────────┘    │   (FastRMCP)     │    └─────────────────┘
+└─────────────────┘    │   (FastMCP-Tx)     │    └─────────────────┘
                        └──────────────────┘              │
                                 │                        │
                        ┌────────▼────────┐              │
-                       │ RMCP Reliability │◀─────────────┘
+                       │ MCP-Tx Reliability │◀─────────────┘
                        │ • Retry Logic   │
                        │ • Idempotency   │
                        │ • ACK/NACK      │
@@ -49,7 +49,7 @@ RMCP addresses these challenges with automatic retry, idempotency, and delivery 
 ### 1. Core Agent Setup
 
 ```python
-from rmcp import FastRMCP, RetryPolicy, RMCPConfig
+from mcp_tx import FastMCP-Tx, RetryPolicy, MCPTxConfig
 import openai
 import aiohttp
 import json
@@ -57,7 +57,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 # Configure for AI workloads
-config = RMCPConfig(
+config = MCPTxConfig(
     default_timeout_ms=30000,  # AI APIs can be slow
     max_concurrent_requests=5,  # Rate limit consideration
     enable_request_logging=True,
@@ -65,7 +65,7 @@ config = RMCPConfig(
 )
 
 # Create research assistant
-research_agent = FastRMCP(mcp_session, config=config, name="SmartResearchAssistant")
+research_agent = FastMCP-Tx(mcp_session, config=config, name="SmartResearchAssistant")
 ```
 
 ### 2. Web Search Tool
@@ -160,7 +160,7 @@ async def analyze_content(content: str, focus_areas: List[str] = None) -> Dict[s
         }
         
     except Exception as e:
-        # RMCP will retry this automatically
+        # MCP-Tx will retry this automatically
         raise Exception(f"AI analysis failed: {str(e)}")
 ```
 
@@ -308,14 +308,14 @@ async def save_research(research_id: str, report: Dict[str, Any]) -> Dict[str, A
 
 ```python
 class SmartResearchAssistant:
-    """Orchestrates the complete research workflow with RMCP reliability."""
+    """Orchestrates the complete research workflow with MCP-Tx reliability."""
     
-    def __init__(self, agent: FastRMCP):
+    def __init__(self, agent: FastMCP-Tx):
         self.agent = agent
         self.research_sessions = {}
     
     async def conduct_research(self, query: str, research_id: str = None) -> Dict[str, Any]:
-        """Conduct comprehensive research with full RMCP tracking."""
+        """Conduct comprehensive research with full MCP-Tx tracking."""
         
         if not research_id:
             research_id = f"research_{int(datetime.utcnow().timestamp())}"
@@ -443,7 +443,7 @@ class SmartResearchAssistant:
             raise
     
     def _record_step(self, research_id: str, step_name: str, result):
-        """Record each step with RMCP metadata."""
+        """Record each step with MCP-Tx metadata."""
         self.research_sessions[research_id]["steps"].append({
             "step": step_name,
             "request_id": result.rmcp_meta.request_id,
@@ -476,7 +476,7 @@ async def main():
             
             print(f"✨ Research completed successfully!")
             print(f"📊 Sources analyzed: {result['metadata']['sources_found']}")
-            print(f"🔄 Total RMCP retry attempts: {result['metadata']['total_rmcp_attempts']}")
+            print(f"🔄 Total MCP-Tx retry attempts: {result['metadata']['total_rmcp_attempts']}")
             print(f"📄 Report generated and saved")
             
             # Display the research report
@@ -493,19 +493,19 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Key Benefits of RMCP for AI Agents
+## Key Benefits of MCP-Tx for AI Agents
 
 ### 1. **Reliability in AI Workflows**
 
 ```python
-# Without RMCP: Manual error handling
+# Without MCP-Tx: Manual error handling
 try:
     result = await openai_api_call()
 except Exception:
     # Manual retry logic, no guarantees
     pass
 
-# With RMCP: Automatic reliability
+# With MCP-Tx: Automatic reliability
 @agent.tool(retry_policy=RetryPolicy(max_attempts=3))
 async def ai_analysis(content: str) -> dict:
     # Automatic retry with exponential backoff
@@ -548,7 +548,7 @@ for step in research_session["steps"]:
 - Optimize retry policies based on real performance
 
 ### 4. **Structure for Observability**
-- Log each workflow step with RMCP metadata
+- Log each workflow step with MCP-Tx metadata
 - Preserve intermediate results for debugging
 - Implement comprehensive error reporting
 
@@ -562,7 +562,7 @@ The Smart Research Assistant can be extended with additional tools:
 - **Multi-language Support** - Translation and localization
 - **Real-time Updates** - Continuous research monitoring
 
-Each new tool benefits from RMCP's reliability features, making the entire agent more robust and production-ready.
+Each new tool benefits from MCP-Tx's reliability features, making the entire agent more robust and production-ready.
 
 ## See Also
 

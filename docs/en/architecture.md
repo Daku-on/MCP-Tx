@@ -1,13 +1,13 @@
-# RMCP Architecture Overview
+# MCP-Tx Architecture Overview
 
-Understanding how RMCP enhances MCP with reliability guarantees.
+Understanding how MCP-Tx enhances MCP with reliability guarantees.
 
 ## High-Level Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
 │                 │    │                      │    │                 │
-│   Your Client   │    │    RMCP Session      │    │   MCP Server    │
+│   Your Client   │    │    MCP-Tx Session      │    │   MCP Server    │
 │   Application   │    │   (Reliability       │    │   (Existing)    │
 │                 │    │    Wrapper)          │    │                 │
 └─────────────────┘    └──────────────────────┘    └─────────────────┘
@@ -15,22 +15,22 @@ Understanding how RMCP enhances MCP with reliability guarantees.
          │ call_tool()            │ Enhanced MCP             │ Standard MCP  
          ├─────────────────────▶  │ with _meta.rmcp         ├──────────────▶
          │                        │                          │
-         │ RMCPResult             │ Standard MCP             │ Tool Result
+         │ MCP-TxResult             │ Standard MCP             │ Tool Result
          ◀─────────────────────── │ Response                 ◀──────────────┤
          │                        │                          │
 ```
 
 ## Core Components
 
-### 1. RMCPSession (Wrapper)
+### 1. MCPTxSession (Wrapper)
 
 The main interface that wraps any existing MCP session:
 
 ```python
-class RMCPSession:
-    def __init__(self, mcp_session: BaseSession, config: RMCPConfig = None):
+class MCPTxSession:
+    def __init__(self, mcp_session: BaseSession, config: MCPTxConfig = None):
         self.mcp_session = mcp_session  # Your existing MCP session
-        self.config = config or RMCPConfig()
+        self.config = config or MCPTxConfig()
         # ... reliability infrastructure
 ```
 
@@ -45,7 +45,7 @@ class RMCPSession:
 
 ### 2. Message Enhancement
 
-RMCP enhances standard MCP messages with reliability metadata:
+MCP-Tx enhances standard MCP messages with reliability metadata:
 
 ```json
 {
@@ -118,7 +118,7 @@ response = {
     }
 }
 
-# Client validates ACK and returns RMCPResult
+# Client validates ACK and returns MCP-TxResult
 ```
 
 ### 2. Retry Logic with Exponential Backoff
@@ -150,12 +150,12 @@ def calculate_delay(attempt: int, policy: RetryPolicy) -> int:
 
 **Cache-based Deduplication**:
 ```python
-class RMCPSession:
+class MCPTxSession:
     def __init__(self):
         # LRU cache with TTL for memory safety
-        self._deduplication_cache: dict[str, tuple[RMCPResult, datetime]] = {}
+        self._deduplication_cache: dict[str, tuple[MCP-TxResult, datetime]] = {}
     
-    def _get_cached_result(self, idempotency_key: str) -> RMCPResult | None:
+    def _get_cached_result(self, idempotency_key: str) -> MCP-TxResult | None:
         if idempotency_key in self._deduplication_cache:
             cached_result, timestamp = self._deduplication_cache[idempotency_key]
             
@@ -173,8 +173,8 @@ class RMCPSession:
 ### 4. Concurrent Request Management
 
 ```python
-class RMCPSession:
-    def __init__(self, config: RMCPConfig):
+class MCPTxSession:
+    def __init__(self, config: MCPTxConfig):
         # Semaphore for concurrency control
         self._request_semaphore = anyio.Semaphore(config.max_concurrent_requests)
         
@@ -189,11 +189,11 @@ class RMCPSession:
 
 ## Capability Negotiation
 
-RMCP uses MCP's experimental capabilities to negotiate features:
+MCP-Tx uses MCP's experimental capabilities to negotiate features:
 
 ### Client Advertisement
 ```python
-# During initialization, RMCP advertises its capabilities
+# During initialization, MCP-Tx advertises its capabilities
 kwargs["capabilities"]["experimental"]["rmcp"] = {
     "version": "0.1.0",
     "features": ["ack", "retry", "idempotency", "transactions"]
@@ -202,7 +202,7 @@ kwargs["capabilities"]["experimental"]["rmcp"] = {
 
 ### Server Response
 ```python
-# Server responds with supported RMCP features
+# Server responds with supported MCP-Tx features
 server_capabilities = {
     "experimental": {
         "rmcp": {
@@ -219,7 +219,7 @@ if not self._rmcp_enabled:
     # Transparent fallback to standard MCP
     return await self._execute_standard_mcp_call(name, arguments, timeout_ms)
 else:
-    # Enhanced MCP with RMCP metadata
+    # Enhanced MCP with MCP-Tx metadata
     return await self._execute_rmcp_call(name, arguments, rmcp_meta, timeout_ms)
 ```
 
@@ -231,8 +231,8 @@ else:
 - **Configuration**: Minimal overhead (~1KB per session)
 
 ### Latency Impact
-- **RMCP Overhead**: < 1ms per request (metadata processing)
-- **Network Overhead**: +200-500 bytes per request (RMCP metadata)
+- **MCP-Tx Overhead**: < 1ms per request (metadata processing)
+- **Network Overhead**: +200-500 bytes per request (MCP-Tx metadata)
 - **Retry Delays**: Configurable exponential backoff (default: 1s, 2s, 4s)
 
 ### Throughput
@@ -244,14 +244,14 @@ else:
 
 ### Error Classification
 ```python
-class RMCPError(Exception):
+class MCP-TxError(Exception):
     def __init__(self, message: str, error_code: str, retryable: bool):
         self.retryable = retryable  # Determines retry behavior
 
 # Specific error types
-RMCPTimeoutError(retryable=True)    # Retry on timeout
-RMCPNetworkError(retryable=True)    # Retry on network issues  
-RMCPSequenceError(retryable=False)  # Don't retry on sequence errors
+MCP-TxTimeoutError(retryable=True)    # Retry on timeout
+MCP-TxNetworkError(retryable=True)    # Retry on network issues  
+MCP-TxSequenceError(retryable=False)  # Don't retry on sequence errors
 ```
 
 ### Error Propagation
@@ -286,9 +286,9 @@ def _sanitize_error_message(self, error: Exception) -> str:
 ## Next Steps
 
 - [**Getting Started**](getting-started.md) - Quick start with configuration examples
-- [**API Reference**](api/rmcp-session.md) - Detailed method documentation
+- [**API Reference**](api/mcp-tx-session.md) - Detailed method documentation
 - [**Examples**](examples/basic.md) - Practical usage patterns
 
 ---
 
-**Previous**: [Getting Started](getting-started.md) | **Next**: [API Reference](api/rmcp-session.md)
+**Previous**: [Getting Started](getting-started.md) | **Next**: [API Reference](api/mcp-tx-session.md)

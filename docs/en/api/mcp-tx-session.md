@@ -1,13 +1,13 @@
-# RMCPSession API Reference
+# MCPTxSession API Reference
 
 The main interface for reliable MCP tool calls.
 
-## Class: RMCPSession
+## Class: MCPTxSession
 
 ```python
-class RMCPSession:
+class MCPTxSession:
     """
-    RMCP Session that wraps an existing MCP session with reliability features.
+    MCP-Tx Session that wraps an existing MCP session with reliability features.
     
     Provides:
     - ACK/NACK guarantees
@@ -21,21 +21,21 @@ class RMCPSession:
 ### Constructor
 
 ```python
-def __init__(self, mcp_session: BaseSession, config: RMCPConfig | None = None)
+def __init__(self, mcp_session: BaseSession, config: MCPTxConfig | None = None)
 ```
 
 **Parameters**:
 - `mcp_session` (`BaseSession`): Existing MCP session to wrap
-- `config` (`RMCPConfig`, optional): RMCP configuration. Defaults to `RMCPConfig()`
+- `config` (`MCPTxConfig`, optional): MCP-Tx configuration. Defaults to `MCPTxConfig()`
 
 **Example**:
 ```python
-from rmcp import RMCPSession, RMCPConfig
+from mcp_tx import MCPTxSession, MCPTxConfig
 from mcp.client.session import ClientSession
 
 mcp_session = ClientSession(...)
-config = RMCPConfig(default_timeout_ms=10000)
-rmcp_session = RMCPSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=10000)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ### Methods
@@ -46,7 +46,7 @@ rmcp_session = RMCPSession(mcp_session, config)
 async def initialize(self, **kwargs) -> Any
 ```
 
-Initialize the session with RMCP capability negotiation.
+Initialize the session with MCP-Tx capability negotiation.
 
 **Parameters**:
 - `**kwargs`: Passed through to underlying MCP session's `initialize()`
@@ -54,16 +54,16 @@ Initialize the session with RMCP capability negotiation.
 **Returns**: Result from underlying MCP session initialization
 
 **Behavior**:
-- Adds RMCP experimental capabilities to initialization
-- Detects server RMCP support
-- Enables/disables RMCP features based on server capabilities
+- Adds MCP-Tx experimental capabilities to initialization
+- Detects server MCP-Tx support
+- Enables/disables MCP-Tx features based on server capabilities
 
 **Example**:
 ```python
 result = await rmcp_session.initialize(
     capabilities={"tools": {"list_changed": True}}
 )
-print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
+print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
 ```
 
 #### call_tool()
@@ -77,10 +77,10 @@ async def call_tool(
     idempotency_key: str | None = None,
     timeout_ms: int | None = None,
     retry_policy: RetryPolicy | None = None,
-) -> RMCPResult
+) -> MCP-TxResult
 ```
 
-Call a tool with RMCP reliability guarantees.
+Call a tool with MCP-Tx reliability guarantees.
 
 **Parameters**:
 - `name` (`str`): Tool name (alphanumeric, hyphens, underscores only)
@@ -89,13 +89,13 @@ Call a tool with RMCP reliability guarantees.
 - `timeout_ms` (`int`, optional): Override default timeout (1-600,000ms)
 - `retry_policy` (`RetryPolicy`, optional): Override default retry policy
 
-**Returns**: `RMCPResult` with tool result and RMCP metadata
+**Returns**: `MCP-TxResult` with tool result and MCP-Tx metadata
 
 **Raises**:
 - `ValueError`: Invalid input parameters
-- `RMCPTimeoutError`: Operation timed out
-- `RMCPNetworkError`: Network/connection error
-- `RMCPError`: Other RMCP-specific errors
+- `MCP-TxTimeoutError`: Operation timed out
+- `MCP-TxNetworkError`: Network/connection error
+- `MCP-TxError`: Other MCP-Tx-specific errors
 
 **Example**:
 ```python
@@ -125,7 +125,7 @@ result = await rmcp_session.call_tool(
 async def close(self) -> None
 ```
 
-Close the RMCP session and underlying MCP session.
+Close the MCP-Tx session and underlying MCP session.
 
 **Behavior**:
 - Waits briefly for active requests to complete
@@ -137,7 +137,7 @@ Close the RMCP session and underlying MCP session.
 await rmcp_session.close()
 
 # Or use as async context manager
-async with RMCPSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     result = await rmcp.call_tool("echo", {"msg": "Hello"})
     # Automatically closed on exit
@@ -152,15 +152,15 @@ async with RMCPSession(mcp_session) as rmcp:
 def rmcp_enabled(self) -> bool
 ```
 
-Whether RMCP features are enabled for this session.
+Whether MCP-Tx features are enabled for this session.
 
-**Returns**: `True` if server supports RMCP, `False` if falling back to standard MCP
+**Returns**: `True` if server supports MCP-Tx, `False` if falling back to standard MCP
 
 **Example**:
 ```python
 await rmcp_session.initialize()
 if rmcp_session.rmcp_enabled:
-    print("✅ RMCP features active")
+    print("✅ MCP-Tx features active")
 else:
     print("⚠️ Falling back to standard MCP")
 ```
@@ -172,7 +172,7 @@ else:
 def active_requests(self) -> dict[str, RequestTracker]
 ```
 
-Currently active RMCP requests.
+Currently active MCP-Tx requests.
 
 **Returns**: Dictionary mapping request IDs to `RequestTracker` objects
 
@@ -185,16 +185,16 @@ for request_id, tracker in rmcp_session.active_requests.items():
 
 ### Async Context Manager
 
-`RMCPSession` supports async context manager protocol:
+`MCPTxSession` supports async context manager protocol:
 
 ```python
-async def __aenter__(self) -> RMCPSession: ...
+async def __aenter__(self) -> MCPTxSession: ...
 async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
 ```
 
 **Example**:
 ```python
-async with RMCPSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     result = await rmcp.call_tool("test", {})
@@ -203,17 +203,17 @@ async with RMCPSession(mcp_session) as rmcp:
     # Session automatically closed on exit
 ```
 
-## RMCPResult
+## MCP-TxResult
 
 Result object returned by `call_tool()`.
 
 ```python
 @dataclass
-class RMCPResult:
-    """Result wrapper containing both MCP result and RMCP metadata."""
+class MCP-TxResult:
+    """Result wrapper containing both MCP result and MCP-Tx metadata."""
     
     result: Any                    # Actual tool result from MCP
-    rmcp_meta: RMCPResponse       # RMCP metadata and status
+    rmcp_meta: MCP-TxResponse       # MCP-Tx metadata and status
 ```
 
 ### Properties
@@ -245,7 +245,7 @@ def attempts(self) -> int:
 ```python
 result = await rmcp_session.call_tool("calculator", {"op": "add", "a": 1, "b": 2})
 
-# Check RMCP guarantees
+# Check MCP-Tx guarantees
 assert result.ack == True           # Request was acknowledged
 assert result.processed == True     # Tool was executed  
 assert result.final_status == "completed"
@@ -264,15 +264,15 @@ else:
 ### Exception Hierarchy
 
 ```python
-RMCPError (base)
-├── RMCPTimeoutError      # Timeout occurred
-├── RMCPNetworkError      # Network/connection issue  
-└── RMCPSequenceError     # Sequence/ordering error
+MCP-TxError (base)
+├── MCP-TxTimeoutError      # Timeout occurred
+├── MCP-TxNetworkError      # Network/connection issue  
+└── MCP-TxSequenceError     # Sequence/ordering error
 ```
 
 ### Error Attributes
 
-All RMCP errors have:
+All MCP-Tx errors have:
 - `message`: Human-readable error description
 - `error_code`: Machine-readable error code
 - `retryable`: Whether error should trigger retry
@@ -281,14 +281,14 @@ All RMCP errors have:
 ### Example Error Handling
 
 ```python
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 try:
     result = await rmcp_session.call_tool("slow_api", {})
-except RMCPTimeoutError as e:
+except MCP-TxTimeoutError as e:
     print(f"Timed out after {e.details['timeout_ms']}ms")
     # Maybe retry with longer timeout
-except RMCPNetworkError as e:
+except MCP-TxNetworkError as e:
     print(f"Network error: {e.message}")
     # Maybe check connection
 except ValueError as e:
@@ -302,13 +302,13 @@ except ValueError as e:
 
 ```python
 # ✅ Good: Use async context manager
-async with RMCPSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... use rmcp
     # Automatically cleaned up
 
 # ⚠️ Acceptable: Manual cleanup  
-rmcp = RMCPSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... use rmcp
@@ -340,10 +340,10 @@ await rmcp.call_tool(
 # ✅ Good: Specific error handling
 try:
     result = await rmcp.call_tool("api_call", {})
-except RMCPTimeoutError:
+except MCP-TxTimeoutError:
     # Handle timeout specifically
     result = await rmcp.call_tool("api_call", {}, timeout_ms=60000)
-except RMCPNetworkError:
+except MCP-TxNetworkError:
     # Handle network issues
     await asyncio.sleep(5)  # Wait and retry
     result = await rmcp.call_tool("api_call", {})
@@ -360,19 +360,19 @@ except Exception:
 ```python
 # ✅ Good: Environment-specific configuration
 if environment == "production":
-    config = RMCPConfig(
+    config = MCPTxConfig(
         default_timeout_ms=30000,
         retry_policy=RetryPolicy(max_attempts=5),
         max_concurrent_requests=20
     )
 else:
-    config = RMCPConfig(
+    config = MCPTxConfig(
         default_timeout_ms=5000, 
         retry_policy=RetryPolicy(max_attempts=2),
         max_concurrent_requests=5
     )
 
-rmcp = RMCPSession(mcp_session, config)
+rmcp = MCPTxSession(mcp_session, config)
 ```
 
 ---

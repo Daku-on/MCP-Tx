@@ -1,14 +1,14 @@
-# RMCPでAIエージェントを構築する
+# MCP-TxでAIエージェントを構築する
 
-このガイドでは、FastRMCPデコレータを使用して信頼性の高いAIエージェントを構築する方法を実演します。堅牢なエラーハンドリングと配信保証を必要とするマルチステップワークフローに焦点を当てています。
+このガイドでは、FastMCPTxデコレータを使用して信頼性の高いAIエージェントを構築する方法を実演します。堅牢なエラーハンドリングと配信保証を必要とするマルチステップワークフローに焦点を当てています。
 
 ## 概要: スマートリサーチアシスタント
 
-複数のAIツールをRMCP信頼性機能と組み合わせて包括的なリサーチを実行する**スマートリサーチアシスタント**を構築します。
+複数のAIツールをMCP-Tx信頼性機能と組み合わせて包括的なリサーチを実行する**スマートリサーチアシスタント**を構築します。
 
 ### エージェント機能
 
-| ツール | 目的 | RMCPのメリット |
+| ツール | 目的 | MCP-Txのメリット |
 |------|-----|-------------|
 | **Web検索** | 関連するソースを発見 | API障害時のリトライ |
 | **コンテンツ分析** | 要約と洞察の抽出 | 冪等な処理 |
@@ -16,7 +16,7 @@
 | **レポート生成** | 構造化された出力を作成 | トランザクション追跡 |
 | **知識保存** | リサーチ結果を永続化 | 重複防止 |
 
-### AIエージェントでRMCPを使う理由
+### AIエージェントでMCP-Txを使う理由
 
 AIエージェントには以下が伴うことが多い：
 - **外部API呼び出し** が予期せず失敗する可能性
@@ -24,7 +24,7 @@ AIエージェントには以下が伴うことが多い：
 - **高価な操作** を重複させるべきでない
 - **複雑な状態** で追跡が必要
 
-RMCPは自動リトライ、冪等性、配信保証でこれらの課題に対処します。
+MCP-Txは自動リトライ、冪等性、配信保証でこれらの課題に対処します。
 
 ## アーキテクチャ
 
@@ -32,11 +32,11 @@ RMCPは自動リトライ、冪等性、配信保証でこれらの課題に対�
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  リサーチ       │    │   スマートリサーチ │    │   AIサービス    │
 │  リクエスト     │───▶│   アシスタント   │───▶│   (OpenAI等)    │
-└─────────────────┘    │   (FastRMCP)     │    └─────────────────┘
+└─────────────────┘    │   (FastMCPTx)     │    └─────────────────┘
                        └──────────────────┘              │
                                 │                        │
                        ┌────────▼────────┐              │
-                       │ RMCP信頼性      │◀─────────────┘
+                       │ MCP-Tx信頼性      │◀─────────────┘
                        │ • リトライ論理  │
                        │ • 冪等性        │
                        │ • ACK/NACK      │
@@ -49,7 +49,7 @@ RMCPは自動リトライ、冪等性、配信保証でこれらの課題に対�
 ### 1. コアエージェントセットアップ
 
 ```python
-from rmcp import FastRMCP, RetryPolicy, RMCPConfig
+from mcp_tx import FastMCPTx, RetryPolicy, MCPTxConfig
 import openai
 import aiohttp
 import json
@@ -57,7 +57,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 # AIワークロード用の設定
-config = RMCPConfig(
+config = MCPTxConfig(
     default_timeout_ms=30000,  # AI APIは遅い場合がある
     max_concurrent_requests=5,  # レート制限の考慮
     enable_request_logging=True,
@@ -65,7 +65,7 @@ config = RMCPConfig(
 )
 
 # リサーチアシスタントを作成
-research_agent = FastRMCP(mcp_session, config=config, name="スマートリサーチアシスタント")
+research_agent = FastMCPTx(mcp_session, config=config, name="スマートリサーチアシスタント")
 ```
 
 ### 2. Web検索ツール
@@ -160,7 +160,7 @@ async def analyze_content(content: str, focus_areas: List[str] = None) -> Dict[s
         }
         
     except Exception as e:
-        # RMCPが自動的にリトライ
+        # MCP-Txが自動的にリトライ
         raise Exception(f"AI分析に失敗: {str(e)}")
 ```
 
@@ -308,14 +308,14 @@ async def save_research(research_id: str, report: Dict[str, Any]) -> Dict[str, A
 
 ```python
 class SmartResearchAssistant:
-    """RMCP信頼性で完全なリサーチワークフローをオーケストレート"""
+    """MCP-Tx信頼性で完全なリサーチワークフローをオーケストレート"""
     
-    def __init__(self, agent: FastRMCP):
+    def __init__(self, agent: FastMCPTx):
         self.agent = agent
         self.research_sessions = {}
     
     async def conduct_research(self, query: str, research_id: str = None) -> Dict[str, Any]:
-        """完全なRMCP追跡で包括的なリサーチを実施"""
+        """完全なMCP-Tx追跡で包括的なリサーチを実施"""
         
         if not research_id:
             research_id = f"research_{int(datetime.utcnow().timestamp())}"
@@ -443,7 +443,7 @@ class SmartResearchAssistant:
             raise
     
     def _record_step(self, research_id: str, step_name: str, result):
-        """RMCPメタデータで各ステップを記録"""
+        """MCP-Txメタデータで各ステップを記録"""
         self.research_sessions[research_id]["steps"].append({
             "step": step_name,
             "request_id": result.rmcp_meta.request_id,
@@ -476,7 +476,7 @@ async def main():
             
             print(f"✨ リサーチが正常に完了しました！")
             print(f"📊 分析されたソース: {result['metadata']['sources_found']}")
-            print(f"🔄 総RMCP リトライ試行: {result['metadata']['total_rmcp_attempts']}")
+            print(f"🔄 総MCP-Tx リトライ試行: {result['metadata']['total_rmcp_attempts']}")
             print(f"📄 レポートが生成・保存されました")
             
             # リサーチレポートを表示
@@ -493,19 +493,19 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## AIエージェントでのRMCPの主なメリット
+## AIエージェントでのMCP-Txの主なメリット
 
 ### 1. **AIワークフローの信頼性**
 
 ```python
-# RMCPなし: 手動エラーハンドリング
+# MCP-Txなし: 手動エラーハンドリング
 try:
     result = await openai_api_call()
 except Exception:
     # 手動リトライロジック、保証なし
     pass
 
-# RMCPあり: 自動信頼性
+# MCP-Txあり: 自動信頼性
 @agent.tool(retry_policy=RetryPolicy(max_attempts=3))
 async def ai_analysis(content: str) -> dict:
     # 指数バックオフでの自動リトライ
@@ -548,7 +548,7 @@ for step in research_session["steps"]:
 - 実際のパフォーマンスに基づいてリトライポリシーを最適化
 
 ### 4. **可観測性のための構造化**
-- RMCPメタデータで各ワークフローステップをログ
+- MCP-Txメタデータで各ワークフローステップをログ
 - デバッグのために中間結果を保存
 - 包括的なエラーレポートを実装
 
@@ -562,7 +562,7 @@ for step in research_session["steps"]:
 - **多言語サポート** - 翻訳とローカライゼーション
 - **リアルタイム更新** - 継続的リサーチ監視
 
-各新しいツールがRMCPの信頼性機能の恩恵を受け、エージェント全体をより堅牢で本番対応にします。
+各新しいツールがMCP-Txの信頼性機能の恩恵を受け、エージェント全体をより堅牢で本番対応にします。
 
 ## 関連ドキュメント
 
