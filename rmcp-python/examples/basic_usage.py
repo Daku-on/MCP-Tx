@@ -1,7 +1,7 @@
 """
-Basic RMCP usage example.
+Basic MCP-Tx usage example.
 
-This example shows how to wrap an existing MCP session with RMCP
+This example shows how to wrap an existing MCP session with MCP-Tx
 to add reliability features like ACK/NACK, retry, and deduplication.
 """
 
@@ -11,7 +11,7 @@ from typing import Any, ClassVar
 
 import anyio
 
-from rmcp import RetryPolicy, RMCPConfig, RMCPSession
+from mcp_tx import MCP_TxConfig, MCP_TxSession, RetryPolicy
 
 
 class MockMCPSession:
@@ -25,13 +25,13 @@ class MockMCPSession:
         self.call_count = 0
 
     async def initialize(self, **kwargs) -> Any:
-        """Mock initialization with RMCP capability support."""
+        """Mock initialization with MCP-Tx capability support."""
         print("🔌 Initializing MCP session...")
 
-        # Mock server response with RMCP support
+        # Mock server response with MCP-Tx support
         class MockCapabilities:
             experimental: ClassVar[dict[str, Any]] = {
-                "rmcp": {"version": "0.1.0", "features": ["ack", "retry", "idempotency"]}
+                "mcp_tx": {"version": "0.1.0", "features": ["ack", "retry", "idempotency"]}
             }
 
         class MockResult:
@@ -63,38 +63,38 @@ class MockMCPSession:
 
 
 async def basic_example():
-    """Demonstrate basic RMCP usage."""
-    print("🚀 RMCP Basic Usage Example")
+    """Demonstrate basic MCP-Tx usage."""
+    print("🚀 MCP-Tx Basic Usage Example")
     print("=" * 40)
 
     # Create mock MCP session (in real usage, this would be your actual MCP session)
     mcp_session = MockMCPSession(failure_rate=0.3)  # 30% failure rate for demo
 
-    # Configure RMCP with custom settings
-    config = RMCPConfig(
+    # Configure MCP-Tx with custom settings
+    config = MCP_TxConfig(
         default_timeout_ms=5000,
         retry_policy=RetryPolicy(max_attempts=3, base_delay_ms=500, backoff_multiplier=1.5, jitter=True),
         max_concurrent_requests=5,
     )
 
-    # Wrap MCP session with RMCP
-    rmcp_session = RMCPSession(mcp_session, config)
+    # Wrap MCP session with MCP-Tx
+    mcp_tx_session = MCP_TxSession(mcp_session, config)
 
     try:
         # Initialize session with capability negotiation
-        print("\n📋 Initializing RMCP session...")
-        await rmcp_session.initialize()
+        print("\n📋 Initializing MCP-Tx session...")
+        await mcp_tx_session.initialize()
 
-        if rmcp_session.rmcp_enabled:
-            print("✅ RMCP enabled - reliability features active")
+        if mcp_tx_session.mcp_tx_enabled:
+            print("✅ MCP-Tx enabled - reliability features active")
         else:
-            print("⚠️  RMCP disabled - falling back to standard MCP")
+            print("⚠️  MCP-Tx disabled - falling back to standard MCP")
 
         print("\n🎯 Running tool call examples...")
 
         # Example 1: Simple tool call
         print("\n1️⃣ Simple tool call:")
-        result1 = await rmcp_session.call_tool("file_reader", {"path": "/tmp/data.json"})
+        result1 = await mcp_tx_session.call_tool("file_reader", {"path": "/tmp/data.json"})
         print(f"   ✅ ACK: {result1.ack}")
         print(f"   ✅ Processed: {result1.processed}")
         print(f"   🔁 Attempts: {result1.attempts}")
@@ -104,26 +104,26 @@ async def basic_example():
         print("\n2️⃣ Tool call with idempotency (prevents duplicates):")
         idempotency_key = "write_config_v1"
 
-        result2a = await rmcp_session.call_tool(
+        result2a = await mcp_tx_session.call_tool(
             "file_writer",
             {"path": "/config/settings.json", "content": '{"mode": "production"}'},
             idempotency_key=idempotency_key,
         )
-        print(f"   First call - Duplicate: {result2a.rmcp_meta.duplicate}")
+        print(f"   First call - Duplicate: {result2a.mcp_tx_meta.duplicate}")
 
         # Same call again - should be deduplicated
-        result2b = await rmcp_session.call_tool(
+        result2b = await mcp_tx_session.call_tool(
             "file_writer",
             {"path": "/config/settings.json", "content": '{"mode": "staging"}'},  # Different content!
             idempotency_key=idempotency_key,  # Same key
         )
-        print(f"   Second call - Duplicate: {result2b.rmcp_meta.duplicate}")
+        print(f"   Second call - Duplicate: {result2b.mcp_tx_meta.duplicate}")
 
         # Example 3: Tool call with custom timeout and retry
         print("\n3️⃣ Tool call with custom retry policy:")
         custom_retry = RetryPolicy(max_attempts=5, base_delay_ms=200, backoff_multiplier=2.0)
 
-        result3 = await rmcp_session.call_tool(
+        result3 = await mcp_tx_session.call_tool(
             "api_caller",
             {"url": "https://api.example.com/data", "method": "GET"},
             timeout_ms=3000,
@@ -136,7 +136,7 @@ async def basic_example():
         print("\n4️⃣ Concurrent tool calls:")
         tasks = []
         for i in range(3):
-            task = rmcp_session.call_tool(f"processor_{i}", {"data": f"batch_{i}", "index": i})
+            task = mcp_tx_session.call_tool(f"processor_{i}", {"data": f"batch_{i}", "index": i})
             tasks.append(task)
 
         results = await asyncio.gather(*tasks)
@@ -144,7 +144,7 @@ async def basic_example():
             print(f"   Task {i}: ✅ Success={result.ack}, Attempts={result.attempts}")
 
         # Show active requests (should be empty now)
-        active = rmcp_session.active_requests
+        active = mcp_tx_session.active_requests
         print(f"\n📈 Active requests: {len(active)}")
 
     except Exception as e:
@@ -152,22 +152,22 @@ async def basic_example():
 
     finally:
         # Clean up
-        print("\n🧹 Closing RMCP session...")
-        await rmcp_session.close()
+        print("\n🧹 Closing MCP-Tx session...")
+        await mcp_tx_session.close()
         print("✅ Session closed successfully")
 
 
 async def retry_demonstration():
     """Demonstrate retry behavior with failures."""
     print("\n" + "=" * 40)
-    print("🔄 RMCP Retry Demonstration")
+    print("🔄 MCP-Tx Retry Demonstration")
     print("=" * 40)
 
     # Create MCP session with high failure rate
     mcp_session = MockMCPSession(failure_rate=0.7)  # 70% failure rate
 
     # Configure aggressive retry policy
-    config = RMCPConfig(
+    config = MCP_TxConfig(
         retry_policy=RetryPolicy(
             max_attempts=5,
             base_delay_ms=100,
@@ -176,23 +176,23 @@ async def retry_demonstration():
         )
     )
 
-    rmcp_session = RMCPSession(mcp_session, config)
+    mcp_tx_session = MCP_TxSession(mcp_session, config)
 
     try:
-        await rmcp_session.initialize()
+        await mcp_tx_session.initialize()
         print(f"🎯 Calling unreliable tool with {config.retry_policy.max_attempts} max attempts...")
 
-        result = await rmcp_session.call_tool("unreliable_tool", {"operation": "risky_operation"})
+        result = await mcp_tx_session.call_tool("unreliable_tool", {"operation": "risky_operation"})
 
         if result.ack:
             print(f"✅ Success after {result.attempts} attempts!")
             print(f"📊 Final status: {result.final_status}")
         else:
             print(f"❌ Failed after {result.attempts} attempts")
-            print(f"🚨 Error: {result.rmcp_meta.error_message}")
+            print(f"🚨 Error: {result.mcp_tx_meta.error_message}")
 
     finally:
-        await rmcp_session.close()
+        await mcp_tx_session.close()
 
 
 async def main():
@@ -205,7 +205,7 @@ async def main():
         await retry_demonstration()
 
         print("\n🎉 All examples completed!")
-        print("\nKey RMCP features demonstrated:")
+        print("\nKey MCP-Tx features demonstrated:")
         print("  ✅ ACK/NACK guarantees")
         print("  🔁 Automatic retry with exponential backoff")
         print("  🔒 Request deduplication via idempotency keys")

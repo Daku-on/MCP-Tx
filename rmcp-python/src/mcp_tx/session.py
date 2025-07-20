@@ -1,5 +1,5 @@
 """
-RMCP Session - Wraps MCP sessions with reliability features.
+MCP-Tx Session - Wraps MCP sessions with reliability features.
 """
 
 from __future__ import annotations
@@ -12,16 +12,16 @@ from typing import Any, Protocol
 import anyio
 
 from .types import (
+    MCPTxConfig,
+    MCPTxError,
+    MCPTxMeta,
+    MCPTxNetworkError,
+    MCPTxResponse,
+    MCPTxResult,
+    MCPTxTimeoutError,
     MessageStatus,
     RequestTracker,
     RetryPolicy,
-    RMCPConfig,
-    RMCPError,
-    RMCPMeta,
-    RMCPNetworkError,
-    RMCPResponse,
-    RMCPResult,
-    RMCPTimeoutError,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,9 +35,9 @@ class BaseSession(Protocol):
     async def close(self) -> None: ...
 
 
-class RMCPSession:
+class MCPTxSession:
     """
-    RMCP Session that wraps an existing MCP session with reliability features.
+    MCP-Tx Session that wraps an existing MCP session with reliability features.
 
     Provides:
     - ACK/NACK guarantees
@@ -47,22 +47,22 @@ class RMCPSession:
     - 100% backward compatibility with MCP
     """
 
-    def __init__(self, mcp_session: BaseSession, config: RMCPConfig | None = None):
+    def __init__(self, mcp_session: BaseSession, config: MCPTxConfig | None = None):
         self.mcp_session = mcp_session
-        self.config = config or RMCPConfig()
-        self._rmcp_enabled = False
+        self.config = config or MCPTxConfig()
+        self._mcp_tx_enabled = False
         self._server_capabilities: dict[str, Any] = {}
 
         # Request tracking
         self._active_requests: dict[str, RequestTracker] = {}
-        self._deduplication_cache: dict[str, tuple[RMCPResult, datetime]] = {}
+        self._deduplication_cache: dict[str, tuple[MCPTxResult, datetime]] = {}
 
         # Semaphore for concurrency control
         self._request_semaphore = anyio.Semaphore(self.config.max_concurrent_requests)
 
-        logger.info("RMCP session initialized with config: %s", self.config)
+        logger.info("MCP-Tx session initialized with config: %s", self.config)
 
-    async def __aenter__(self) -> RMCPSession:
+    async def __aenter__(self) -> MCPTxSession:
         """Async context manager entry."""
         return self
 
@@ -99,36 +99,36 @@ class RMCPSession:
 
     async def initialize(self, **kwargs) -> Any:
         """
-        Initialize the session with RMCP capability negotiation.
+        Initialize the session with MCP-Tx capability negotiation.
         """
-        # Add RMCP experimental capabilities to initialization
+        # Add MCP-Tx experimental capabilities to initialization
         if "capabilities" not in kwargs:
             kwargs["capabilities"] = {}
 
         if "experimental" not in kwargs["capabilities"]:
             kwargs["capabilities"]["experimental"] = {}
 
-        # Advertise RMCP capabilities
-        kwargs["capabilities"]["experimental"]["rmcp"] = {
+        # Advertise MCP-Tx capabilities
+        kwargs["capabilities"]["experimental"]["mcp_tx"] = {
             "version": "0.1.0",
             "features": ["ack", "retry", "idempotency", "transactions"],
         }
 
-        logger.debug("Initializing MCP session with RMCP capabilities")
+        logger.debug("Initializing MCP session with MCP-Tx capabilities")
         result = await self.mcp_session.initialize(**kwargs)
 
-        # Check if server supports RMCP
+        # Check if server supports MCP-Tx
         if hasattr(result, "capabilities") and result.capabilities:
             server_caps = result.capabilities
             if hasattr(server_caps, "experimental") and server_caps.experimental:
                 self._server_capabilities = server_caps.experimental
-                if "rmcp" in self._server_capabilities:
-                    self._rmcp_enabled = True
-                    logger.info("RMCP enabled - server supports RMCP features")
+                if "mcp_tx" in self._server_capabilities:
+                    self._mcp_tx_enabled = True
+                    logger.info("MCP-Tx enabled - server supports MCP-Tx features")
                 else:
-                    logger.info("RMCP disabled - server does not support RMCP")
+                    logger.info("MCP-Tx disabled - server does not support MCP-Tx")
             else:
-                logger.info("RMCP disabled - no experimental capabilities from server")
+                logger.info("MCP-Tx disabled - no experimental capabilities from server")
 
         return result
 
@@ -140,9 +140,9 @@ class RMCPSession:
         idempotency_key: str | None = None,
         timeout_ms: int | None = None,
         retry_policy: RetryPolicy | None = None,
-    ) -> RMCPResult:
+    ) -> MCPTxResult:
         """
-        Call a tool with RMCP reliability guarantees.
+        Call a tool with MCP-Tx reliability guarantees.
 
         Args:
             name: Tool name
@@ -152,7 +152,7 @@ class RMCPSession:
             retry_policy: Optional retry policy override
 
         Returns:
-            RMCPResult with both tool result and RMCP metadata
+            MCPTxResult with both tool result and MCP-Tx metadata
 
         Raises:
             ValueError: If input validation fails
@@ -197,25 +197,25 @@ class RMCPSession:
         idempotency_key: str | None,
         timeout_ms: int,
         retry_policy: RetryPolicy,
-    ) -> RMCPResult:
+    ) -> MCPTxResult:
         """Execute tool call with retry logic."""
-        rmcp_meta = RMCPMeta(idempotency_key=idempotency_key, timeout_ms=timeout_ms)
+        mcp_tx_meta = MCPTxMeta(idempotency_key=idempotency_key, timeout_ms=timeout_ms)
 
         # Track request
         tracker = RequestTracker(
-            request_id=rmcp_meta.request_id,
-            transaction_id=rmcp_meta.transaction_id,
+            request_id=mcp_tx_meta.request_id,
+            transaction_id=mcp_tx_meta.transaction_id,
             status=MessageStatus.PENDING,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
-        self._active_requests[rmcp_meta.request_id] = tracker
+        self._active_requests[mcp_tx_meta.request_id] = tracker
 
         last_error: Exception | None = None
 
         try:
             for attempt in range(retry_policy.max_attempts):
-                rmcp_meta.retry_count = attempt
+                mcp_tx_meta.retry_count = attempt
                 tracker.attempts = attempt + 1
 
                 try:
@@ -225,23 +225,23 @@ class RMCPSession:
                     )
 
                     # Call tool with timeout
-                    result = await self._execute_tool_call(name, arguments, rmcp_meta, timeout_ms)
+                    result = await self._execute_tool_call(name, arguments, mcp_tx_meta, timeout_ms)
 
                     # Success - update tracker and cache result
                     tracker.update_status(MessageStatus.ACKNOWLEDGED)
 
-                    rmcp_result = RMCPResult(
+                    mcp_tx_result = MCPTxResult(
                         result=result,
-                        rmcp_meta=RMCPResponse(
+                        mcp_tx_meta=MCPTxResponse(
                             ack=True, processed=True, duplicate=False, attempts=attempt + 1, final_status="completed"
                         ),
                     )
 
                     # Cache result if idempotency key provided
                     if idempotency_key:
-                        self._cache_result(idempotency_key, rmcp_result)
+                        self._cache_result(idempotency_key, mcp_tx_result)
 
-                    return rmcp_result
+                    return mcp_tx_result
 
                 except Exception as e:
                     last_error = e
@@ -266,15 +266,15 @@ class RMCPSession:
 
         finally:
             # Always clean up tracker regardless of success or failure
-            self._active_requests.pop(rmcp_meta.request_id, None)
+            self._active_requests.pop(mcp_tx_meta.request_id, None)
 
         # Return failure result
         error_code = getattr(last_error, "error_code", "UNKNOWN_ERROR")
         sanitized_error = self._sanitize_error_message(last_error) if last_error else "Unknown error"
 
-        return RMCPResult(
+        return MCPTxResult(
             result=None,
-            rmcp_meta=RMCPResponse(
+            mcp_tx_meta=MCPTxResponse(
                 ack=False,
                 processed=False,
                 duplicate=False,
@@ -286,17 +286,17 @@ class RMCPSession:
         )
 
     async def _execute_tool_call(
-        self, name: str, arguments: dict[str, Any] | None, rmcp_meta: RMCPMeta, timeout_ms: int
+        self, name: str, arguments: dict[str, Any] | None, mcp_tx_meta: MCPTxMeta, timeout_ms: int
     ) -> Any:
-        """Execute the actual tool call with RMCP metadata."""
-        if not self._rmcp_enabled:
+        """Execute the actual tool call with MCP-Tx metadata."""
+        if not self._mcp_tx_enabled:
             # Fallback to standard MCP
             return await self._execute_standard_mcp_call(name, arguments, timeout_ms)
 
-        # Enhanced MCP call with RMCP metadata
+        # Enhanced MCP call with MCP-Tx metadata
         request = {
             "method": "tools/call",
-            "params": {"name": name, "arguments": arguments or {}, "_meta": {"rmcp": rmcp_meta.to_dict()}},
+            "params": {"name": name, "arguments": arguments or {}, "_meta": {"mcp_tx": mcp_tx_meta.to_dict()}},
         }
 
         # Execute with timeout
@@ -305,31 +305,31 @@ class RMCPSession:
                 response = await self.mcp_session.send_request(request)
 
             if cancel_scope.cancelled_caught:
-                raise RMCPTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
+                raise MCPTxTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
 
             return response
 
         except Exception as e:
             # Wrap network errors
             if "connection" in str(e).lower() or "network" in str(e).lower():
-                raise RMCPNetworkError(f"Network error during tool call: {e!s}", e)
+                raise MCPTxNetworkError(f"Network error during tool call: {e!s}", e)
             raise
 
     async def _execute_standard_mcp_call(self, name: str, arguments: dict[str, Any] | None, timeout_ms: int) -> Any:
-        """Execute standard MCP tool call without RMCP enhancements."""
+        """Execute standard MCP tool call without MCP-Tx enhancements."""
         request = {"method": "tools/call", "params": {"name": name, "arguments": arguments or {}}}
 
         with anyio.move_on_after(timeout_ms / 1000.0) as cancel_scope:
             response = await self.mcp_session.send_request(request)
 
         if cancel_scope.cancelled_caught:
-            raise RMCPTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
+            raise MCPTxTimeoutError(f"Tool call timeout after {timeout_ms}ms", timeout_ms)
 
         return response
 
     def _should_retry(self, error: Exception, retry_policy: RetryPolicy) -> bool:
         """Determine if an error should trigger a retry."""
-        if isinstance(error, RMCPError):
+        if isinstance(error, MCPTxError):
             return error.retryable
 
         error_str = str(error).upper()
@@ -347,7 +347,7 @@ class RMCPSession:
         # Ensure delay is always positive and within bounds
         return int(max(delay, retry_policy.base_delay_ms))
 
-    def _get_cached_result(self, idempotency_key: str) -> RMCPResult | None:
+    def _get_cached_result(self, idempotency_key: str) -> MCPTxResult | None:
         """Get cached result for idempotency key."""
         if idempotency_key in self._deduplication_cache:
             cached_result, timestamp = self._deduplication_cache[idempotency_key]
@@ -358,23 +358,23 @@ class RMCPSession:
 
             if timestamp >= cutoff_time:
                 # Return a copy with duplicate flag set to True
-                duplicate_response = RMCPResponse(
-                    ack=cached_result.rmcp_meta.ack,
-                    processed=cached_result.rmcp_meta.processed,
+                duplicate_response = MCPTxResponse(
+                    ack=cached_result.mcp_tx_meta.ack,
+                    processed=cached_result.mcp_tx_meta.processed,
                     duplicate=True,  # Mark as duplicate
-                    attempts=cached_result.rmcp_meta.attempts,
-                    final_status=cached_result.rmcp_meta.final_status,
-                    error_code=cached_result.rmcp_meta.error_code,
-                    error_message=cached_result.rmcp_meta.error_message,
+                    attempts=cached_result.mcp_tx_meta.attempts,
+                    final_status=cached_result.mcp_tx_meta.final_status,
+                    error_code=cached_result.mcp_tx_meta.error_code,
+                    error_message=cached_result.mcp_tx_meta.error_message,
                 )
-                return RMCPResult(result=cached_result.result, rmcp_meta=duplicate_response)
+                return MCPTxResult(result=cached_result.result, mcp_tx_meta=duplicate_response)
             else:
                 # Entry expired, remove it
                 del self._deduplication_cache[idempotency_key]
 
         return None
 
-    def _cache_result(self, idempotency_key: str, result: RMCPResult) -> None:
+    def _cache_result(self, idempotency_key: str, result: MCPTxResult) -> None:
         """Cache result for deduplication with time-based eviction."""
         current_time = datetime.utcnow()
         self._deduplication_cache[idempotency_key] = (result, current_time)
@@ -396,18 +396,18 @@ class RMCPSession:
                 del self._deduplication_cache[key]
 
     @property
-    def rmcp_enabled(self) -> bool:
-        """Whether RMCP features are enabled for this session."""
-        return self._rmcp_enabled
+    def mcp_tx_enabled(self) -> bool:
+        """Whether MCP-Tx features are enabled for this session."""
+        return self._mcp_tx_enabled
 
     @property
     def active_requests(self) -> dict[str, RequestTracker]:
-        """Currently active RMCP requests."""
+        """Currently active MCP-Tx requests."""
         return self._active_requests.copy()
 
     async def close(self) -> None:
-        """Close the RMCP session and underlying MCP session."""
-        logger.info("Closing RMCP session")
+        """Close the MCP-Tx session and underlying MCP session."""
+        logger.info("Closing MCP-Tx session")
 
         # Wait for active requests to complete or timeout
         if self._active_requests:
@@ -423,4 +423,4 @@ class RMCPSession:
         self._active_requests.clear()
         self._deduplication_cache.clear()
 
-        logger.info("RMCP session closed")
+        logger.info("MCP-Tx session closed")

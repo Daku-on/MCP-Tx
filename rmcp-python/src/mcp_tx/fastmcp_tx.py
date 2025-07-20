@@ -1,7 +1,7 @@
-"""FastRMCP - Decorator-based API for RMCP reliability features.
+"""FastMCP-Tx - Decorator-based API for MCP-Tx reliability features.
 
-FastRMCP provides a decorator-based interface similar to FastMCP, allowing developers
-to easily add RMCP reliability features (retry, idempotency, ACK/NACK) to their tools.
+FastMCP-Tx provides a decorator-based interface similar to FastMCP, allowing developers
+to easily add MCP-Tx reliability features (retry, idempotency, ACK/NACK) to their tools.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from typing import Any, TypeVar
 
 import anyio
 
-from rmcp.session import RMCPSession
-from rmcp.types import RetryPolicy, RMCPConfig, RMCPResult
+from mcp_tx.session import MCPTxSession
+from mcp_tx.types import MCPTxConfig, MCPTxResult, RetryPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -98,19 +98,19 @@ class ToolRegistry:
         }
 
 
-class FastRMCP:
-    """FastRMCP - Decorator-based RMCP reliability for MCP tools.
+class FastMCPTx:
+    """FastMCP-Tx - Decorator-based MCP-Tx reliability for MCP tools.
 
-    FastRMCP wraps an existing MCP session and provides a decorator-based interface
-    for adding RMCP reliability features to tool functions. Tools registered with
-    FastRMCP automatically get retry logic, idempotency, and ACK/NACK handling.
+    FastMCP-Tx wraps an existing MCP session and provides a decorator-based interface
+    for adding MCP-Tx reliability features to tool functions. Tools registered with
+    FastMCP-Tx automatically get retry logic, idempotency, and ACK/NACK handling.
 
     Example:
         ```python
-        from rmcp import FastRMCP, RetryPolicy
+        from mcp_tx import FastMCPTx, RetryPolicy
 
         # Wrap existing MCP session
-        app = FastRMCP(mcp_session)
+        app = FastMCPTx(mcp_session)
 
         @app.tool()
         async def my_tool(arg: str) -> str:
@@ -122,7 +122,7 @@ class FastRMCP:
             \"\"\"Critical tool with custom retry policy.\"\"\"
             return {"processed": data}
 
-        # Call tools with automatic RMCP reliability
+        # Call tools with automatic MCP-Tx reliability
         result = await app.call_tool("my_tool", {"arg": "test"})
         ```
     """
@@ -130,30 +130,30 @@ class FastRMCP:
     def __init__(
         self,
         mcp_session: Any,
-        config: RMCPConfig | None = None,
-        name: str = "FastRMCP App",
+        config: MCPTxConfig | None = None,
+        name: str = "FastMCP-Tx App",
         max_tools: int = 1000,
     ) -> None:
-        """Initialize FastRMCP with an MCP session.
+        """Initialize FastMCP-Tx with an MCP session.
 
         Args:
             mcp_session: An existing MCP session to wrap
-            config: Optional RMCP configuration
+            config: Optional MCP-Tx configuration
             name: Application name for logging and debugging
             max_tools: Maximum number of tools that can be registered
         """
         self.name = name
         self._mcp_session = mcp_session
-        self._rmcp_session: RMCPSession | None = None
-        self._config = config or RMCPConfig()
+        self._mcp_tx_session: MCPTxSession | None = None
+        self._config = config or MCPTxConfig()
         self._registry = ToolRegistry(max_tools=max_tools)
         self._initialized = False
         self._init_lock = anyio.Lock()
 
-        logger.info(f"Created FastRMCP app: {name}")
+        logger.info(f"Created FastMCP-Tx app: {name}")
 
     async def initialize(self) -> None:
-        """Initialize the RMCP session."""
+        """Initialize the MCP-Tx session."""
         # Fast path: check if already initialized without acquiring lock
         if self._initialized:
             return
@@ -163,21 +163,21 @@ class FastRMCP:
             if self._initialized:
                 return
 
-            self._rmcp_session = RMCPSession(self._mcp_session, self._config)
-            await self._rmcp_session.initialize()
+            self._mcp_tx_session = MCPTxSession(self._mcp_session, self._config)
+            await self._mcp_tx_session.initialize()
             self._initialized = True
-            logger.info(f"Initialized FastRMCP app: {self.name}")
+            logger.info(f"Initialized FastMCP-Tx app: {self.name}")
 
-    async def __aenter__(self) -> FastRMCP:
+    async def __aenter__(self) -> FastMCPTx:
         """Async context manager entry."""
         await self.initialize()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
-        if self._rmcp_session:
-            await self._rmcp_session.__aexit__(exc_type, exc_val, exc_tb)
-        logger.info(f"Closed FastRMCP app: {self.name}")
+        if self._mcp_tx_session:
+            await self._mcp_tx_session.__aexit__(exc_type, exc_val, exc_tb)
+        logger.info(f"Closed FastMCP-Tx app: {self.name}")
 
     def tool(
         self,
@@ -187,9 +187,9 @@ class FastRMCP:
         timeout_ms: int | None = None,
         description: str | None = None,
     ) -> Callable[[AnyFunction], AnyFunction]:
-        """Decorator to register a tool with RMCP reliability features.
+        """Decorator to register a tool with MCP-Tx reliability features.
 
-        The decorated function will automatically get RMCP reliability features:
+        The decorated function will automatically get MCP-Tx reliability features:
         - Automatic retry with exponential backoff
         - Request deduplication and idempotency
         - ACK/NACK message handling
@@ -244,8 +244,8 @@ class FastRMCP:
         name: str,
         arguments: dict[str, Any],
         idempotency_key: str | None = None,
-    ) -> RMCPResult:
-        """Call a registered tool with RMCP reliability features.
+    ) -> MCPTxResult:
+        """Call a registered tool with MCP-Tx reliability features.
 
         Args:
             name: Name of the registered tool
@@ -253,11 +253,11 @@ class FastRMCP:
             idempotency_key: Optional custom idempotency key
 
         Returns:
-            RMCPResult with tool execution result and reliability metadata
+            MCPTxResult with tool execution result and reliability metadata
 
         Raises:
             ValueError: If tool is not registered or arguments are invalid
-            RuntimeError: If FastRMCP is not initialized
+            RuntimeError: If FastMCP-Tx is not initialized
         """
         # Input validation
         if not isinstance(name, str) or not name.strip():
@@ -269,8 +269,8 @@ class FastRMCP:
         if idempotency_key is not None and not isinstance(idempotency_key, str):
             raise ValueError("Idempotency key must be a string or None")
 
-        if not self._initialized or not self._rmcp_session:
-            raise RuntimeError("FastRMCP not initialized. Use 'async with app:' or call 'await app.initialize()'")
+        if not self._initialized or not self._mcp_tx_session:
+            raise RuntimeError("FastMCP-Tx not initialized. Use 'async with app:' or call 'await app.initialize()'")
 
         tool_config = self._registry.get_tool(name)
         if not tool_config:
@@ -283,8 +283,8 @@ class FastRMCP:
             except Exception as e:
                 logger.warning(f"Failed to generate idempotency key for tool '{name}': {e}")
 
-        # Call tool through RMCP session with configured policies
-        return await self._rmcp_session.call_tool(
+        # Call tool through MCP-Tx session with configured policies
+        return await self._mcp_tx_session.call_tool(
             name=name,
             arguments=arguments,
             retry_policy=tool_config["retry_policy"],
@@ -306,4 +306,4 @@ class FastRMCP:
 
 
 # Convenience exports
-__all__ = ["FastRMCP", "ToolRegistry"]
+__all__ = ["FastMCPTx", "ToolRegistry"]
