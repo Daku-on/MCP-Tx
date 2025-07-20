@@ -1,13 +1,13 @@
-# RMCPアーキテクチャ概要
+# MCP-Txアーキテクチャ概要
 
-RMCPがどのようにMCPに信頼性保証を追加するかを理解する。
+MCP-TxがどのようにMCPに信頼性保証を追加するかを理解する。
 
 ## ハイレベルアーキテクチャ
 
 ```
 ┌─────────────────┐    ┌──────────────────────┐    ┌─────────────────┐
 │                 │    │                      │    │                 │
-│  クライアント   │    │    RMCPセッション    │    │   MCPサーバー   │
+│  クライアント   │    │    MCP-Txセッション    │    │   MCPサーバー   │
 │  アプリケーション│    │   (信頼性ラッパー)    │    │   (既存)        │
 │                 │    │                      │    │                 │
 └─────────────────┘    └──────────────────────┘    └─────────────────┘
@@ -15,22 +15,22 @@ RMCPがどのようにMCPに信頼性保証を追加するかを理解する。
          │ call_tool()            │ 拡張MCP                  │ 標準MCP  
          ├─────────────────────▶  │ _meta.rmcp付き          ├──────────────▶
          │                        │                          │
-         │ RMCPResult             │ 標準MCP                  │ ツール結果
+         │ MCP-TxResult             │ 標準MCP                  │ ツール結果
          ◀─────────────────────── │ レスポンス               ◀──────────────┤
          │                        │                          │
 ```
 
 ## コアコンポーネント
 
-### 1. RMCPSession（ラッパー）
+### 1. MCP-TxSession（ラッパー）
 
 既存のMCPセッションをラップするメインインターフェース：
 
 ```python
-class RMCPSession:
-    def __init__(self, mcp_session: BaseSession, config: RMCPConfig = None):
+class MCP-TxSession:
+    def __init__(self, mcp_session: BaseSession, config: MCP-TxConfig = None):
         self.mcp_session = mcp_session  # 既存のMCPセッション
-        self.config = config or RMCPConfig()
+        self.config = config or MCP-TxConfig()
         # ... 信頼性インフラストラクチャ
 ```
 
@@ -45,7 +45,7 @@ class RMCPSession:
 
 ### 2. メッセージ拡張
 
-RMCPは標準MCPメッセージを信頼性メタデータで拡張：
+MCP-Txは標準MCPメッセージを信頼性メタデータで拡張：
 
 ```json
 {
@@ -118,7 +118,7 @@ response = {
     }
 }
 
-# クライアントがACKを検証してRMCPResultを返す
+# クライアントがACKを検証してMCP-TxResultを返す
 ```
 
 ### 2. 指数バックオフによるリトライロジック
@@ -150,12 +150,12 @@ def calculate_delay(attempt: int, policy: RetryPolicy) -> int:
 
 **キャッシュベース重複排除**：
 ```python
-class RMCPSession:
+class MCP-TxSession:
     def __init__(self):
         # メモリ安全性のためのTTL付きLRUキャッシュ
-        self._deduplication_cache: dict[str, tuple[RMCPResult, datetime]] = {}
+        self._deduplication_cache: dict[str, tuple[MCP-TxResult, datetime]] = {}
     
-    def _get_cached_result(self, idempotency_key: str) -> RMCPResult | None:
+    def _get_cached_result(self, idempotency_key: str) -> MCP-TxResult | None:
         if idempotency_key in self._deduplication_cache:
             cached_result, timestamp = self._deduplication_cache[idempotency_key]
             
@@ -173,8 +173,8 @@ class RMCPSession:
 ### 4. 並行リクエスト管理
 
 ```python
-class RMCPSession:
-    def __init__(self, config: RMCPConfig):
+class MCP-TxSession:
+    def __init__(self, config: MCP-TxConfig):
         # 並行性制御用セマフォ
         self._request_semaphore = anyio.Semaphore(config.max_concurrent_requests)
         
@@ -189,12 +189,12 @@ class RMCPSession:
 
 ## 機能ネゴシエーション
 
-RMCPはMCPの実験的機能を使用して機能をネゴシエート：
+MCP-TxはMCPの実験的機能を使用して機能をネゴシエート：
 
 ### クライアント広告
 
 ```python
-# 初期化中、RMCPは機能を広告
+# 初期化中、MCP-Txは機能を広告
 kwargs["capabilities"]["experimental"]["rmcp"] = {
     "version": "0.1.0",
     "features": ["ack", "retry", "idempotency", "transactions"]
@@ -204,7 +204,7 @@ kwargs["capabilities"]["experimental"]["rmcp"] = {
 ### サーバー応答
 
 ```python
-# サーバーがサポートするRMCP機能で応答
+# サーバーがサポートするMCP-Tx機能で応答
 server_capabilities = {
     "experimental": {
         "rmcp": {
@@ -222,7 +222,7 @@ if not self._rmcp_enabled:
     # 標準MCPへの透明なフォールバック
     return await self._execute_standard_mcp_call(name, arguments, timeout_ms)
 else:
-    # RMCPメタデータ付き拡張MCP
+    # MCP-Txメタデータ付き拡張MCP
     return await self._execute_rmcp_call(name, arguments, rmcp_meta, timeout_ms)
 ```
 
@@ -234,8 +234,8 @@ else:
 - **設定**: 最小オーバーヘッド（セッションあたり約1KB）
 
 ### レイテンシ影響
-- **RMCPオーバーヘッド**: リクエストあたり< 1ms（メタデータ処理）
-- **ネットワークオーバーヘッド**: リクエストあたり+200-500バイト（RMCPメタデータ）
+- **MCP-Txオーバーヘッド**: リクエストあたり< 1ms（メタデータ処理）
+- **ネットワークオーバーヘッド**: リクエストあたり+200-500バイト（MCP-Txメタデータ）
 - **リトライ遅延**: 設定可能な指数バックオフ（デフォルト: 1s, 2s, 4s）
 
 ### スループット
@@ -247,14 +247,14 @@ else:
 
 ### エラー分類
 ```python
-class RMCPError(Exception):
+class MCP-TxError(Exception):
     def __init__(self, message: str, error_code: str, retryable: bool):
         self.retryable = retryable  # リトライ動作を決定
 
 # 特定エラータイプ
-RMCPTimeoutError(retryable=True)    # タイムアウト時リトライ
-RMCPNetworkError(retryable=True)    # ネットワーク問題時リトライ  
-RMCPSequenceError(retryable=False)  # シーケンスエラー時リトライしない
+MCP-TxTimeoutError(retryable=True)    # タイムアウト時リトライ
+MCP-TxNetworkError(retryable=True)    # ネットワーク問題時リトライ  
+MCP-TxSequenceError(retryable=False)  # シーケンスエラー時リトライしない
 ```
 
 ### エラー伝播
@@ -288,7 +288,7 @@ def _sanitize_error_message(self, error: Exception) -> str:
 
 ## 次のステップ
 
-- [**設定ガイド**](configuration_jp.md) - RMCP動作をカスタマイズ
+- [**設定ガイド**](configuration_jp.md) - MCP-Tx動作をカスタマイズ
 - [**APIリファレンス**](api/rmcp-session_jp.md) - 詳細なメソッドドキュメント
 - [**パフォーマンスガイド**](performance_jp.md) - 最適化とチューニング
 

@@ -1,8 +1,8 @@
-# Migration from MCP to RMCP
+# Migration from MCP to MCP-Tx
 
-Step-by-step guide to upgrade from standard MCP to RMCP with reliability guarantees.
+Step-by-step guide to upgrade from standard MCP to MCP-Tx with reliability guarantees.
 
-## Why Migrate to RMCP?
+## Why Migrate to MCP-Tx?
 
 **Standard MCP Limitations**:
 - ❌ No delivery guarantees (fire-and-forget)
@@ -11,7 +11,7 @@ Step-by-step guide to upgrade from standard MCP to RMCP with reliability guarant
 - ❌ Limited error handling and recovery
 - ❌ No request lifecycle visibility
 
-**RMCP Benefits**:
+**MCP-Tx Benefits**:
 - ✅ **Guaranteed delivery** with ACK/NACK
 - ✅ **Automatic retry** with exponential backoff
 - ✅ **Idempotency** prevents duplicate execution
@@ -49,20 +49,20 @@ async def mcp_example():
     await session.close()
 ```
 
-#### After (RMCP Wrapper)
+#### After (MCP-Tx Wrapper)
 ```python
 import asyncio
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
-from rmcp import RMCPSession  # Add RMCP import
+from rmcp import MCP-TxSession  # Add MCP-Tx import
 
 async def rmcp_example():
     # Same MCP setup
     transport = StdioClientTransport(...)
     mcp_session = ClientSession(transport)
     
-    # Wrap with RMCP for reliability
-    rmcp_session = RMCPSession(mcp_session)
+    # Wrap with MCP-Tx for reliability
+    rmcp_session = MCP-TxSession(mcp_session)
     
     await rmcp_session.initialize()  # Same interface
     
@@ -84,22 +84,22 @@ async def rmcp_example():
 ```
 
 **Migration Steps**:
-1. ✅ Install RMCP: `uv add rmcp`
-2. ✅ Import RMCPSession: `from rmcp import RMCPSession`
-3. ✅ Wrap MCP session: `rmcp_session = RMCPSession(mcp_session)`
+1. ✅ Install MCP-Tx: `uv add mcp_tx`
+2. ✅ Import MCP-TxSession: `from rmcp import MCP-TxSession`
+3. ✅ Wrap MCP session: `rmcp_session = MCP-TxSession(mcp_session)`
 4. ✅ Update result handling: Use `result.ack` and `result.result`
-5. ✅ Test with existing servers (automatic fallback if no RMCP support)
+5. ✅ Test with existing servers (automatic fallback if no MCP-Tx support)
 
 ### Strategy 2: Gradual Enhancement
 
-**Best for**: Large applications that want to add RMCP features incrementally.
+**Best for**: Large applications that want to add MCP-Tx features incrementally.
 
 #### Phase 1: Basic Wrapper
 ```python
 class ApplicationClient:
     def __init__(self, mcp_session):
-        # Phase 1: Wrap with basic RMCP
-        self.session = RMCPSession(mcp_session)
+        # Phase 1: Wrap with basic MCP-Tx
+        self.session = MCP-TxSession(mcp_session)
         self.initialized = False
     
     async def initialize(self):
@@ -174,29 +174,29 @@ class ApplicationClient:
 import os
 from typing import Union
 from mcp.client.session import ClientSession
-from rmcp import RMCPSession
+from rmcp import MCP-TxSession
 
 class ConfigurableClient:
     def __init__(self, mcp_session: ClientSession):
         self.mcp_session = mcp_session
         
-        # Feature flag for RMCP
-        use_rmcp = os.getenv("USE_RMCP", "false").lower() == "true"
+        # Feature flag for MCP-Tx
+        use_rmcp = os.getenv("USE_MCP-Tx", "false").lower() == "true"
         
         if use_rmcp:
-            print("🚀 Using RMCP for enhanced reliability")
-            self.session = RMCPSession(mcp_session)
+            print("🚀 Using MCP-Tx for enhanced reliability")
+            self.session = MCP-TxSession(mcp_session)
         else:
             print("📡 Using standard MCP")
             self.session = mcp_session
         
-        self.is_rmcp = isinstance(self.session, RMCPSession)
+        self.is_rmcp = isinstance(self.session, MCP-TxSession)
     
     async def call_tool_with_fallback(self, name: str, arguments: dict) -> dict:
-        """Call tool with RMCP if available, fallback to MCP error handling."""
+        """Call tool with MCP-Tx if available, fallback to MCP error handling."""
         
         if self.is_rmcp:
-            # RMCP path - rich error handling
+            # MCP-Tx path - rich error handling
             result = await self.session.call_tool(name, arguments)
             
             if result.ack:
@@ -254,19 +254,19 @@ async def unreliable_operation():
                 raise e
 ```
 
-#### After (RMCP)
+#### After (MCP-Tx)
 ```python
 # Automatic retry with rich error handling
 async def unreliable_operation():
-    from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+    from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
     
     try:
         result = await rmcp_session.call_tool("unreliable_api", {})
         return result.result if result.ack else None
-    except RMCPTimeoutError as e:
+    except MCP-TxTimeoutError as e:
         print(f"Operation timed out after {e.details['timeout_ms']}ms")
         return None
-    except RMCPNetworkError as e:
+    except MCP-TxNetworkError as e:
         print(f"Network error: {e.message}")
         return None
 ```
@@ -292,7 +292,7 @@ async def idempotent_operation(operation_id: str, data: dict):
         raise e
 ```
 
-#### After (RMCP)
+#### After (MCP-Tx)
 ```python
 # Automatic duplicate detection
 async def idempotent_operation(operation_id: str, data: dict):
@@ -322,14 +322,14 @@ class MCPClient:
         # Manual implementation of reliability features
 ```
 
-#### After (RMCP)
+#### After (MCP-Tx)
 ```python
-# Declarative RMCP configuration
-from rmcp import RMCPConfig, RetryPolicy
+# Declarative MCP-Tx configuration
+from rmcp import MCP-TxConfig, RetryPolicy
 
-class RMCPClient:
+class MCP-TxClient:
     def __init__(self):
-        config = RMCPConfig(
+        config = MCP-TxConfig(
             default_timeout_ms=30000,
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -341,7 +341,7 @@ class RMCPClient:
             deduplication_window_ms=300000
         )
         
-        self.session = RMCPSession(mcp_session, config)
+        self.session = MCP-TxSession(mcp_session, config)
         # Reliability features handled automatically
 ```
 
@@ -352,26 +352,26 @@ class RMCPClient:
 - [ ] **Inventory MCP usage**: Document all `call_tool()` calls in codebase
 - [ ] **Identify critical operations**: Mark operations that need reliability guarantees
 - [ ] **Review error handling**: Document current error handling patterns
-- [ ] **Check MCP server versions**: Ensure compatibility with RMCP
+- [ ] **Check MCP server versions**: Ensure compatibility with MCP-Tx
 - [ ] **Plan testing strategy**: Define test scenarios for migration validation
 
 ### Migration Execution
 
-- [ ] **Install RMCP**: `uv add rmcp`
-- [ ] **Update imports**: Add `from rmcp import RMCPSession`
-- [ ] **Wrap MCP sessions**: Replace direct MCP usage with RMCP wrapper
+- [ ] **Install MCP-Tx**: `uv add mcp_tx`
+- [ ] **Update imports**: Add `from rmcp import MCP-TxSession`
+- [ ] **Wrap MCP sessions**: Replace direct MCP usage with MCP-Tx wrapper
 - [ ] **Update result handling**: Use `result.ack` and `result.result` pattern
-- [ ] **Configure RMCP**: Set appropriate timeouts, retry policies, concurrency limits
+- [ ] **Configure MCP-Tx**: Set appropriate timeouts, retry policies, concurrency limits
 - [ ] **Add idempotency keys**: For operations that should be idempotent
-- [ ] **Enhance error handling**: Use RMCP-specific exception types
+- [ ] **Enhance error handling**: Use MCP-Tx-specific exception types
 
 ### Post-Migration Validation
 
-- [ ] **Test backward compatibility**: Verify works with non-RMCP servers
+- [ ] **Test backward compatibility**: Verify works with non-MCP-Tx servers
 - [ ] **Validate reliability features**: Test retry, idempotency, timeout handling
-- [ ] **Performance testing**: Measure RMCP overhead vs standard MCP
+- [ ] **Performance testing**: Measure MCP-Tx overhead vs standard MCP
 - [ ] **Monitor error rates**: Compare error rates before/after migration
-- [ ] **Update documentation**: Document new RMCP-specific features
+- [ ] **Update documentation**: Document new MCP-Tx-specific features
 
 ## Troubleshooting Migration Issues
 
@@ -379,12 +379,12 @@ class RMCPClient:
 
 ```python
 # ❌ Problem
-from rmcp import RMCPSession  # ModuleNotFoundError
+from rmcp import MCP-TxSession  # ModuleNotFoundError
 
 # ✅ Solution  
-# Install RMCP first
-# uv add rmcp
-# or pip install rmcp
+# Install MCP-Tx first
+# uv add mcp_tx
+# or pip install mcp_tx
 ```
 
 ### Issue: Result Access Errors
@@ -392,7 +392,7 @@ from rmcp import RMCPSession  # ModuleNotFoundError
 ```python
 # ❌ Problem
 result = await rmcp_session.call_tool("test", {})
-print(result)  # RMCPResult object, not direct result
+print(result)  # MCP-TxResult object, not direct result
 
 # ✅ Solution
 result = await rmcp_session.call_tool("test", {})
@@ -406,37 +406,37 @@ else:
 
 ```python
 # ❌ Problem
-# Server doesn't support RMCP experimental capabilities
+# Server doesn't support MCP-Tx experimental capabilities
 
 # ✅ Solution - Automatic fallback
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCP-TxSession(mcp_session)
 await rmcp_session.initialize()
 
 if rmcp_session.rmcp_enabled:
-    print("✅ RMCP features active")
+    print("✅ MCP-Tx features active")
 else:
     print("⚠️ Falling back to standard MCP")
-    # RMCP still works, just without server-side features
+    # MCP-Tx still works, just without server-side features
 ```
 
 ### Issue: Performance Concerns
 
 ```python
 # ❌ Problem
-# RMCP adds overhead for simple operations
+# MCP-Tx adds overhead for simple operations
 
 # ✅ Solution - Selective usage
 class HybridClient:
     def __init__(self, mcp_session):
         self.mcp_session = mcp_session
-        self.rmcp_session = RMCPSession(mcp_session)
+        self.rmcp_session = MCP-TxSession(mcp_session)
     
     async def simple_call(self, tool: str, args: dict):
         # Use MCP for simple, non-critical operations
         return await self.mcp_session.call_tool(tool, args)
     
     async def critical_call(self, tool: str, args: dict):
-        # Use RMCP for critical operations needing reliability
+        # Use MCP-Tx for critical operations needing reliability
         result = await self.rmcp_session.call_tool(tool, args)
         return result.result if result.ack else None
 ```
@@ -459,12 +459,12 @@ async def read_file(path: str) -> str:
     
     return result.result["content"]
 
-# ❌ Bad: Force callers to handle RMCP details
-async def read_file(path: str) -> RMCPResult:
+# ❌ Bad: Force callers to handle MCP-Tx details
+async def read_file(path: str) -> MCP-TxResult:
     return await rmcp_session.call_tool("file_reader", {"path": path})
 ```
 
-### 3. Leverage RMCP Features Gradually
+### 3. Leverage MCP-Tx Features Gradually
 1. **Phase 1**: Basic wrapper (automatic retry, error handling)
 2. **Phase 2**: Add idempotency for write operations
 3. **Phase 3**: Custom retry policies for different operation types
@@ -474,7 +474,7 @@ async def read_file(path: str) -> RMCPResult:
 - Track reliability metrics (success rates, retry counts)
 - Monitor performance impact (latency, throughput)
 - Compare error rates before/after migration
-- Set up alerts for RMCP-specific issues
+- Set up alerts for MCP-Tx-specific issues
 
 ---
 

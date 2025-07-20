@@ -1,26 +1,26 @@
-# RMCP Configuration Guide
+# MCP-Tx Configuration Guide
 
-This guide covers all configuration options available in RMCP, from basic settings to advanced tuning.
+This guide covers all configuration options available in MCP-Tx, from basic settings to advanced tuning.
 
 ## Quick Start Configuration
 
 ### Basic Setup
 
 ```python
-from rmcp import RMCPConfig, RMCPSession
+from rmcp import MCP-TxConfig, MCP-TxSession
 
 # Default configuration (recommended for most use cases)
-config = RMCPConfig()
-session = RMCPSession(mcp_session, config)
+config = MCP-TxConfig()
+session = MCP-TxSession(mcp_session, config)
 ```
 
 ### Common Customizations
 
 ```python
-from rmcp import RMCPConfig, RetryPolicy
+from rmcp import MCP-TxConfig, RetryPolicy
 
 # Production-ready configuration
-config = RMCPConfig(
+config = MCP-TxConfig(
     # Timeouts
     default_timeout_ms=30000,        # 30 seconds
     
@@ -45,7 +45,7 @@ config = RMCPConfig(
 
 ## Configuration Options
 
-### RMCPConfig Parameters
+### MCP-TxConfig Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -69,20 +69,20 @@ config = RMCPConfig(
 | `jitter` | bool | True | Add randomness to prevent thundering herd |
 | `retry_on_timeout` | bool | True | Retry timeout errors |
 
-## FastRMCP Configuration
+## FastMCP-Tx Configuration
 
 ### App-Level Configuration
 
 ```python
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 
-# Configure FastRMCP app
-config = RMCPConfig(
+# Configure FastMCP-Tx app
+config = MCP-TxConfig(
     default_timeout_ms=20000,
     enable_request_logging=True
 )
 
-app = FastRMCP(
+app = FastMCP-Tx(
     mcp_session,
     config=config,
     name="Production App",
@@ -117,13 +117,13 @@ async def critical_tool(id: str, data: dict) -> dict:
 
 ```python
 import os
-from rmcp import RMCPConfig
+from rmcp import MCP-TxConfig
 
 # Read from environment
-config = RMCPConfig(
-    default_timeout_ms=int(os.getenv("RMCP_TIMEOUT", "30000")),
-    max_concurrent_requests=int(os.getenv("RMCP_MAX_CONCURRENT", "10")),
-    enable_request_logging=os.getenv("RMCP_LOGGING", "false").lower() == "true"
+config = MCP-TxConfig(
+    default_timeout_ms=int(os.getenv("MCP-Tx_TIMEOUT", "30000")),
+    max_concurrent_requests=int(os.getenv("MCP-Tx_MAX_CONCURRENT", "10")),
+    enable_request_logging=os.getenv("MCP-Tx_LOGGING", "false").lower() == "true"
 )
 ```
 
@@ -132,7 +132,7 @@ config = RMCPConfig(
 ```python
 import json
 from pathlib import Path
-from rmcp import RMCPConfig, RetryPolicy
+from rmcp import MCP-TxConfig, RetryPolicy
 
 # Load from JSON file
 config_path = Path("rmcp_config.json")
@@ -140,13 +140,13 @@ if config_path.exists():
     with open(config_path) as f:
         config_data = json.load(f)
     
-    config = RMCPConfig(
+    config = MCP-TxConfig(
         default_timeout_ms=config_data.get("timeout_ms", 30000),
         retry_policy=RetryPolicy(**config_data.get("retry", {})),
         **config_data.get("options", {})
     )
 else:
-    config = RMCPConfig()  # Defaults
+    config = MCP-TxConfig()  # Defaults
 ```
 
 Example `rmcp_config.json`:
@@ -198,11 +198,11 @@ async def expensive_operation(): ...
 ### Dynamic Configuration
 
 ```python
-class DynamicRMCPConfig:
+class DynamicMCP-TxConfig:
     """Configuration that can be updated at runtime."""
     
     def __init__(self):
-        self._config = RMCPConfig()
+        self._config = MCP-TxConfig()
         self._overrides = {}
     
     def update_timeout(self, operation: str, timeout_ms: int):
@@ -216,7 +216,7 @@ class DynamicRMCPConfig:
         return base
 
 # Usage
-dynamic_config = DynamicRMCPConfig()
+dynamic_config = DynamicMCP-TxConfig()
 dynamic_config.update_timeout("slow_operation", 120000)  # 2 minutes
 ```
 
@@ -224,7 +224,7 @@ dynamic_config.update_timeout("slow_operation", 120000)  # 2 minutes
 
 ```python
 # High-throughput configuration
-high_throughput_config = RMCPConfig(
+high_throughput_config = MCP-TxConfig(
     max_concurrent_requests=50,
     default_timeout_ms=10000,  # Fail fast
     retry_policy=RetryPolicy(
@@ -236,7 +236,7 @@ high_throughput_config = RMCPConfig(
 )
 
 # High-reliability configuration
-high_reliability_config = RMCPConfig(
+high_reliability_config = MCP-TxConfig(
     max_concurrent_requests=5,  # Limit load
     default_timeout_ms=60000,  # Patient timeouts
     retry_policy=RetryPolicy(
@@ -254,11 +254,11 @@ high_reliability_config = RMCPConfig(
 ### Metrics Collection
 
 ```python
-from rmcp import RMCPConfig
+from rmcp import MCP-TxConfig
 import logging
 
 # Configure with metrics
-config = RMCPConfig(
+config = MCP-TxConfig(
     enable_request_logging=True,
     log_level="DEBUG"
 )
@@ -271,7 +271,7 @@ class MetricsHandler(logging.Handler):
             metrics = record.rmcp_metrics
             send_to_prometheus(metrics)
 
-# Attach to RMCP logger
+# Attach to MCP-Tx logger
 logger = logging.getLogger('rmcp')
 logger.addHandler(MetricsHandler())
 ```
@@ -282,12 +282,12 @@ logger.addHandler(MetricsHandler())
 class HealthCheckConfig:
     """Configuration with built-in health monitoring."""
     
-    def __init__(self, base_config: RMCPConfig):
+    def __init__(self, base_config: MCP-TxConfig):
         self.base_config = base_config
         self.health_threshold = 0.95  # 95% success rate
         self.check_interval_ms = 30000  # 30 seconds
     
-    async def health_check(self, session: RMCPSession) -> bool:
+    async def health_check(self, session: MCP-TxSession) -> bool:
         """Check if session is healthy."""
         try:
             result = await session.call_tool(
@@ -306,7 +306,7 @@ class HealthCheckConfig:
 
 ```python
 # Good: Use defaults unless you have specific requirements
-config = RMCPConfig()
+config = MCP-TxConfig()
 
 # Only customize what you need
 config.default_timeout_ms = 45000  # Specific requirement
@@ -316,14 +316,14 @@ config.default_timeout_ms = 45000  # Specific requirement
 
 ```python
 # Development
-dev_config = RMCPConfig(
+dev_config = MCP-TxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     retry_policy=RetryPolicy(max_attempts=1)  # Fail fast in dev
 )
 
 # Production
-prod_config = RMCPConfig(
+prod_config = MCP-TxConfig(
     enable_request_logging=True,
     log_level="INFO",
     retry_policy=RetryPolicy(max_attempts=5),
@@ -335,7 +335,7 @@ prod_config = RMCPConfig(
 
 ```python
 # Configuration for high-frequency trading system
-config = RMCPConfig(
+config = MCP-TxConfig(
     # Low timeout because market data is time-sensitive
     default_timeout_ms=500,
     
@@ -353,7 +353,7 @@ config = RMCPConfig(
 
 ```python
 # Enable all debugging features
-debug_config = RMCPConfig(
+debug_config = MCP-TxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     # Slow down retries for debugging

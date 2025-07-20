@@ -1,6 +1,6 @@
-# RMCP統合ガイド
+# MCP-Tx統合ガイド
 
-このガイドでは、既存のMCPサーバーや人気のフレームワークとRMCPを統合する方法を示します。
+このガイドでは、既存のMCPサーバーや人気のフレームワークとMCP-Txを統合する方法を示します。
 
 ## 既存MCPサーバーとの統合
 
@@ -9,11 +9,11 @@
 ```python
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioTransport
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 import asyncio
 
 async def connect_to_mcp_server():
-    """既存のMCPサーバーにRMCP信頼性で接続"""
+    """既存のMCPサーバーにMCP-Tx信頼性で接続"""
     
     # 標準MCPサーバーに接続
     transport = StdioTransport(
@@ -22,13 +22,13 @@ async def connect_to_mcp_server():
     )
     
     async with ClientSession(transport) as mcp_session:
-        # RMCPでラップ
-        config = RMCPConfig(
+        # MCP-Txでラップ
+        config = MCP-TxConfig(
             default_timeout_ms=30000,
             enable_request_logging=True
         )
         
-        app = FastRMCP(mcp_session, config)
+        app = FastMCP-Tx(mcp_session, config)
         
         # ツールラッパーを登録
         @app.tool()
@@ -39,7 +39,7 @@ async def connect_to_mcp_server():
                 {"path": path, "operation": operation}
             )
         
-        # RMCP機能で使用
+        # MCP-Tx機能で使用
         async with app:
             result = await app.call_tool(
                 "reliable_file_operation",
@@ -51,8 +51,8 @@ async def connect_to_mcp_server():
 ### 複数MCPサーバー統合
 
 ```python
-class MultiServerRMCP:
-    """統一されたRMCPインターフェースで複数のMCPサーバーを統合"""
+class MultiServerMCP-Tx:
+    """統一されたMCP-Txインターフェースで複数のMCPサーバーを統合"""
     
     def __init__(self):
         self.servers = {}
@@ -63,7 +63,7 @@ class MultiServerRMCP:
         session = ClientSession(transport)
         await session.__aenter__()
         
-        app = FastRMCP(session, name=f"RMCP-{name}")
+        app = FastMCP-Tx(session, name=f"MCP-Tx-{name}")
         await app.initialize()
         
         self.servers[name] = session
@@ -102,7 +102,7 @@ class MultiServerRMCP:
         return await asyncio.gather(*tasks, return_exceptions=True)
 
 # 使用例
-multi_server = MultiServerRMCP()
+multi_server = MultiServerMCP-Tx()
 
 # 異なるMCPサーバーを追加
 await multi_server.add_server(
@@ -129,11 +129,11 @@ file_result = await multi_server.call_server_tool(
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 import asyncio
 
-class RMCPMiddleware:
-    """RMCP統合用Djangoミドルウェア"""
+class MCP-TxMiddleware:
+    """MCP-Tx統合用Djangoミドルウェア"""
     
     _instance = None
     
@@ -142,10 +142,10 @@ class RMCPMiddleware:
         self._setup_rmcp()
     
     def _setup_rmcp(self):
-        """RMCP接続を初期化"""
-        if not RMCPMiddleware._instance:
-            config = RMCPConfig(
-                default_timeout_ms=settings.RMCP_TIMEOUT,
+        """MCP-Tx接続を初期化"""
+        if not MCP-TxMiddleware._instance:
+            config = MCP-TxConfig(
+                default_timeout_ms=settings.MCP-Tx_TIMEOUT,
                 enable_request_logging=settings.DEBUG
             )
             
@@ -154,13 +154,13 @@ class RMCPMiddleware:
             asyncio.set_event_loop(loop)
             
             mcp_session = self._create_mcp_session()
-            RMCPMiddleware._instance = FastRMCP(mcp_session, config)
+            MCP-TxMiddleware._instance = FastMCP-Tx(mcp_session, config)
             
-            loop.run_until_complete(RMCPMiddleware._instance.initialize())
+            loop.run_until_complete(MCP-TxMiddleware._instance.initialize())
     
     def __call__(self, request):
-        # リクエストにRMCPを付加
-        request.rmcp = RMCPMiddleware._instance
+        # リクエストにMCP-Txを付加
+        request.rmcp = MCP-TxMiddleware._instance
         response = self.get_response(request)
         return response
 
@@ -169,11 +169,11 @@ from django.http import JsonResponse
 from asgiref.sync import async_to_sync
 
 def process_with_rmcp(request):
-    """RMCPを使用するDjangoビュー"""
+    """MCP-Txを使用するDjangoビュー"""
     tool_name = request.POST.get('tool')
     arguments = request.POST.get('arguments', {})
     
-    # 同期コンテキストでRMCP呼び出しを実行
+    # 同期コンテキストでMCP-Tx呼び出しを実行
     result = async_to_sync(request.rmcp.call_tool)(
         tool_name,
         arguments
@@ -191,12 +191,12 @@ def process_with_rmcp(request):
 ```python
 # rmcp_flask/extension.py
 from flask import Flask, g
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 import asyncio
 from functools import wraps
 
-class FlaskRMCP:
-    """RMCP用Flask拡張"""
+class FlaskMCP-Tx:
+    """MCP-Tx用Flask拡張"""
     
     def __init__(self, app=None):
         self.app = app
@@ -206,25 +206,25 @@ class FlaskRMCP:
     
     def init_app(self, app: Flask):
         """Flask拡張を初期化"""
-        app.config.setdefault('RMCP_TIMEOUT', 30000)
-        app.config.setdefault('RMCP_MAX_RETRIES', 3)
+        app.config.setdefault('MCP-Tx_TIMEOUT', 30000)
+        app.config.setdefault('MCP-Tx_MAX_RETRIES', 3)
         
         # 最初のリクエストでセットアップ
         app.before_first_request(self._setup_rmcp)
         app.teardown_appcontext(self._teardown_rmcp)
     
     def _setup_rmcp(self):
-        """RMCP接続を初期化"""
-        config = RMCPConfig(
-            default_timeout_ms=self.app.config['RMCP_TIMEOUT'],
+        """MCP-Tx接続を初期化"""
+        config = MCP-TxConfig(
+            default_timeout_ms=self.app.config['MCP-Tx_TIMEOUT'],
             retry_policy=RetryPolicy(
-                max_attempts=self.app.config['RMCP_MAX_RETRIES']
+                max_attempts=self.app.config['MCP-Tx_MAX_RETRIES']
             )
         )
         
-        # セッションとRMCPを作成
+        # セッションとMCP-Txを作成
         mcp_session = self._create_mcp_session()
-        self._rmcp = FastRMCP(mcp_session, config)
+        self._rmcp = FastMCP-Tx(mcp_session, config)
         
         # イベントループで初期化
         loop = asyncio.new_event_loop()
@@ -232,19 +232,19 @@ class FlaskRMCP:
     
     @property
     def rmcp(self):
-        """RMCPインスタンスを取得"""
+        """MCP-Txインスタンスを取得"""
         return self._rmcp
 
 # Flaskアプリでの使用例
 from flask import Flask, jsonify
-from rmcp_flask import FlaskRMCP
+from rmcp_flask import FlaskMCP-Tx
 
 app = Flask(__name__)
-rmcp_ext = FlaskRMCP(app)
+rmcp_ext = FlaskMCP-Tx(app)
 
 @app.route('/execute/<tool_name>', methods=['POST'])
 def execute_tool(tool_name):
-    """RMCPツールを実行"""
+    """MCP-Txツールを実行"""
     from flask import request
     
     # 非同期操作を実行
@@ -267,37 +267,37 @@ def execute_tool(tool_name):
 ```python
 # rmcp_celery/tasks.py
 from celery import Celery, Task
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 import asyncio
 
 app = Celery('rmcp_tasks')
 
-class RMCPTask(Task):
-    """RMCPサポート付きベースタスク"""
+class MCP-TxTask(Task):
+    """MCP-Txサポート付きベースタスク"""
     
     _rmcp = None
     
     @property
     def rmcp(self):
-        if RMCPTask._rmcp is None:
-            # RMCPを初期化
-            config = RMCPConfig(
+        if MCP-TxTask._rmcp is None:
+            # MCP-Txを初期化
+            config = MCP-TxConfig(
                 default_timeout_ms=60000,  # バックグラウンドタスクでは長いタイムアウト
                 retry_policy=RetryPolicy(max_attempts=5)
             )
             
             mcp_session = self._create_mcp_session()
-            RMCPTask._rmcp = FastRMCP(mcp_session, config)
+            MCP-TxTask._rmcp = FastMCP-Tx(mcp_session, config)
             
             # 初期化
             loop = asyncio.new_event_loop()
-            loop.run_until_complete(RMCPTask._rmcp.initialize())
+            loop.run_until_complete(MCP-TxTask._rmcp.initialize())
         
-        return RMCPTask._rmcp
+        return MCP-TxTask._rmcp
 
-@app.task(base=RMCPTask, bind=True)
+@app.task(base=MCP-TxTask, bind=True)
 def process_data_async(self, data_id: str):
-    """RMCPを使用するCeleryタスク"""
+    """MCP-Txを使用するCeleryタスク"""
     # イベントループで実行
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -347,8 +347,8 @@ from datetime import datetime
 
 Base = declarative_base()
 
-class RMCPOperation(Base):
-    """データベースでRMCP操作を追跡"""
+class MCP-TxOperation(Base):
+    """データベースでMCP-Tx操作を追跡"""
     
     __tablename__ = 'rmcp_operations'
     
@@ -363,10 +363,10 @@ class RMCPOperation(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
 
-class DatabaseTrackedRMCP:
-    """データベース追跡付きRMCP"""
+class DatabaseTrackedMCP-Tx:
+    """データベース追跡付きMCP-Tx"""
     
-    def __init__(self, app: FastRMCP, db_url: str):
+    def __init__(self, app: FastMCP-Tx, db_url: str):
         self.app = app
         self.engine = create_engine(db_url)
         Base.metadata.create_all(self.engine)
@@ -384,16 +384,16 @@ class DatabaseTrackedRMCP:
         # 既存の操作をチェック
         idempotency_key = kwargs.get('idempotency_key')
         if idempotency_key:
-            existing = session.query(RMCPOperation).filter_by(
+            existing = session.query(MCP-TxOperation).filter_by(
                 idempotency_key=idempotency_key,
                 status='completed'
             ).first()
             
             if existing:
                 # キャッシュされた結果を返す
-                return RMCPResult(
+                return MCP-TxResult(
                     result=existing.result,
-                    rmcp_meta=RMCPResponse(
+                    rmcp_meta=MCP-TxResponse(
                         ack=True,
                         processed=True,
                         duplicate=True,
@@ -403,7 +403,7 @@ class DatabaseTrackedRMCP:
                 )
         
         # 操作レコードを作成
-        operation = RMCPOperation(
+        operation = MCP-TxOperation(
             tool_name=name,
             arguments=arguments,
             idempotency_key=idempotency_key,
@@ -444,10 +444,10 @@ class DatabaseTrackedRMCP:
 import aio_pika
 import json
 
-class RabbitMQRMCP:
-    """非同期処理用RabbitMQ付きRMCP"""
+class RabbitMQMCP-Tx:
+    """非同期処理用RabbitMQ付きMCP-Tx"""
     
-    def __init__(self, app: FastRMCP, amqp_url: str):
+    def __init__(self, app: FastMCP-Tx, amqp_url: str):
         self.app = app
         self.amqp_url = amqp_url
         self.connection = None
@@ -541,17 +541,17 @@ class RabbitMQRMCP:
 # lambda_handler.py
 import json
 import asyncio
-from rmcp import FastRMCP, RMCPConfig
+from rmcp import FastMCP-Tx, MCP-TxConfig
 
 # 接続再利用のためハンドラー外で初期化
 rmcp_app = None
 
 def get_rmcp_app():
-    """RMCPアプリを取得または作成"""
+    """MCP-Txアプリを取得または作成"""
     global rmcp_app
     if rmcp_app is None:
         # Lambda環境用に設定
-        config = RMCPConfig(
+        config = MCP-TxConfig(
             default_timeout_ms=25000,  # Lambdaタイムアウトバッファ
             retry_policy=RetryPolicy(
                 max_attempts=2,  # クイックリトライ
@@ -561,7 +561,7 @@ def get_rmcp_app():
         
         # MCPセッションを作成（実装固有）
         mcp_session = create_lambda_mcp_session()
-        rmcp_app = FastRMCP(mcp_session, config)
+        rmcp_app = FastMCP-Tx(mcp_session, config)
         
         # 初期化
         loop = asyncio.new_event_loop()
@@ -570,7 +570,7 @@ def get_rmcp_app():
     return rmcp_app
 
 def lambda_handler(event, context):
-    """RMCP付きAWS Lambdaハンドラー"""
+    """MCP-Tx付きAWS Lambdaハンドラー"""
     tool_name = event.get('tool_name')
     arguments = event.get('arguments', {})
     idempotency_key = event.get('idempotency_key')
@@ -582,7 +582,7 @@ def lambda_handler(event, context):
         }
     
     try:
-        # RMCPアプリを取得
+        # MCP-Txアプリを取得
         app = get_rmcp_app()
         
         # ツール呼び出しを実行
@@ -625,14 +625,14 @@ def lambda_handler(event, context):
 
 ```python
 class ConnectionPool:
-    """RMCP接続を効率的に管理"""
+    """MCP-Tx接続を効率的に管理"""
     
     def __init__(self, max_connections: int = 10):
         self.max_connections = max_connections
         self.connections = []
         self.available = asyncio.Queue(maxsize=max_connections)
     
-    async def acquire(self) -> FastRMCP:
+    async def acquire(self) -> FastMCP-Tx:
         """プールから接続を取得"""
         if not self.connections:
             # 初期接続を作成
@@ -643,14 +643,14 @@ class ConnectionPool:
         
         return await self.available.get()
     
-    async def release(self, app: FastRMCP):
+    async def release(self, app: FastMCP-Tx):
         """接続をプールに戻す"""
         await self.available.put(app)
     
-    async def _create_connection(self) -> FastRMCP:
-        """新しいRMCP接続を作成"""
+    async def _create_connection(self) -> FastMCP-Tx:
+        """新しいMCP-Tx接続を作成"""
         mcp_session = await create_mcp_session()
-        app = FastRMCP(mcp_session)
+        app = FastMCP-Tx(mcp_session)
         await app.initialize()
         return app
 ```
@@ -662,7 +662,7 @@ class IntegrationErrorHandler:
     """統合用の統一エラーハンドリング"""
     
     @staticmethod
-    async def safe_call(app: FastRMCP, tool_name: str, arguments: dict):
+    async def safe_call(app: FastMCP-Tx, tool_name: str, arguments: dict):
         """包括的なエラーハンドリング付きの安全なツール呼び出し"""
         try:
             return await app.call_tool(tool_name, arguments)
@@ -696,13 +696,13 @@ from unittest.mock import AsyncMock
 
 @pytest.fixture
 async def mock_rmcp_app():
-    """RMCPでのテスト用フィクスチャ"""
-    app = AsyncMock(spec=FastRMCP)
+    """MCP-Txでのテスト用フィクスチャ"""
+    app = AsyncMock(spec=FastMCP-Tx)
     
     # 成功レスポンスをモック
-    app.call_tool.return_value = RMCPResult(
+    app.call_tool.return_value = MCP-TxResult(
         result={"status": "success"},
-        rmcp_meta=RMCPResponse(
+        rmcp_meta=MCP-TxResponse(
             ack=True,
             processed=True,
             duplicate=False,

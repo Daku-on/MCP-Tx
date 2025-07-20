@@ -1,12 +1,12 @@
 # トラブルシューティングガイド
 
-RMCPを使用する際の一般的な問題と解決策。
+MCP-Txを使用する際の一般的な問題と解決策。
 
 ## インストール問題
 
 ### "No module named 'rmcp'"
 
-**問題**: RMCPを使用しようとした際のインポートエラー
+**問題**: MCP-Txを使用しようとした際のインポートエラー
 ```python
 ModuleNotFoundError: No module named 'rmcp'
 ```
@@ -14,10 +14,10 @@ ModuleNotFoundError: No module named 'rmcp'
 **解決策**:
 ```bash
 # uv（推奨）でインストール
-uv add rmcp
+uv add mcp_tx
 
 # またはpipでインストール
-pip install rmcp
+pip install mcp_tx
 
 # インストール確認
 python -c "import rmcp; print(rmcp.__version__)"
@@ -39,29 +39,29 @@ uv sync --upgrade
 uv venv --clear
 source .venv/bin/activate  # Linux/Mac
 # または .venv\Scripts\activate  # Windows
-uv add rmcp
+uv add mcp_tx
 ```
 
 ## セッション初期化問題
 
-### "RMCP session not initialized"
+### "MCP-Tx session not initialized"
 
 **問題**: セッションを初期化せずに`call_tool()`を呼び出し
 ```python
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCP-TxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # エラー！
 ```
 
 **解決策**: 常に最初に`initialize()`を呼び出し
 ```python
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCP-TxSession(mcp_session)
 await rmcp_session.initialize()  # 必須！
 result = await rmcp_session.call_tool("test", {})
 ```
 
 ### サーバー機能ネゴシエーション失敗
 
-**問題**: サーバーがRMCP機能に応答しない
+**問題**: サーバーがMCP-Tx機能に応答しない
 
 **症状**:
 - `rmcp_session.rmcp_enabled`が`False`
@@ -72,7 +72,7 @@ result = await rmcp_session.call_tool("test", {})
 # 初期化後にサーバー機能をチェック
 await rmcp_session.initialize()
 if not rmcp_session.rmcp_enabled:
-    print("⚠️ サーバーがRMCPをサポートしていません - フォールバックモード使用")
+    print("⚠️ サーバーがMCP-Txをサポートしていません - フォールバックモード使用")
     # これは多くのサーバーで正常で期待される動作
 
 # ネゴシエーションを確認するためデバッグログを強制
@@ -86,7 +86,7 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 **悪いパターン**:
 ```python
-rmcp = RMCPSession(mcp_session)
+rmcp = MCP-TxSession(mcp_session)
 await rmcp.initialize()
 # ... rmcpを使用
 # セッションがクローズされない - リソースリーク！
@@ -95,13 +95,13 @@ await rmcp.initialize()
 **良いパターン**:
 ```python
 # ✅ 最良: 非同期コンテキストマネージャーを使用
-async with RMCPSession(mcp_session) as rmcp:
+async with MCP-TxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... rmcpを使用
     # 自動的にクローズ
 
 # ✅ 許容: 手動クリーンアップ
-rmcp = RMCPSession(mcp_session)
+rmcp = MCP-TxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... rmcpを使用
@@ -111,7 +111,7 @@ finally:
 
 ## 結果処理問題
 
-### "RMCPResult object has no attribute 'content'"
+### "MCP-TxResult object has no attribute 'content'"
 
 **問題**: MCP結果に直接アクセスしようとしている
 ```python
@@ -168,7 +168,7 @@ else:
 ```python
 # デフォルト10秒後にタイムアウト
 result = await rmcp_session.call_tool("process_large_file", {"path": "/huge.csv"})
-# RMCPTimeoutError!
+# MCP-TxTimeoutError!
 ```
 
 **解決策**:
@@ -181,8 +181,8 @@ result = await rmcp_session.call_tool(
 )
 
 # 解決策2: セッションデフォルトを設定
-config = RMCPConfig(default_timeout_ms=60000)  # 1分デフォルト
-rmcp_session = RMCPSession(mcp_session, config)
+config = MCP-TxConfig(default_timeout_ms=60000)  # 1分デフォルト
+rmcp_session = MCP-TxSession(mcp_session, config)
 
 # 解決策3: 環境固有設定
 def get_timeout_for_environment():
@@ -194,7 +194,7 @@ def get_timeout_for_environment():
     else:
         return 5000   # 5秒（高速開発サイクル）
 
-config = RMCPConfig(default_timeout_ms=get_timeout_for_environment())
+config = MCP-TxConfig(default_timeout_ms=get_timeout_for_environment())
 ```
 
 ### メモリ使用量の時間的増加
@@ -209,7 +209,7 @@ config = RMCPConfig(default_timeout_ms=get_timeout_for_environment())
 **解決策**:
 ```python
 # キャッシュウィンドウを減らす
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=300000,  # デフォルト10分ではなく5分
     max_concurrent_requests=5,       # 並行リクエストを制限
 )
@@ -277,19 +277,19 @@ except Exception as e:
     return None  # すべてのエラーコンテキストを失った！
 ```
 
-**解決策**: 特定のRMCP例外を処理
+**解決策**: 特定のMCP-Tx例外を処理
 ```python
 # ✅ 良い: 特定例外処理
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 try:
     result = await rmcp_session.call_tool("api_call", {})
     
-except RMCPTimeoutError as e:
+except MCP-TxTimeoutError as e:
     print(f"操作が{e.details['timeout_ms']}ms後にタイムアウト")
     # より長いタイムアウトでリトライするか、異なるアプローチ
     
-except RMCPNetworkError as e:
+except MCP-TxNetworkError as e:
     print(f"ネットワークエラー: {e.message}")
     # ネットワーク接続をチェックするか、後でリトライ
     
@@ -322,7 +322,7 @@ async def call_tool_with_context(tool_name: str, arguments: dict):
         print(f"  ツール: {tool_name}")
         print(f"  引数: {arguments}")
         print(f"  エラー: {e}")
-        print(f"  RMCP有効: {rmcp_session.rmcp_enabled}")
+        print(f"  MCP-Tx有効: {rmcp_session.rmcp_enabled}")
         print(f"  アクティブリクエスト: {len(rmcp_session.active_requests)}")
         raise
 ```
@@ -331,7 +331,7 @@ async def call_tool_with_context(tool_name: str, arguments: dict):
 
 ### 遅いツール呼び出し
 
-**問題**: RMCP操作が期待より遅い
+**問題**: MCP-Tx操作が期待より遅い
 
 **デバッグステップ**:
 ```python
@@ -348,7 +348,7 @@ async def benchmark_call(tool_name: str, arguments: dict):
     print(f"ツール: {tool_name}")
     print(f"期間: {duration_ms:.1f}ms") 
     print(f"試行回数: {result.attempts}")
-    print(f"RMCP有効: {rmcp_session.rmcp_enabled}")
+    print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
     
     return result
 
@@ -358,20 +358,20 @@ direct_result = await mcp_session.call_tool(tool_name, arguments)
 direct_duration = (time.time() - start_time) * 1000
 
 print(f"直接MCP: {direct_duration:.1f}ms")
-print(f"RMCPオーバーヘッド: {duration_ms - direct_duration:.1f}ms")
+print(f"MCP-Txオーバーヘッド: {duration_ms - direct_duration:.1f}ms")
 ```
 
 **一般的な原因と解決策**:
 ```python
 # リソース競合を引き起こす高い並行性制限
-config = RMCPConfig(max_concurrent_requests=5)  # デフォルト10から削減
+config = MCP-TxConfig(max_concurrent_requests=5)  # デフォルト10から削減
 
 # 不必要なリトライ試行
 quick_policy = RetryPolicy(max_attempts=1)  # 単純操作にはリトライなし
 result = await rmcp_session.call_tool("fast_op", {}, retry_policy=quick_policy)
 
 # メモリ圧迫を引き起こす大きな重複排除キャッシュ
-config = RMCPConfig(deduplication_window_ms=60000)  # 10分ではなく1分
+config = MCP-TxConfig(deduplication_window_ms=60000)  # 10分ではなく1分
 ```
 
 ### 高いリトライ率
@@ -412,7 +412,7 @@ print(f"最大試行回数: {retry_stats['max_attempts']}")
 ```python
 import logging
 
-# RMCP内部用ログ設定
+# MCP-Tx内部用ログ設定
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -422,7 +422,7 @@ logging.basicConfig(
 rmcp_logger = logging.getLogger("rmcp")
 rmcp_logger.setLevel(logging.DEBUG)
 
-# これでRMCPは以下をログ出力:
+# これでMCP-Txは以下をログ出力:
 # - リクエストID生成
 # - リトライ試行と遅延  
 # - キャッシュヒット/ミス
@@ -433,9 +433,9 @@ rmcp_logger.setLevel(logging.DEBUG)
 ### セッション内省
 
 ```python
-async def debug_session_state(rmcp_session: RMCPSession):
-    print("=== RMCPセッションデバッグ情報 ===")
-    print(f"RMCP有効: {rmcp_session.rmcp_enabled}")
+async def debug_session_state(rmcp_session: MCP-TxSession):
+    print("=== MCP-Txセッションデバッグ情報 ===")
+    print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
     print(f"アクティブリクエスト: {len(rmcp_session.active_requests)}")
     
     for req_id, tracker in rmcp_session.active_requests.items():
@@ -500,14 +500,14 @@ await test_mcp_connectivity(mcp_session)
 import sys
 import rmcp
 print(f"Pythonバージョン: {sys.version}")
-print(f"RMCPバージョン: {rmcp.__version__}")
+print(f"MCP-Txバージョン: {rmcp.__version__}")
 print(f"プラットフォーム: {sys.platform}")
 ```
 
 2. **設定**:
 ```python
-print(f"RMCP設定: {rmcp_session.config}")
-print(f"RMCP有効: {rmcp_session.rmcp_enabled}")
+print(f"MCP-Tx設定: {rmcp_session.config}")
+print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
 ```
 
 3. **エラー詳細**:

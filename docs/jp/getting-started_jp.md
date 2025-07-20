@@ -1,18 +1,18 @@
 # はじめる
 
-5分でRMCP (Reliable Model Context Protocol) の使用を開始しましょう。
+5分でMCP-Tx (Reliable Model Context Protocol) の使用を開始しましょう。
 
 ## インストール
 
 ```bash
 # uv（推奨）
-uv add rmcp
+uv add mcp_tx
 
 # pip
-pip install rmcp
+pip install mcp_tx
 
 # インストール確認
-python -c "import rmcp; print(f'RMCP {rmcp.__version__} installed')"
+python -c "import rmcp; print(f'MCP-Tx {rmcp.__version__} installed')"
 ```
 
 ## 基本的な使用方法
@@ -22,7 +22,7 @@ python -c "import rmcp; print(f'RMCP {rmcp.__version__} installed')"
 ```python
 import asyncio
 import os
-from rmcp import RMCPSession
+from rmcp import MCP-TxSession
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
 
@@ -31,14 +31,14 @@ async def main():
     transport = StdioClientTransport(...)
     mcp_session = ClientSession(transport)
     
-    # RMCPで信頼性機能を追加
-    rmcp_session = RMCPSession(mcp_session)
+    # MCP-Txで信頼性機能を追加
+    rmcp_session = MCP-TxSession(mcp_session)
     
     # 初期化（必須）
     await rmcp_session.initialize()
     
     # これで信頼性保証付きツール呼び出しが可能
-    result = await rmcp_session.call_tool("echo", {"message": "Hello RMCP!"})
+    result = await rmcp_session.call_tool("echo", {"message": "Hello MCP-Tx!"})
     
     if result.ack:
         print(f"成功: {result.result}")
@@ -55,7 +55,7 @@ asyncio.run(main())
 ```python
 result = await rmcp_session.call_tool("file_reader", {"path": "/data.txt"})
 
-# RMCPの保証をチェック
+# MCP-Txの保証をチェック
 print(f"承認済み: {result.ack}")           # リクエストが承認されたか
 print(f"処理済み: {result.processed}")      # ツールが実際に実行されたか
 print(f"試行回数: {result.attempts}")       # リトライ回数
@@ -73,7 +73,7 @@ if result.ack:
 
 ```python
 async def reliable_file_operations():
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 冪等性付きファイル書き込み
@@ -117,7 +117,7 @@ async def reliable_api_calls():
         ]
     )
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         result = await rmcp.call_tool(
@@ -143,14 +143,14 @@ async def reliable_api_calls():
 ### 環境固有の設定
 
 ```python
-from rmcp import RMCPConfig, RetryPolicy
+from rmcp import MCP-TxConfig, RetryPolicy
 import os
 
 def create_config():
     env = os.getenv("ENVIRONMENT", "development")
     
     if env == "production":
-        return RMCPConfig(
+        return MCP-TxConfig(
             default_timeout_ms=30000,      # 30秒
             retry_policy=RetryPolicy(
                 max_attempts=5,
@@ -161,7 +161,7 @@ def create_config():
             deduplication_window_ms=600000 # 10分間の重複排除
         )
     else:
-        return RMCPConfig(
+        return MCP-TxConfig(
             default_timeout_ms=5000,       # 5秒（開発用）
             retry_policy=RetryPolicy(
                 max_attempts=2,
@@ -172,14 +172,14 @@ def create_config():
 
 # 設定を使用
 config = create_config()
-rmcp_session = RMCPSession(mcp_session, config)
+rmcp_session = MCP-TxSession(mcp_session, config)
 ```
 
 ### 操作別設定
 
 ```python
 async def operation_specific_config():
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 高速操作 - 短いタイムアウト
@@ -210,7 +210,7 @@ async def operation_specific_config():
 ### 特定エラータイプの処理
 
 ```python
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 async def robust_error_handling():
     try:
@@ -221,14 +221,14 @@ async def robust_error_handling():
         else:
             print(f"ツール実行失敗: {result.rmcp_meta.error_message}")
             
-    except RMCPTimeoutError as e:
+    except MCP-TxTimeoutError as e:
         print(f"タイムアウト: {e.details['timeout_ms']}ms後")
         # より長いタイムアウトで再試行
         return await rmcp_session.call_tool(
             "external_service", {}, timeout_ms=60000
         )
         
-    except RMCPNetworkError as e:
+    except MCP-TxNetworkError as e:
         print(f"ネットワークエラー: {e.message}")
         # しばらく待ってから再試行
         await asyncio.sleep(5)
@@ -243,7 +243,7 @@ async def robust_error_handling():
 import asyncio
 
 async def concurrent_operations():
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 複数のファイルを並列処理
@@ -279,12 +279,12 @@ async def concurrent_operations():
 ```python
 import logging
 
-# RMCP内部のデバッグログを有効化
+# MCP-Tx内部のデバッグログを有効化
 logging.basicConfig(level=logging.DEBUG)
 rmcp_logger = logging.getLogger("rmcp")
 rmcp_logger.setLevel(logging.DEBUG)
 
-# これでRMCPが以下をログ出力します:
+# これでMCP-Txが以下をログ出力します:
 # - リクエストID生成
 # - リトライ試行と遅延
 # - キャッシュヒット/ミス
@@ -296,10 +296,10 @@ rmcp_logger.setLevel(logging.DEBUG)
 
 ```python
 async def monitor_session():
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
-        print(f"RMCP有効: {rmcp.rmcp_enabled}")
+        print(f"MCP-Tx有効: {rmcp.rmcp_enabled}")
         print(f"アクティブリクエスト: {len(rmcp.active_requests)}")
         
         # 操作実行
@@ -317,19 +317,19 @@ async def monitor_session():
 # 前: 標準MCP
 # result = await mcp_session.call_tool("tool", args)
 
-# 後: RMCP（信頼性機能付き）
+# 後: MCP-Tx（信頼性機能付き）
 result = await rmcp_session.call_tool("tool", args)
 if result.ack:
     actual_result = result.result  # 元のMCP結果
 ```
 
-### パターン 2: 条件付きRMCP使用
+### パターン 2: 条件付きMCP-Tx使用
 
 ```python
-USE_RMCP = os.getenv("USE_RMCP", "false").lower() == "true"
+USE_MCP-Tx = os.getenv("USE_MCP-Tx", "false").lower() == "true"
 
-if USE_RMCP:
-    session = RMCPSession(mcp_session)
+if USE_MCP-Tx:
+    session = MCP-TxSession(mcp_session)
     await session.initialize()
 else:
     session = mcp_session
@@ -337,7 +337,7 @@ else:
 # セッションを通常通り使用
 result = await session.call_tool("tool", args)
 
-# RMCP結果の場合は適切に処理
+# MCP-Tx結果の場合は適切に処理
 if hasattr(result, 'ack'):
     actual_result = result.result if result.ack else None
 else:
@@ -351,7 +351,7 @@ async def batch_processing(items):
     results = []
     failed = []
     
-    async with RMCPSession(mcp_session) as rmcp:
+    async with MCP-TxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         for item in items:
@@ -378,7 +378,7 @@ async def batch_processing(items):
 
 ### 📚 さらに学ぶ
 
-- **[アーキテクチャ](architecture.jp.md)** - RMCPの内部動作を理解
+- **[アーキテクチャ](architecture.jp.md)** - MCP-Txの内部動作を理解
 - **[移行ガイド](migration.jp.md)** - 既存のMCPコードをアップグレード
 - **[FAQ](faq.jp.md)** - よくある質問と回答
 

@@ -1,23 +1,23 @@
-# RMCP Performance Guide
+# MCP-Tx Performance Guide
 
-This guide covers performance optimization strategies for RMCP in production environments.
+This guide covers performance optimization strategies for MCP-Tx in production environments.
 
 ## Performance Overview
 
-RMCP adds reliability features with minimal overhead:
+MCP-Tx adds reliability features with minimal overhead:
 - **Latency overhead**: ~1-5ms per request (ACK/NACK processing)
 - **Memory overhead**: ~1KB per active request (deduplication tracking)
-- **Network overhead**: ~200 bytes per request (RMCP metadata)
+- **Network overhead**: ~200 bytes per request (MCP-Tx metadata)
 
 ## Quick Performance Wins
 
 ### 1. Optimize Timeouts
 
 ```python
-from rmcp import RMCPConfig, FastRMCP
+from rmcp import MCP-TxConfig, FastMCP-Tx
 
 # Fast-fail configuration for interactive applications
-config = RMCPConfig(
+config = MCP-TxConfig(
     default_timeout_ms=5000,  # 5 seconds max wait
     retry_policy=RetryPolicy(
         max_attempts=2,  # Quick retry only
@@ -25,7 +25,7 @@ config = RMCPConfig(
     )
 )
 
-app = FastRMCP(mcp_session, config)
+app = FastMCP-Tx(mcp_session, config)
 ```
 
 ### 2. Batch Operations
@@ -53,7 +53,7 @@ results = await asyncio.gather(*[
 
 ```python
 # Reuse sessions for multiple operations
-async with FastRMCP(mcp_session) as app:
+async with FastMCP-Tx(mcp_session) as app:
     # All operations share the same connection pool
     for i in range(1000):
         await app.call_tool("operation", {"id": i})
@@ -65,7 +65,7 @@ async with FastRMCP(mcp_session) as app:
 
 ```python
 # High-concurrency configuration
-config = RMCPConfig(
+config = MCP-TxConfig(
     max_concurrent_requests=50,  # Increase parallel operations
     default_timeout_ms=10000
 )
@@ -110,12 +110,12 @@ async def inefficient_io(url: str) -> dict:
 
 ```python
 # Short-lived operations: smaller window
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=60000  # 1 minute
 )
 
 # Long-running workflows: larger window
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=3600000  # 1 hour
 )
 
@@ -127,7 +127,7 @@ config = RMCPConfig(
 
 ```python
 # Limit tool registry size
-app = FastRMCP(
+app = FastMCP-Tx(
     mcp_session,
     max_tools=100  # Prevent unbounded growth
 )
@@ -135,7 +135,7 @@ app = FastRMCP(
 # Dynamic tool registration/cleanup
 class ManagedApp:
     def __init__(self, mcp_session):
-        self.app = FastRMCP(mcp_session)
+        self.app = FastMCP-Tx(mcp_session)
         self.tool_usage = {}
     
     def register_tool_with_ttl(self, tool_func, ttl_seconds=3600):
@@ -153,7 +153,7 @@ class ManagedApp:
 
 ```python
 # Enable compression for large payloads
-config = RMCPConfig(
+config = MCP-TxConfig(
     enable_compression=True,  # Gzip for messages > 1KB
     compression_threshold_bytes=1024
 )
@@ -236,7 +236,7 @@ import psutil
 import asyncio
 
 class ResourceMonitor:
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.baseline_memory = psutil.Process().memory_info().rss
     
@@ -247,7 +247,7 @@ class ResourceMonitor:
             current_memory = process.memory_info().rss
             memory_delta = (current_memory - self.baseline_memory) / 1024 / 1024  # MB
             
-            logger.info(f"RMCP Stats: "
+            logger.info(f"MCP-Tx Stats: "
                        f"Tools: {len(self.app.list_tools())}, "
                        f"Memory Delta: {memory_delta:.1f}MB, "
                        f"CPU: {process.cpu_percent()}%")
@@ -260,14 +260,14 @@ class ResourceMonitor:
 ### Load Balancing
 
 ```python
-class LoadBalancedRMCP:
+class LoadBalancedMCP-Tx:
     """Distribute load across multiple MCP sessions."""
     
     def __init__(self, mcp_sessions: list):
-        self.apps = [FastRMCP(session) for session in mcp_sessions]
+        self.apps = [FastMCP-Tx(session) for session in mcp_sessions]
         self.current = 0
     
-    async def call_tool(self, name: str, arguments: dict) -> RMCPResult:
+    async def call_tool(self, name: str, arguments: dict) -> MCP-TxResult:
         # Round-robin selection
         app = self.apps[self.current]
         self.current = (self.current + 1) % len(self.apps)
@@ -281,15 +281,15 @@ class LoadBalancedRMCP:
 from functools import lru_cache
 import hashlib
 
-class CachedRMCP:
+class CachedMCP-Tx:
     """Add caching to idempotent operations."""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.cache = {}
         self.cache_ttl = 300  # 5 minutes
     
-    async def call_tool_cached(self, name: str, arguments: dict) -> RMCPResult:
+    async def call_tool_cached(self, name: str, arguments: dict) -> MCP-TxResult:
         # Generate cache key
         cache_key = hashlib.md5(
             f"{name}:{json.dumps(arguments, sort_keys=True)}".encode()
@@ -311,7 +311,7 @@ class CachedRMCP:
 ### Connection Warmup
 
 ```python
-async def warmup_rmcp(app: FastRMCP):
+async def warmup_rmcp(app: FastMCP-Tx):
     """Pre-warm connections for better latency."""
     # Initialize connection pool
     await app.initialize()
@@ -325,7 +325,7 @@ async def warmup_rmcp(app: FastRMCP):
     # Wait for warmup to complete
     await asyncio.gather(*warmup_tasks, return_exceptions=True)
     
-    logger.info("RMCP connection pool warmed up")
+    logger.info("MCP-Tx connection pool warmed up")
 ```
 
 ## Performance Benchmarks
@@ -333,8 +333,8 @@ async def warmup_rmcp(app: FastRMCP):
 ### Baseline Performance
 
 ```python
-async def benchmark_rmcp(app: FastRMCP, iterations: int = 1000):
-    """Measure RMCP performance characteristics."""
+async def benchmark_rmcp(app: FastMCP-Tx, iterations: int = 1000):
+    """Measure MCP-Tx performance characteristics."""
     
     # Sequential performance
     start = time.time()
@@ -381,7 +381,7 @@ async def benchmark_rmcp(app: FastRMCP, iterations: int = 1000):
 ## See Also
 
 - [Configuration Guide](configuration.md) - Detailed configuration options
-- [Architecture Overview](architecture.md) - Understanding RMCP internals
+- [Architecture Overview](architecture.md) - Understanding MCP-Tx internals
 - [Troubleshooting](troubleshooting.md) - Common performance issues
 
 ---

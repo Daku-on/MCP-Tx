@@ -1,36 +1,36 @@
 # Frequently Asked Questions
 
-Common questions about RMCP implementation and usage.
+Common questions about MCP-Tx implementation and usage.
 
 ## General Questions
 
-### What is RMCP?
+### What is MCP-Tx?
 
-**RMCP (Reliable Model Context Protocol)** is a reliability layer that wraps existing MCP sessions to provide delivery guarantees, automatic retry, request deduplication, and enhanced error handling. It's 100% backward compatible with standard MCP.
+**MCP-Tx (Reliable Model Context Protocol)** is a reliability layer that wraps existing MCP sessions to provide delivery guarantees, automatic retry, request deduplication, and enhanced error handling. It's 100% backward compatible with standard MCP.
 
-### Do I need to modify my MCP servers to use RMCP?
+### Do I need to modify my MCP servers to use MCP-Tx?
 
-**No.** RMCP is designed for backward compatibility. It works with any existing MCP server:
+**No.** MCP-Tx is designed for backward compatibility. It works with any existing MCP server:
 
-- **RMCP-aware servers**: Get full reliability features (ACK/NACK, server-side deduplication)
+- **MCP-Tx-aware servers**: Get full reliability features (ACK/NACK, server-side deduplication)
 - **Standard MCP servers**: Automatic fallback with client-side reliability features
 
 ```python
 # Works with any MCP server
-rmcp_session = RMCPSession(your_mcp_session)
+rmcp_session = MCP-TxSession(your_mcp_session)
 await rmcp_session.initialize()
 
-print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
-# True = server supports RMCP, False = fallback mode
+print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
+# True = server supports MCP-Tx, False = fallback mode
 ```
 
-### What's the performance impact of RMCP?
+### What's the performance impact of MCP-Tx?
 
 **Minimal overhead** for most applications:
 
 - **Latency**: < 1ms per request (metadata processing)
 - **Memory**: ~10-100KB (request tracking, deduplication cache)
-- **Network**: +200-500 bytes per request (RMCP metadata)
+- **Network**: +200-500 bytes per request (MCP-Tx metadata)
 - **CPU**: Negligible (async operations, efficient caching)
 
 **Benchmark results** (vs standard MCP):
@@ -38,24 +38,24 @@ print(f"RMCP enabled: {rmcp_session.rmcp_enabled}")
 - High concurrency: +1-3% latency  
 - Large payloads: < 1% latency impact
 
-### Can I use RMCP with existing MCP libraries?
+### Can I use MCP-Tx with existing MCP libraries?
 
-**Yes.** RMCP wraps any object that implements the MCP session interface:
+**Yes.** MCP-Tx wraps any object that implements the MCP session interface:
 
 ```python
 # Works with any MCP client
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
 from mcp.client.sse import SseClientTransport
-from rmcp import RMCPSession
+from rmcp import MCP-TxSession
 
 # Standard MCP clients
 mcp_session = ClientSession(StdioClientTransport(...))
 # or
 mcp_session = ClientSession(SseClientTransport(...))
 
-# Wrap with RMCP
-rmcp_session = RMCPSession(mcp_session)
+# Wrap with MCP-Tx
+rmcp_session = MCP-TxSession(mcp_session)
 ```
 
 ## Configuration Questions
@@ -65,7 +65,7 @@ rmcp_session = RMCPSession(mcp_session)
 Use `RetryPolicy` to configure retry behavior per session or per call:
 
 ```python
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
 
 # Session-level retry policy
 aggressive_retry = RetryPolicy(
@@ -78,8 +78,8 @@ aggressive_retry = RetryPolicy(
     ]
 )
 
-config = RMCPConfig(retry_policy=aggressive_retry)
-rmcp_session = RMCPSession(mcp_session, config)
+config = MCP-TxConfig(retry_policy=aggressive_retry)
+rmcp_session = MCP-TxSession(mcp_session, config)
 
 # Or per-call override
 quick_retry = RetryPolicy(max_attempts=2, base_delay_ms=500)
@@ -141,11 +141,11 @@ result = await rmcp_session.call_tool(
 
 ```python
 # Default timeout configuration
-config = RMCPConfig(
+config = MCP-TxConfig(
     default_timeout_ms=10000,  # 10 seconds for most operations
 )
 
-rmcp_session = RMCPSession(mcp_session, config)
+rmcp_session = MCP-TxSession(mcp_session, config)
 
 # Quick operations - shorter timeout
 result = await rmcp_session.call_tool(
@@ -176,7 +176,7 @@ result = await rmcp_session.call_tool(
 **Use specific exception types** for targeted error handling:
 
 ```python
-from rmcp.types import RMCPTimeoutError, RMCPNetworkError, RMCPError
+from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError, MCP-TxError
 
 async def robust_operation():
     try:
@@ -188,7 +188,7 @@ async def robust_operation():
             # Tool executed but returned error
             raise RuntimeError(f"Tool failed: {result.rmcp_meta.error_message}")
             
-    except RMCPTimeoutError as e:
+    except MCP-TxTimeoutError as e:
         # Handle timeout - maybe retry with longer timeout
         print(f"Operation timed out after {e.details['timeout_ms']}ms")
         return await rmcp_session.call_tool(
@@ -197,17 +197,17 @@ async def robust_operation():
             timeout_ms=60000  # Longer timeout
         )
         
-    except RMCPNetworkError as e:
+    except MCP-TxNetworkError as e:
         # Handle network issues - maybe wait and retry
         print(f"Network error: {e.message}")
         await asyncio.sleep(5)
         return await rmcp_session.call_tool("external_api", {"endpoint": "/data"})
         
-    except RMCPError as e:
-        # Handle other RMCP errors
+    except MCP-TxError as e:
+        # Handle other MCP-Tx errors
         if e.retryable:
             print(f"Retryable error: {e.message}")
-            # RMCP already retried, so log and handle gracefully
+            # MCP-Tx already retried, so log and handle gracefully
         else:
             print(f"Permanent error: {e.message}")
             # Don't retry, handle as final failure
@@ -248,26 +248,26 @@ elif not result.ack:
     # This case triggers automatic retry
 ```
 
-### How do I debug RMCP issues?
+### How do I debug MCP-Tx issues?
 
-**Enable debug logging** to see RMCP internals:
+**Enable debug logging** to see MCP-Tx internals:
 
 ```python
 import logging
 
-# Enable RMCP debug logging
+# Enable MCP-Tx debug logging
 logging.basicConfig(level=logging.DEBUG)
 rmcp_logger = logging.getLogger("rmcp")
 rmcp_logger.setLevel(logging.DEBUG)
 
-# Now RMCP will log:
+# Now MCP-Tx will log:
 # - Request ID generation
 # - Retry attempts and delays
 # - Cache hits/misses
 # - Server capability negotiation
 # - Error details
 
-async with RMCPSession(mcp_session) as rmcp:
+async with MCP-TxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     # Debug information in logs
@@ -281,27 +281,27 @@ async with RMCPSession(mcp_session) as rmcp:
 
 ## Advanced Usage Questions
 
-### Can I use RMCP with multiple MCP servers?
+### Can I use MCP-Tx with multiple MCP servers?
 
-**Yes, create separate RMCP sessions** for each server:
+**Yes, create separate MCP-Tx sessions** for each server:
 
 ```python
 # Multiple servers with different configurations
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
 
 # Fast, reliable server - minimal retry
-fast_config = RMCPConfig(
+fast_config = MCP-TxConfig(
     retry_policy=RetryPolicy(max_attempts=2, base_delay_ms=500),
     default_timeout_ms=5000
 )
-fast_rmcp = RMCPSession(fast_mcp_session, fast_config)
+fast_rmcp = MCP-TxSession(fast_mcp_session, fast_config)
 
 # Slow, unreliable server - aggressive retry
-slow_config = RMCPConfig(
+slow_config = MCP-TxConfig(
     retry_policy=RetryPolicy(max_attempts=5, base_delay_ms=2000),
     default_timeout_ms=30000
 )
-slow_rmcp = RMCPSession(slow_mcp_session, slow_config)
+slow_rmcp = MCP-TxSession(slow_mcp_session, slow_config)
 
 # Use appropriate session for each operation
 fast_result = await fast_rmcp.call_tool("cache_lookup", {"key": "data"})
@@ -343,7 +343,7 @@ class CircuitBreaker:
         self.failures[tool_name] += 1
         self.last_failure[tool_name] = time.time()
 
-# Usage with RMCP
+# Usage with MCP-Tx
 circuit_breaker = CircuitBreaker()
 
 async def call_with_circuit_breaker(tool_name: str, arguments: dict):
@@ -425,27 +425,27 @@ result = await rmcp_session.call_tool(
 
 ## Integration Questions
 
-### How do I integrate RMCP with FastAPI?
+### How do I integrate MCP-Tx with FastAPI?
 
-**Use dependency injection** for RMCP sessions:
+**Use dependency injection** for MCP-Tx sessions:
 
 ```python
 from fastapi import FastAPI, Depends, HTTPException
-from rmcp import RMCPSession
+from rmcp import MCP-TxSession
 import asyncio
 
 app = FastAPI()
 
-# Global RMCP session (or use dependency injection)
+# Global MCP-Tx session (or use dependency injection)
 _rmcp_session = None
 
-async def get_rmcp_session() -> RMCPSession:
-    """FastAPI dependency for RMCP session."""
+async def get_rmcp_session() -> MCP-TxSession:
+    """FastAPI dependency for MCP-Tx session."""
     global _rmcp_session
     if _rmcp_session is None:
-        # Initialize RMCP session
+        # Initialize MCP-Tx session
         mcp_session = await setup_mcp_session()
-        _rmcp_session = RMCPSession(mcp_session)
+        _rmcp_session = MCP-TxSession(mcp_session)
         await _rmcp_session.initialize()
     
     return _rmcp_session
@@ -453,9 +453,9 @@ async def get_rmcp_session() -> RMCPSession:
 @app.post("/process-file")
 async def process_file(
     file_path: str,
-    rmcp: RMCPSession = Depends(get_rmcp_session)
+    rmcp: MCP-TxSession = Depends(get_rmcp_session)
 ):
-    """Process file using RMCP."""
+    """Process file using MCP-Tx."""
     try:
         result = await rmcp.call_tool(
             "file_processor",
@@ -480,21 +480,21 @@ async def process_file(
 
 @app.on_event("shutdown")
 async def shutdown():
-    """Clean up RMCP session on shutdown."""
+    """Clean up MCP-Tx session on shutdown."""
     global _rmcp_session
     if _rmcp_session:
         await _rmcp_session.close()
 ```
 
-### How do I use RMCP with asyncio.gather()?
+### How do I use MCP-Tx with asyncio.gather()?
 
-**RMCP works seamlessly** with asyncio concurrency:
+**MCP-Tx works seamlessly** with asyncio concurrency:
 
 ```python
 import asyncio
 
 async def concurrent_operations():
-    """Run multiple RMCP operations concurrently."""
+    """Run multiple MCP-Tx operations concurrently."""
     
     # Create list of concurrent operations
     operations = [
@@ -528,13 +528,13 @@ async def concurrent_operations():
 ### "ModuleNotFoundError: No module named 'rmcp'"
 
 ```bash
-# Install RMCP
-uv add rmcp
+# Install MCP-Tx
+uv add mcp_tx
 # or
-pip install rmcp
+pip install mcp_tx
 ```
 
-### "RMCPResult object has no attribute 'content'"
+### "MCP-TxResult object has no attribute 'content'"
 
 ```python
 # ❌ Wrong: Accessing MCP result directly
@@ -547,15 +547,15 @@ if result.ack:
     print(result.result)  # This contains the actual MCP result
 ```
 
-### "RMCP session not initialized"
+### "MCP-Tx session not initialized"
 
 ```python
 # ❌ Wrong: Forgot to initialize
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCP-TxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # Error
 
 # ✅ Correct: Always initialize first
-rmcp_session = RMCPSession(mcp_session)
+rmcp_session = MCP-TxSession(mcp_session)
 await rmcp_session.initialize()  # Required step
 result = await rmcp_session.call_tool("test", {})
 ```
@@ -564,12 +564,12 @@ result = await rmcp_session.call_tool("test", {})
 
 ```python
 # Configure cache limits to prevent memory leaks
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=300000,  # 5 minutes instead of default 10
     max_concurrent_requests=5,       # Limit concurrent requests
 )
 
-rmcp_session = RMCPSession(mcp_session, config)
+rmcp_session = MCP-TxSession(mcp_session, config)
 ```
 
 ---

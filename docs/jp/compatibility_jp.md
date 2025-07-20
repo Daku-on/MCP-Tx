@@ -1,25 +1,25 @@
-# RMCP互換性ガイド
+# MCP-Tx互換性ガイド
 
-このガイドでは、RMCPと標準MCP間の互換性、バージョン要件、移行の考慮事項について説明します。
+このガイドでは、MCP-Txと標準MCP間の互換性、バージョン要件、移行の考慮事項について説明します。
 
 ## MCP互換性
 
 ### 完全な後方互換性
 
-RMCPは標準MCPと100%後方互換性があります：
+MCP-Txは標準MCPと100%後方互換性があります：
 
 ```python
 # 任意のMCPサーバーで動作
 async def use_with_any_mcp_server(mcp_session):
-    # RMCPは既存のセッションをラップ
-    rmcp_session = RMCPSession(mcp_session)
+    # MCP-Txは既存のセッションをラップ
+    rmcp_session = MCP-TxSession(mcp_session)
     
-    # サーバーがRMCPをサポートしない場合、標準MCPのように動作
+    # サーバーがMCP-Txをサポートしない場合、標準MCPのように動作
     result = await rmcp_session.call_tool("any_tool", {})
     
-    # RMCP機能はオプション
+    # MCP-Tx機能はオプション
     if hasattr(result, 'rmcp_meta'):
-        print(f"RMCP有効: {result.rmcp_meta.ack}")
+        print(f"MCP-Tx有効: {result.rmcp_meta.ack}")
     else:
         print("標準MCPレスポンス")
 ```
@@ -28,8 +28,8 @@ async def use_with_any_mcp_server(mcp_session):
 
 ```python
 async def detect_rmcp_support(session):
-    """サーバーがRMCP機能をサポートするかチェック"""
-    # 初期化中にRMCPが機能をネゴシエート
+    """サーバーがMCP-Tx機能をサポートするかチェック"""
+    # 初期化中にMCP-Txが機能をネゴシエート
     info = await session.initialize()
     
     if 'experimental' in info.capabilities:
@@ -47,7 +47,7 @@ async def detect_rmcp_support(session):
 
 ### Pythonバージョンサポート
 
-| Pythonバージョン | RMCPサポート | 備考 |
+| Pythonバージョン | MCP-Txサポート | 備考 |
 |---------------|--------------|-------|
 | 3.10+ | ✅ 完全サポート | 推奨 |
 | 3.9 | ✅ 完全サポート | サポート |
@@ -56,7 +56,7 @@ async def detect_rmcp_support(session):
 
 ### MCP SDKバージョン
 
-| MCP SDKバージョン | RMCP互換性 | 備考 |
+| MCP SDKバージョン | MCP-Tx互換性 | 備考 |
 |-----------------|-------------------|-------|
 | 1.0.0+ | ✅ 完全サポート | 現在の標準 |
 | 0.9.x | ✅ 互換 | 一部機能が制限される場合 |
@@ -74,10 +74,10 @@ anyio = ">=3.0.0"  # クロスプラットフォーム非同期用
 
 ## プロトコル互換性
 
-### RMCPプロトコルバージョン
+### MCP-Txプロトコルバージョン
 
 ```python
-# RMCPは複数のプロトコルバージョンをサポート
+# MCP-Txは複数のプロトコルバージョンをサポート
 PROTOCOL_VERSIONS = {
     "0.1.0": {  # 現在のバージョン
         "features": ["ack", "retry", "idempotency"],
@@ -124,18 +124,18 @@ PROTOCOL_VERSIONS = {
 ### 非同期フレームワークサポート
 
 ```python
-# RMCPはクロスプラットフォーム非同期にanyioを使用
+# MCP-Txはクロスプラットフォーム非同期にanyioを使用
 import anyio
 
 # asyncioで動作（デフォルト）
 import asyncio
-app = FastRMCP(mcp_session)  # asyncioを使用
+app = FastMCP-Tx(mcp_session)  # asyncioを使用
 
 # trioでも動作
 import trio
 async def with_trio():
     async with anyio.create_task_group() as tg:
-        app = FastRMCP(mcp_session)
+        app = FastMCP-Tx(mcp_session)
         tg.start_soon(app.initialize)
 ```
 
@@ -164,19 +164,19 @@ async def with_trio():
 
 ```python
 import sys
-from rmcp import RMCPConfig
+from rmcp import MCP-TxConfig
 
-def get_platform_config() -> RMCPConfig:
+def get_platform_config() -> MCP-TxConfig:
     """プラットフォーム最適化設定を取得"""
     if sys.platform == "win32":
         # Windows固有の最適化
-        return RMCPConfig(
+        return MCP-TxConfig(
             max_concurrent_requests=50,  # Windowsは異なる制限
             use_uvloop=False  # Windowsでは利用不可
         )
     else:
         # Unix系システム
-        return RMCPConfig(
+        return MCP-TxConfig(
             max_concurrent_requests=100,
             use_uvloop=True  # より良いパフォーマンス
         )
@@ -184,7 +184,7 @@ def get_platform_config() -> RMCPConfig:
 
 ## 破壊的変更と移行
 
-### RMCP 0.xから1.0への移行
+### MCP-Tx 0.xから1.0への移行
 
 ```python
 # 旧API（0.x）
@@ -258,7 +258,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
 
 ```python
 # 一部のMCPサーバーはメッセージサイズ制限がある
-config = RMCPConfig(
+config = MCP-TxConfig(
     max_message_size=1024 * 1024,  # 1MB制限
     enable_compression=True  # 大きなメッセージを圧縮
 )
@@ -278,21 +278,21 @@ async def safe_call_tool(app, name, arguments):
 
 ```python
 import pytest
-from rmcp import FastRMCP, RMCPSession
+from rmcp import FastMCP-Tx, MCP-TxSession
 
 @pytest.mark.compatibility
 class TestCompatibility:
-    """様々な設定でのRMCP互換性をテスト"""
+    """様々な設定でのMCP-Tx互換性をテスト"""
     
     async def test_standard_mcp_fallback(self, standard_mcp_session):
-        """RMCPが非RMCPサーバーで動作することをテスト"""
-        rmcp = RMCPSession(standard_mcp_session)
+        """MCP-Txが非MCP-Txサーバーで動作することをテスト"""
+        rmcp = MCP-TxSession(standard_mcp_session)
         
-        # RMCP機能なしで動作するべき
+        # MCP-Tx機能なしで動作するべき
         result = await rmcp.call_tool("echo", {"text": "hello"})
         assert result.result == {"text": "hello"}
         
-        # RMCPメタデータはフォールバックを示すべき
+        # MCP-Txメタデータはフォールバックを示すべき
         assert not hasattr(result, 'rmcp_meta') or not result.rmcp_meta.ack
     
     async def test_version_negotiation(self, mock_server):
@@ -310,7 +310,7 @@ class TestCompatibility:
     async def test_feature_degradation(self, limited_server):
         """優雅な機能劣化をテスト"""
         # サーバーはACKのみをサポート、リトライはなし
-        app = FastRMCP(limited_server)
+        app = FastMCP-Tx(limited_server)
         
         @app.tool(retry_policy=RetryPolicy(max_attempts=3))
         async def test_tool():
@@ -326,7 +326,7 @@ class TestCompatibility:
 ```python
 # rmcp_check.py
 async def check_compatibility(server_url: str):
-    """サーバーとのRMCP互換性をチェック"""
+    """サーバーとのMCP-Tx互換性をチェック"""
     try:
         # サーバーに接続
         session = await connect_to_mcp_server(server_url)
@@ -335,7 +335,7 @@ async def check_compatibility(server_url: str):
         rmcp_support = await detect_rmcp_support(session)
         
         print(f"サーバー: {server_url}")
-        print(f"RMCPサポート: {'あり' if rmcp_support['supported'] else 'なし'}")
+        print(f"MCP-Txサポート: {'あり' if rmcp_support['supported'] else 'なし'}")
         
         if rmcp_support['supported']:
             print(f"バージョン: {rmcp_support['version']}")
@@ -351,9 +351,9 @@ async def check_compatibility(server_url: str):
         except:
             print("✗ ツール呼び出し: サポートなし")
         
-        # 利用可能な場合はRMCP機能をテスト
+        # 利用可能な場合はMCP-Tx機能をテスト
         if rmcp_support['supported']:
-            rmcp_session = RMCPSession(session)
+            rmcp_session = MCP-TxSession(session)
             
             # ACKをテスト
             result = await rmcp_session.call_tool("ping", {})
@@ -377,11 +377,11 @@ if __name__ == "__main__":
 
 ### 計画されている機能
 
-RMCPは前方互換性を持つよう設計されています：
+MCP-Txは前方互換性を持つよう設計されています：
 
 ```python
 # 将来の機能はオプション
-future_config = RMCPConfig(
+future_config = MCP-TxConfig(
     # 現在の機能
     enable_retry=True,
     enable_deduplication=True,
@@ -401,7 +401,7 @@ future_config = RMCPConfig(
 
 ## 関連ドキュメント
 
-- [移行ガイド](migration_jp.md) - MCPからRMCPへのアップグレード
+- [移行ガイド](migration_jp.md) - MCPからMCP-Txへのアップグレード
 - [はじめに](getting-started_jp.md) - 初期セットアップ
 - [FAQ](faq_jp.md) - 一般的な互換性質問
 

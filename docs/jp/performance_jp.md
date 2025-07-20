@@ -1,23 +1,23 @@
-# RMCPパフォーマンスガイド
+# MCP-Txパフォーマンスガイド
 
-このガイドでは、本番環境でのRMCPのパフォーマンス最適化戦略について説明します。
+このガイドでは、本番環境でのMCP-Txのパフォーマンス最適化戦略について説明します。
 
 ## パフォーマンス概要
 
-RMCPは最小限のオーバーヘッドで信頼性機能を追加：
+MCP-Txは最小限のオーバーヘッドで信頼性機能を追加：
 - **レイテンシオーバーヘッド**: リクエストあたり約1-5ms（ACK/NACK処理）
 - **メモリオーバーヘッド**: アクティブリクエストあたり約1KB（重複排除追跡）
-- **ネットワークオーバーヘッド**: リクエストあたり約200バイト（RMCPメタデータ）
+- **ネットワークオーバーヘッド**: リクエストあたり約200バイト（MCP-Txメタデータ）
 
 ## 即効性のあるパフォーマンス改善
 
 ### 1. タイムアウト最適化
 
 ```python
-from rmcp import RMCPConfig, FastRMCP
+from rmcp import MCP-TxConfig, FastMCP-Tx
 
 # インタラクティブアプリケーション用の高速失敗設定
-config = RMCPConfig(
+config = MCP-TxConfig(
     default_timeout_ms=5000,  # 最大5秒待機
     retry_policy=RetryPolicy(
         max_attempts=2,  # クイックリトライのみ
@@ -25,7 +25,7 @@ config = RMCPConfig(
     )
 )
 
-app = FastRMCP(mcp_session, config)
+app = FastMCP-Tx(mcp_session, config)
 ```
 
 ### 2. バッチ操作
@@ -53,7 +53,7 @@ results = await asyncio.gather(*[
 
 ```python
 # 複数の操作でセッションを再利用
-async with FastRMCP(mcp_session) as app:
+async with FastMCP-Tx(mcp_session) as app:
     # すべての操作が同じ接続プールを共有
     for i in range(1000):
         await app.call_tool("operation", {"id": i})
@@ -65,7 +65,7 @@ async with FastRMCP(mcp_session) as app:
 
 ```python
 # 高同時実行設定
-config = RMCPConfig(
+config = MCP-TxConfig(
     max_concurrent_requests=50,  # 並列操作を増加
     default_timeout_ms=10000
 )
@@ -110,12 +110,12 @@ async def inefficient_io(url: str) -> dict:
 
 ```python
 # 短期間操作: 小さなウィンドウ
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=60000  # 1分
 )
 
 # 長時間実行ワークフロー: 大きなウィンドウ
-config = RMCPConfig(
+config = MCP-TxConfig(
     deduplication_window_ms=3600000  # 1時間
 )
 
@@ -127,7 +127,7 @@ config = RMCPConfig(
 
 ```python
 # ツールレジストリサイズを制限
-app = FastRMCP(
+app = FastMCP-Tx(
     mcp_session,
     max_tools=100  # 無制限の増加を防止
 )
@@ -135,7 +135,7 @@ app = FastRMCP(
 # 動的ツール登録/クリーンアップ
 class ManagedApp:
     def __init__(self, mcp_session):
-        self.app = FastRMCP(mcp_session)
+        self.app = FastMCP-Tx(mcp_session)
         self.tool_usage = {}
     
     def register_tool_with_ttl(self, tool_func, ttl_seconds=3600):
@@ -153,7 +153,7 @@ class ManagedApp:
 
 ```python
 # 大きなペイロード用の圧縮を有効化
-config = RMCPConfig(
+config = MCP-TxConfig(
     enable_compression=True,  # 1KB超のメッセージをGzip
     compression_threshold_bytes=1024
 )
@@ -236,7 +236,7 @@ import psutil
 import asyncio
 
 class ResourceMonitor:
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.baseline_memory = psutil.Process().memory_info().rss
     
@@ -247,7 +247,7 @@ class ResourceMonitor:
             current_memory = process.memory_info().rss
             memory_delta = (current_memory - self.baseline_memory) / 1024 / 1024  # MB
             
-            logger.info(f"RMCP統計: "
+            logger.info(f"MCP-Tx統計: "
                        f"ツール: {len(self.app.list_tools())}, "
                        f"メモリ差分: {memory_delta:.1f}MB, "
                        f"CPU: {process.cpu_percent()}%")
@@ -260,14 +260,14 @@ class ResourceMonitor:
 ### ロードバランシング
 
 ```python
-class LoadBalancedRMCP:
+class LoadBalancedMCP-Tx:
     """複数のMCPセッション間で負荷分散"""
     
     def __init__(self, mcp_sessions: list):
-        self.apps = [FastRMCP(session) for session in mcp_sessions]
+        self.apps = [FastMCP-Tx(session) for session in mcp_sessions]
         self.current = 0
     
-    async def call_tool(self, name: str, arguments: dict) -> RMCPResult:
+    async def call_tool(self, name: str, arguments: dict) -> MCP-TxResult:
         # ラウンドロビン選択
         app = self.apps[self.current]
         self.current = (self.current + 1) % len(self.apps)
@@ -281,15 +281,15 @@ class LoadBalancedRMCP:
 from functools import lru_cache
 import hashlib
 
-class CachedRMCP:
+class CachedMCP-Tx:
     """冪等操作にキャッシュを追加"""
     
-    def __init__(self, app: FastRMCP):
+    def __init__(self, app: FastMCP-Tx):
         self.app = app
         self.cache = {}
         self.cache_ttl = 300  # 5分
     
-    async def call_tool_cached(self, name: str, arguments: dict) -> RMCPResult:
+    async def call_tool_cached(self, name: str, arguments: dict) -> MCP-TxResult:
         # キャッシュキー生成
         cache_key = hashlib.md5(
             f"{name}:{json.dumps(arguments, sort_keys=True)}".encode()
@@ -311,7 +311,7 @@ class CachedRMCP:
 ### 接続ウォームアップ
 
 ```python
-async def warmup_rmcp(app: FastRMCP):
+async def warmup_rmcp(app: FastMCP-Tx):
     """より良いレイテンシのため接続を事前ウォームアップ"""
     # 接続プールを初期化
     await app.initialize()
@@ -325,7 +325,7 @@ async def warmup_rmcp(app: FastRMCP):
     # ウォームアップ完了を待機
     await asyncio.gather(*warmup_tasks, return_exceptions=True)
     
-    logger.info("RMCP接続プールがウォームアップ完了")
+    logger.info("MCP-Tx接続プールがウォームアップ完了")
 ```
 
 ## パフォーマンスベンチマーク
@@ -333,8 +333,8 @@ async def warmup_rmcp(app: FastRMCP):
 ### ベースライン性能
 
 ```python
-async def benchmark_rmcp(app: FastRMCP, iterations: int = 1000):
-    """RMCPパフォーマンス特性を測定"""
+async def benchmark_rmcp(app: FastMCP-Tx, iterations: int = 1000):
+    """MCP-Txパフォーマンス特性を測定"""
     
     # シーケンシャル性能
     start = time.time()
@@ -381,7 +381,7 @@ async def benchmark_rmcp(app: FastRMCP, iterations: int = 1000):
 ## 関連ドキュメント
 
 - [設定ガイド](configuration_jp.md) - 詳細設定オプション
-- [アーキテクチャ概要](architecture_jp.md) - RMCP内部理解
+- [アーキテクチャ概要](architecture_jp.md) - MCP-Tx内部理解
 - [トラブルシューティング](troubleshooting_jp.md) - 一般的な性能問題
 
 ---
