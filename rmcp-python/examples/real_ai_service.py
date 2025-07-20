@@ -195,9 +195,9 @@ class RealAIService:
                             for result in results:
                                 result["source"] = "AI Generated"
                             return results[:num_results]
-                    except:
+                    except Exception:
                         pass
-            except:
+            except Exception:
                 pass
 
         # Hard-coded fallback results
@@ -223,7 +223,11 @@ class RealAIService:
                 {
                     "title": f"{topic_words[i % len(topic_words)].title()} Research: {query}",
                     "url": f"https://example-research-{i + 1}.com/articles/{query.replace(' ', '-').lower()}",
-                    "snippet": f"Comprehensive analysis of {query.lower()}. Recent studies show significant developments in this area, with measurable impacts on productivity and innovation. Research indicates positive trends and growing adoption across industries.",
+                    "snippet": (
+                        f"Comprehensive analysis of {query.lower()}. Recent studies show significant "
+                        "developments in this area, with measurable impacts on productivity and innovation. "
+                        "Research indicates positive trends and growing adoption across industries."
+                    ),
                     "source": "Demo Content",
                 }
             )

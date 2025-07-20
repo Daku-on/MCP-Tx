@@ -88,11 +88,11 @@ uv run python examples/basic_usage.py
 
 ```python
 import asyncio
-from mcp_tx import MCP_TxSession, MCP_TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 async def main():
     # Wrap any existing MCP session
-    mcp_tx_session = MCP_TxSession(mcp_session)
+    mcp_tx_session = MCPTxSession(mcp_session)
     await mcp_tx_session.initialize()
     
     # Enhanced tool calls with reliability guarantees

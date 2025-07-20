@@ -11,7 +11,7 @@ from typing import Any, ClassVar
 
 import anyio
 
-from mcp_tx import MCP_TxConfig, MCP_TxSession, RetryPolicy
+from mcp_tx import MCPTxConfig, MCPTxSession, RetryPolicy
 
 
 class MockMCPSession:
@@ -71,14 +71,14 @@ async def basic_example():
     mcp_session = MockMCPSession(failure_rate=0.3)  # 30% failure rate for demo
 
     # Configure MCP-Tx with custom settings
-    config = MCP_TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=5000,
         retry_policy=RetryPolicy(max_attempts=3, base_delay_ms=500, backoff_multiplier=1.5, jitter=True),
         max_concurrent_requests=5,
     )
 
     # Wrap MCP session with MCP-Tx
-    mcp_tx_session = MCP_TxSession(mcp_session, config)
+    mcp_tx_session = MCPTxSession(mcp_session, config)
 
     try:
         # Initialize session with capability negotiation
@@ -167,7 +167,7 @@ async def retry_demonstration():
     mcp_session = MockMCPSession(failure_rate=0.7)  # 70% failure rate
 
     # Configure aggressive retry policy
-    config = MCP_TxConfig(
+    config = MCPTxConfig(
         retry_policy=RetryPolicy(
             max_attempts=5,
             base_delay_ms=100,
@@ -176,7 +176,7 @@ async def retry_demonstration():
         )
     )
 
-    mcp_tx_session = MCP_TxSession(mcp_session, config)
+    mcp_tx_session = MCPTxSession(mcp_session, config)
 
     try:
         await mcp_tx_session.initialize()

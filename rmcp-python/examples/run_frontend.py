@@ -16,9 +16,9 @@ from pathlib import Path
 def check_dependencies():
     """Check if required dependencies are installed."""
     try:
-        import streamlit
+        import streamlit  # noqa: F401
 
-        import mcp_tx
+        import mcp_tx  # noqa: F401
 
         print("✅ All dependencies available")
         return True

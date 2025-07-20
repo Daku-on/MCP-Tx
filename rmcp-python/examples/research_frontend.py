@@ -349,7 +349,7 @@ def render_research_form() -> str | None:
             query = st.text_input(
                 "Research Query",
                 placeholder="Enter your research question (e.g., 'AI impact on software development 2024')",
-                help="Describe what you want to research. The assistant will search, analyze, and fact-check information.",
+                help="Describe what you want to research. The assistant will search, analyze, and fact-check.",
             )
 
         with col2:
@@ -718,7 +718,7 @@ def render_sidebar() -> str | None:
         st.divider()
 
         # About section
-        st.header("ℹ️ About")
+        st.header("📖 About")
         st.markdown("""
         **Smart Research Assistant** uses FastMCP-Tx to provide:
 

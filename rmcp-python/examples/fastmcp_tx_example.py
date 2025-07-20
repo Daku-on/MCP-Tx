@@ -1,17 +1,17 @@
-"""FastMCP_Tx Example - Decorator-based MCP-Tx reliability.
+"""FastMCPTx Example - Decorator-based MCP-Tx reliability.
 
-This example demonstrates how to use FastMCP_Tx to add MCP-Tx reliability features
+This example demonstrates how to use FastMCPTx to add MCP-Tx reliability features
 to MCP tools using decorators, similar to FastMCP but for client-side reliability.
 """
 
 import asyncio
 from datetime import datetime
 
-from mcp_tx import FastMCP_Tx, MCP_TxConfig, RetryPolicy
+from mcp_tx import FastMCPTx, MCPTxConfig, RetryPolicy
 
 
 async def main():
-    """FastMCP_Tx example with decorator-based tool registration."""
+    """FastMCPTx example with decorator-based tool registration."""
 
     # Create a mock MCP session for demonstration
     # In real usage, you would connect to an actual MCP server
@@ -62,14 +62,14 @@ async def main():
     # Create mock MCP session
     mcp_session = MockMCPSession()
 
-    # Create FastMCP_Tx app with custom configuration
-    config = MCP_TxConfig(
+    # Create FastMCPTx app with custom configuration
+    config = MCPTxConfig(
         default_timeout_ms=10000,  # 10 second default timeout
         max_concurrent_requests=5,
         deduplication_window_ms=300000,  # 5 minute deduplication window
     )
 
-    app = FastMCP_Tx(mcp_session, config=config, name="Example MCP-Tx App")
+    app = FastMCPTx(mcp_session, config=config, name="Example MCP-Tx App")
 
     # Register tools with decorators
 
@@ -111,7 +111,7 @@ async def main():
         """Database query tool with connection reliability."""
         return {"query": query, "params": params or {}}
 
-    # Initialize and use the FastMCP_Tx app
+    # Initialize and use the FastMCPTx app
     async with app:
         print(f"🚀 Started {app.name}")
         print(f"📋 Registered tools: {app.list_tools()}")
@@ -200,7 +200,7 @@ async def main():
         except Exception as e:
             print(f"  ❌ Parallel execution error: {e}")
 
-        print("\n🎉 FastMCP_Tx example completed!")
+        print("\n🎉 FastMCPTx example completed!")
 
 
 if __name__ == "__main__":

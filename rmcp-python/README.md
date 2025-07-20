@@ -144,7 +144,7 @@ if approval.mcp_tx_meta.ack:  # Human clicked "Approve"
 ### 🔍 Enhanced Observability & Debugging
 
 ```python
-# Server logs with RMCP transaction IDs
+# Server logs with MCP-Tx transaction IDs
 @app.route("/process_data")
 def process_data(request):
     tx_id = request.headers.get("MCP-Tx-Transaction-ID")

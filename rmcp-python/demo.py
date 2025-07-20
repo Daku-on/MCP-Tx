@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from examples.basic_usage import MockMCPSession
-from mcp_tx import RetryPolicy, MCPTxConfig, MCPTxSession
+from mcp_tx import MCPTxConfig, MCPTxSession, RetryPolicy
 
 
 async def session_1_demo():
@@ -39,7 +39,7 @@ async def session_1_demo():
     print("🧪 Test 1: Basic MCP-Tx Session Wrapper")
 
     mock_mcp = MockMCPSession(failure_rate=0.0)  # No failures for basic test
-    mcp_tx_session = MCP-TxSession(mock_mcp)
+    mcp_tx_session = MCPTxSession(mock_mcp)
 
     await mcp_tx_session.initialize()
     print(f"   MCP-Tx Enabled: {mcp_tx_session.mcp_tx_enabled}")
@@ -57,7 +57,7 @@ async def session_1_demo():
     print("🧪 Test 2: Retry Logic with Failures")
 
     mock_mcp = MockMCPSession(failure_rate=0.6)  # 60% failure rate
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         retry_policy=RetryPolicy(
             max_attempts=4,
             base_delay_ms=100,
@@ -65,7 +65,7 @@ async def session_1_demo():
             jitter=False,  # Disable for predictable demo
         )
     )
-    mcp_tx_session = MCP-TxSession(mock_mcp, config)
+    mcp_tx_session = MCPTxSession(mock_mcp, config)
 
     await mcp_tx_session.initialize()
 
@@ -83,7 +83,7 @@ async def session_1_demo():
     print("🧪 Test 3: Request Deduplication")
 
     mock_mcp = MockMCPSession(failure_rate=0.0)
-    mcp_tx_session = MCP-TxSession(mock_mcp)
+    mcp_tx_session = MCPTxSession(mock_mcp)
     await mcp_tx_session.initialize()
 
     # First call with idempotency key
@@ -109,7 +109,7 @@ async def session_1_demo():
     print("🧪 Test 4: Concurrent Request Handling")
 
     mock_mcp = MockMCPSession(failure_rate=0.2)  # Some failures
-    mcp_tx_session = MCP-TxSession(mock_mcp)
+    mcp_tx_session = MCPTxSession(mock_mcp)
     await mcp_tx_session.initialize()
 
     # Launch multiple concurrent requests
