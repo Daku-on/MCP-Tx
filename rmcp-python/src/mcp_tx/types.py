@@ -1,5 +1,5 @@
 """
-RMCP core types and data structures.
+MCP-Tx core types and data structures.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 
 class MessageStatus(str, Enum):
-    """Status of an RMCP message."""
+    """Status of an MCP-Tx message."""
 
     PENDING = "pending"
     SENT = "sent"
@@ -24,7 +24,7 @@ class MessageStatus(str, Enum):
 
 
 class TransactionStatus(str, Enum):
-    """Status of an RMCP transaction."""
+    """Status of an MCP-Tx transaction."""
 
     INITIATED = "initiated"
     IN_PROGRESS = "in_progress"
@@ -36,8 +36,8 @@ class TransactionStatus(str, Enum):
 
 
 @dataclass
-class RMCPMeta:
-    """RMCP metadata for message enhancement."""
+class MCPTxMeta:
+    """MCP-Tx metadata for message enhancement."""
 
     version: str = "0.1.0"
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -55,8 +55,8 @@ class RMCPMeta:
 
 
 @dataclass
-class RMCPResponse:
-    """RMCP response metadata."""
+class MCPTxResponse:
+    """MCP-Tx response metadata."""
 
     ack: bool
     processed: bool
@@ -84,8 +84,8 @@ class RetryPolicy(BaseModel):
     )
 
 
-class RMCPConfig(BaseModel):
-    """Configuration for RMCP session."""
+class MCPTxConfig(BaseModel):
+    """Configuration for MCP-Tx session."""
 
     enabled: bool = Field(default=True)
     retry_policy: RetryPolicy = Field(default_factory=RetryPolicy)
@@ -97,40 +97,40 @@ class RMCPConfig(BaseModel):
 
 
 @dataclass
-class RMCPResult:
-    """Result wrapper containing both MCP result and RMCP metadata."""
+class MCPTxResult:
+    """Result wrapper containing both MCP result and MCP-Tx metadata."""
 
     result: Any
-    rmcp_meta: RMCPResponse
+    mcp_tx_meta: MCPTxResponse
 
     @property
     def ack(self) -> bool:
         """Whether the request was acknowledged."""
-        return self.rmcp_meta.ack
+        return self.mcp_tx_meta.ack
 
     @property
     def processed(self) -> bool:
         """Whether the tool was actually executed."""
-        return self.rmcp_meta.processed
+        return self.mcp_tx_meta.processed
 
     @property
     def final_status(self) -> str:
         """Final status of the operation."""
-        return self.rmcp_meta.final_status
+        return self.mcp_tx_meta.final_status
 
     @property
     def attempts(self) -> int:
         """Number of retry attempts made."""
-        return self.rmcp_meta.attempts
+        return self.mcp_tx_meta.attempts
 
 
-class RMCPError(Exception):
-    """Base exception for RMCP errors."""
+class MCPTxError(Exception):
+    """Base exception for MCP-Tx errors."""
 
     def __init__(
         self,
         message: str,
-        error_code: str = "RMCP_ERROR",
+        error_code: str = "MCP_TX_ERROR",
         retryable: bool = False,
         details: dict[str, Any] | None = None,
     ):
@@ -141,32 +141,32 @@ class RMCPError(Exception):
         self.details = details or {}
 
 
-class RMCPTimeoutError(RMCPError):
-    """Timeout error for RMCP operations."""
+class MCPTxTimeoutError(MCPTxError):
+    """Timeout error for MCP-Tx operations."""
 
     def __init__(self, message: str, timeout_ms: int):
-        super().__init__(message, error_code="RMCP_TIMEOUT", retryable=True, details={"timeout_ms": timeout_ms})
+        super().__init__(message, error_code="MCP_TX_TIMEOUT", retryable=True, details={"timeout_ms": timeout_ms})
 
 
-class RMCPNetworkError(RMCPError):
-    """Network error for RMCP operations."""
+class MCPTxNetworkError(MCPTxError):
+    """Network error for MCP-Tx operations."""
 
     def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(
             message,
-            error_code="RMCP_NETWORK_ERROR",
+            error_code="MCP_TX_NETWORK_ERROR",
             retryable=True,
             details={"original_error": str(original_error) if original_error else None},
         )
 
 
-class RMCPSequenceError(RMCPError):
-    """Sequence/ordering error for RMCP operations."""
+class MCPTxSequenceError(MCPTxError):
+    """Sequence/ordering error for MCP-Tx operations."""
 
     def __init__(self, message: str, expected: int, received: int):
         super().__init__(
             message,
-            error_code="RMCP_SEQUENCE_ERROR",
+            error_code="MCP_TX_SEQUENCE_ERROR",
             retryable=False,
             details={"expected": expected, "received": received},
         )
@@ -174,7 +174,7 @@ class RMCPSequenceError(RMCPError):
 
 @dataclass
 class RequestTracker:
-    """Tracks the lifecycle of an RMCP request."""
+    """Tracks the lifecycle of an MCP-Tx request."""
 
     request_id: str
     transaction_id: str | None

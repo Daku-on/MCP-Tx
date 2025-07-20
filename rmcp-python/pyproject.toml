@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "rmcp"
+name = "mcp-tx"
 version = "0.1.0"
-description = "Reliable Model Context Protocol - A reliability layer for MCP tool calls"
+description = "MCP-Tx: A reliability layer for MCP tool calls with human-in-the-loop support"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
-    { name = "RMCP Development Team" },
+    { name = "MCP-Tx Development Team" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -22,20 +22,24 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "aiohttp>=3.12.14",
     "anyio>=4.9.0",
+    "openai>=1.97.0",
     "pydantic>=2.11.7",
+    "python-dotenv>=1.0.0",
+    "streamlit>=1.47.0",
 ]
 
 [project.optional-dependencies]
 dev = []
 
 [project.urls]
-Homepage = "https://github.com/reliable-mcp-draft"
-Repository = "https://github.com/reliable-mcp-draft/rmcp-python"
-Documentation = "https://docs.rmcp.dev"
+Homepage = "https://github.com/Daku-on/MCP-Tx"
+Repository = "https://github.com/Daku-on/MCP-Tx/mcp-tx-python"
+Documentation = "https://docs.mcp-tx.dev"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/rmcp"]
+packages = ["src/mcp_tx"]
 
 [tool.ruff]
 line-length = 120
@@ -52,9 +56,21 @@ select = [
     "RUF", # ruff-specific rules
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"examples/real_ai_service.py" = ["E501"]  # Ignore line length in demo AI service
+"examples/research_*.py" = ["E501"]  # Ignore line length in research examples
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+files = ["src/"]
+exclude = ["examples/", "tests/", ".venv/", ".git/"]
+
 [tool.pyright]
 include = ["src"]
-exclude = ["**/__pycache__"]
+exclude = ["**/__pycache__", "examples/"]
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "strict"

@@ -1,15 +1,15 @@
-"""Tests for FastRMCP decorator-based API."""
+"""Tests for FastMCPTx decorator-based API."""
 
 from unittest.mock import AsyncMock
 
 import anyio
 import pytest
 
-from rmcp import FastRMCP, RetryPolicy, RMCPResponse, RMCPResult
+from mcp_tx import FastMCPTx, MCPTxResponse, MCPTxResult, RetryPolicy
 
 
-class TestFastRMCP:
-    """Test FastRMCP decorator functionality."""
+class TestFastMCPTx:
+    """Test FastMCPTx decorator functionality."""
 
     @pytest.fixture
     def mock_mcp_session(self):
@@ -19,22 +19,22 @@ class TestFastRMCP:
         return session
 
     @pytest.fixture
-    async def fastrmcp_app(self, mock_mcp_session):
-        """Create FastRMCP app with mock session."""
-        app = FastRMCP(mock_mcp_session, name="Test App")
+    async def fastmcptx_app(self, mock_mcp_session):
+        """Create FastMCPTx app with mock session."""
+        app = FastMCPTx(mock_mcp_session, name="Test App")
         await app.initialize()
         return app
 
-    def test_fastrmcp_creation(self, mock_mcp_session):
-        """Test FastRMCP app creation."""
-        app = FastRMCP(mock_mcp_session, name="Test App")
+    def test_fastmcp_tx_creation(self, mock_mcp_session):
+        """Test FastMCPTx app creation."""
+        app = FastMCPTx(mock_mcp_session, name="Test App")
         assert app.name == "Test App"
         assert not app._initialized
         assert app.list_tools() == []
 
     def test_tool_decorator_basic(self, mock_mcp_session):
         """Test basic tool registration with decorator."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool()
         def simple_tool(x: int) -> str:
@@ -54,7 +54,7 @@ class TestFastRMCP:
 
     def test_tool_decorator_async(self, mock_mcp_session):
         """Test async tool registration."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool()
         async def async_tool(data: dict) -> dict:
@@ -70,7 +70,7 @@ class TestFastRMCP:
         """Test tool registration with custom options."""
         retry_policy = RetryPolicy(max_attempts=5, base_delay_ms=2000)
 
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool(
             name="custom_tool", retry_policy=retry_policy, timeout_ms=30000, description="Custom tool description"
@@ -91,7 +91,7 @@ class TestFastRMCP:
 
     def test_tool_decorator_wrong_usage(self, mock_mcp_session):
         """Test error handling for incorrect decorator usage."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         with pytest.raises(TypeError, match="requires parentheses"):
 
@@ -100,27 +100,29 @@ class TestFastRMCP:
                 pass
 
     @pytest.mark.anyio
-    async def test_call_tool_success(self, fastrmcp_app, mock_mcp_session):
-        """Test successful tool call through FastRMCP."""
+    async def test_call_tool_success(self, fastmcptx_app, mock_mcp_session):
+        """Test successful tool call through FastMCPTx."""
 
         # Register a tool
-        @fastrmcp_app.tool()
+        @fastmcptx_app.tool()
         def test_tool(x: int) -> str:
             return str(x)
 
-        # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
-            return_value=RMCPResult(
+        # Mock MCP-Tx session response
+        fastmcptx_app._mcp_tx_session.call_tool = AsyncMock(
+            return_value=MCPTxResult(
                 result={"output": "42"},
-                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
+                mcp_tx_meta=MCPTxResponse(
+                    ack=True, processed=True, duplicate=False, attempts=1, final_status="success"
+                ),
             )
         )
 
         # Call tool
-        result = await fastrmcp_app.call_tool("test_tool", {"x": 42})
+        result = await fastmcptx_app.call_tool("test_tool", {"x": 42})
 
         # Verify call was made with correct parameters
-        fastrmcp_app._rmcp_session.call_tool.assert_called_once_with(
+        fastmcptx_app._mcp_tx_session.call_tool.assert_called_once_with(
             name="test_tool",
             arguments={"x": 42},
             retry_policy=None,
@@ -129,32 +131,34 @@ class TestFastRMCP:
         )
 
         # Verify result
-        assert result.rmcp_meta.ack
+        assert result.mcp_tx_meta.ack
         assert result.result == {"output": "42"}
 
     @pytest.mark.anyio
-    async def test_call_tool_with_custom_policies(self, fastrmcp_app):
+    async def test_call_tool_with_custom_policies(self, fastmcptx_app):
         """Test tool call with custom retry policy and timeout."""
         retry_policy = RetryPolicy(max_attempts=3, base_delay_ms=1000)
 
         # Register tool with custom policies
-        @fastrmcp_app.tool(retry_policy=retry_policy, timeout_ms=15000)
+        @fastmcptx_app.tool(retry_policy=retry_policy, timeout_ms=15000)
         def custom_tool(data: str) -> str:
             return data.upper()
 
-        # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
-            return_value=RMCPResult(
+        # Mock MCP-Tx session response
+        fastmcptx_app._mcp_tx_session.call_tool = AsyncMock(
+            return_value=MCPTxResult(
                 result={"output": "HELLO"},
-                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=2, final_status="success"),
+                mcp_tx_meta=MCPTxResponse(
+                    ack=True, processed=True, duplicate=False, attempts=2, final_status="success"
+                ),
             )
         )
 
         # Call tool
-        result = await fastrmcp_app.call_tool("custom_tool", {"data": "hello"})
+        result = await fastmcptx_app.call_tool("custom_tool", {"data": "hello"})
 
         # Verify custom policies were passed
-        fastrmcp_app._rmcp_session.call_tool.assert_called_once_with(
+        fastmcptx_app._mcp_tx_session.call_tool.assert_called_once_with(
             name="custom_tool",
             arguments={"data": "hello"},
             retry_policy=retry_policy,
@@ -162,34 +166,36 @@ class TestFastRMCP:
             idempotency_key=None,
         )
 
-        assert result.rmcp_meta.attempts == 2
+        assert result.mcp_tx_meta.attempts == 2
 
     @pytest.mark.anyio
-    async def test_call_tool_with_idempotency_key_generator(self, fastrmcp_app):
+    async def test_call_tool_with_idempotency_key_generator(self, fastmcptx_app):
         """Test tool call with custom idempotency key generator."""
 
         def generate_key(args: dict) -> str:
             return f"custom-{args['id']}-{args['action']}"
 
         # Register tool with idempotency key generator
-        @fastrmcp_app.tool(idempotency_key_generator=generate_key)
+        @fastmcptx_app.tool(idempotency_key_generator=generate_key)
         def idempotent_tool(id: str, action: str) -> str:
             return f"Processed {action} for {id}"
 
-        # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
-            return_value=RMCPResult(
+        # Mock MCP-Tx session response
+        fastmcptx_app._mcp_tx_session.call_tool = AsyncMock(
+            return_value=MCPTxResult(
                 result={"output": "Processed update for user123"},
-                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
+                mcp_tx_meta=MCPTxResponse(
+                    ack=True, processed=True, duplicate=False, attempts=1, final_status="success"
+                ),
             )
         )
 
         # Call tool
         arguments = {"id": "user123", "action": "update"}
-        await fastrmcp_app.call_tool("idempotent_tool", arguments)
+        await fastmcptx_app.call_tool("idempotent_tool", arguments)
 
         # Verify generated idempotency key was used
-        fastrmcp_app._rmcp_session.call_tool.assert_called_once_with(
+        fastmcptx_app._mcp_tx_session.call_tool.assert_called_once_with(
             name="idempotent_tool",
             arguments=arguments,
             retry_policy=None,
@@ -198,27 +204,27 @@ class TestFastRMCP:
         )
 
     @pytest.mark.anyio
-    async def test_call_tool_not_registered(self, fastrmcp_app):
+    async def test_call_tool_not_registered(self, fastmcptx_app):
         """Test error when calling unregistered tool."""
         with pytest.raises(ValueError, match="Tool 'nonexistent' not registered"):
-            await fastrmcp_app.call_tool("nonexistent", {})
+            await fastmcptx_app.call_tool("nonexistent", {})
 
     @pytest.mark.anyio
     async def test_call_tool_not_initialized(self, mock_mcp_session):
         """Test error when calling tool before initialization."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool()
         def test_tool():
             return "test"
 
-        with pytest.raises(RuntimeError, match="FastRMCP not initialized"):
+        with pytest.raises(RuntimeError, match="FastMCP-Tx not initialized"):
             await app.call_tool("test_tool", {})
 
     @pytest.mark.anyio
     async def test_context_manager(self, mock_mcp_session):
-        """Test FastRMCP as async context manager."""
-        app = FastRMCP(mock_mcp_session, name="Context Test")
+        """Test FastMCPTx as async context manager."""
+        app = FastMCPTx(mock_mcp_session, name="Context Test")
 
         assert not app._initialized
 
@@ -230,21 +236,21 @@ class TestFastRMCP:
                 return "works"
 
             # Should be able to call tools within context
-            app._rmcp_session.call_tool = AsyncMock(
-                return_value=RMCPResult(
+            app._mcp_tx_session.call_tool = AsyncMock(
+                return_value=MCPTxResult(
                     result={"output": "works"},
-                    rmcp_meta=RMCPResponse(
+                    mcp_tx_meta=MCPTxResponse(
                         ack=True, processed=True, duplicate=False, attempts=1, final_status="success"
                     ),
                 )
             )
 
             result = await app.call_tool("context_tool", {})
-            assert result.rmcp_meta.ack
+            assert result.mcp_tx_meta.ack
 
     def test_get_all_tools_info(self, mock_mcp_session):
         """Test getting information about all registered tools."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool()
         def tool1(x: int) -> str:
@@ -272,7 +278,7 @@ class TestFastRMCP:
 
     def test_tool_registry_size_limit(self, mock_mcp_session):
         """Test tool registry size limit enforcement."""
-        app = FastRMCP(mock_mcp_session, max_tools=2)
+        app = FastMCPTx(mock_mcp_session, max_tools=2)
 
         @app.tool()
         def tool1() -> str:
@@ -291,7 +297,7 @@ class TestFastRMCP:
 
     def test_tool_name_collision(self, mock_mcp_session):
         """Test tool name collision detection."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         @app.tool()
         def duplicate_tool() -> str:
@@ -307,7 +313,7 @@ class TestFastRMCP:
     @pytest.mark.anyio
     async def test_concurrent_initialization(self, mock_mcp_session):
         """Test concurrent initialization safety."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         # Start multiple initialization tasks concurrently
         async with anyio.create_task_group() as tg:
@@ -318,68 +324,70 @@ class TestFastRMCP:
         assert app._initialized
 
     @pytest.mark.anyio
-    async def test_get_all_tools_info_with_none_values(self, fastrmcp_app):
+    async def test_get_all_tools_info_with_none_values(self, fastmcptx_app):
         """Test get_all_tools_info handles None values correctly."""
 
-        @fastrmcp_app.tool()
+        @fastmcptx_app.tool()
         def test_tool() -> str:
             return "test"
 
         # Mock get_tool_info to return None for some tools
-        original_get_tool_info = fastrmcp_app.get_tool_info
+        original_get_tool_info = fastmcptx_app.get_tool_info
 
         def mock_get_tool_info(name: str):
             if name == "test_tool":
                 return original_get_tool_info(name)
             return None
 
-        fastrmcp_app.get_tool_info = mock_get_tool_info
+        fastmcptx_app.get_tool_info = mock_get_tool_info
 
-        all_info = fastrmcp_app.get_all_tools_info()
+        all_info = fastmcptx_app.get_all_tools_info()
 
         # Should only include tools with non-None info
         assert "test_tool" in all_info
         assert len(all_info) == 1
 
     @pytest.mark.anyio
-    async def test_concurrent_tool_calls(self, fastrmcp_app):
+    async def test_concurrent_tool_calls(self, fastmcptx_app):
         """Test concurrent tool calls for thread safety."""
 
-        @fastrmcp_app.tool()
+        @fastmcptx_app.tool()
         def concurrent_tool(value: int) -> int:
             return value * 2
 
-        # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
-            side_effect=lambda name, arguments, **kwargs: RMCPResult(
+        # Mock MCP-Tx session response
+        fastmcptx_app._mcp_tx_session.call_tool = AsyncMock(
+            side_effect=lambda name, arguments, **kwargs: MCPTxResult(
                 result={"output": arguments["value"] * 2},
-                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
+                mcp_tx_meta=MCPTxResponse(
+                    ack=True, processed=True, duplicate=False, attempts=1, final_status="success"
+                ),
             )
         )
 
         # Execute multiple concurrent tool calls
         async def make_concurrent_call(value: int):
-            return await fastrmcp_app.call_tool("concurrent_tool", {"value": value})
+            return await fastmcptx_app.call_tool("concurrent_tool", {"value": value})
 
         # Start 10 concurrent calls
         async with anyio.create_task_group() as tg:
             for i in range(10):
                 tg.start_soon(make_concurrent_call, i)
 
-        # Verify RMCP session was called for each task
-        assert fastrmcp_app._rmcp_session.call_tool.call_count == 10
+        # Verify MCP-Tx session was called for each task
+        assert fastmcptx_app._mcp_tx_session.call_tool.call_count == 10
 
     @pytest.mark.anyio
-    async def test_deep_copy_protection(self, fastrmcp_app):
+    async def test_deep_copy_protection(self, fastmcptx_app):
         """Test that tool configurations are protected from mutation."""
 
-        @fastrmcp_app.tool(timeout_ms=5000)
+        @fastmcptx_app.tool(timeout_ms=5000)
         def protected_tool() -> str:
             return "protected"
 
         # Get tool config twice
-        config1 = fastrmcp_app._registry.get_tool("protected_tool")
-        config2 = fastrmcp_app._registry.get_tool("protected_tool")
+        config1 = fastmcptx_app._registry.get_tool("protected_tool")
+        config2 = fastmcptx_app._registry.get_tool("protected_tool")
 
         # They should be separate objects
         assert config1 is not config2
@@ -393,7 +401,7 @@ class TestFastRMCP:
 
     def test_optimized_get_all_tools_info_performance(self, mock_mcp_session):
         """Test that get_all_tools_info is efficiently implemented."""
-        app = FastRMCP(mock_mcp_session)
+        app = FastMCPTx(mock_mcp_session)
 
         # Register multiple tools
         for i in range(100):
@@ -412,27 +420,27 @@ class TestFastRMCP:
             assert all_info[tool_name]["timeout_ms"] == 1000 + i
 
     @pytest.mark.anyio
-    async def test_input_validation(self, fastrmcp_app):
+    async def test_input_validation(self, fastmcptx_app):
         """Test input validation for call_tool method."""
 
-        @fastrmcp_app.tool()
+        @fastmcptx_app.tool()
         def test_tool(x: int) -> str:
             return str(x)
 
         # Test invalid tool name
         with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
-            await fastrmcp_app.call_tool("", {"x": 1})
+            await fastmcptx_app.call_tool("", {"x": 1})
 
         with pytest.raises(ValueError, match="Tool name must be a non-empty string"):
-            await fastrmcp_app.call_tool("   ", {"x": 1})
+            await fastmcptx_app.call_tool("   ", {"x": 1})
 
         # Test invalid arguments
         with pytest.raises(ValueError, match="Arguments must be a dictionary"):
-            await fastrmcp_app.call_tool("test_tool", "not a dict")  # type: ignore
+            await fastmcptx_app.call_tool("test_tool", "not a dict")  # type: ignore
 
         with pytest.raises(ValueError, match="Arguments must be a dictionary"):
-            await fastrmcp_app.call_tool("test_tool", None)  # type: ignore
+            await fastmcptx_app.call_tool("test_tool", None)  # type: ignore
 
         # Test invalid idempotency key
         with pytest.raises(ValueError, match="Idempotency key must be a string or None"):
-            await fastrmcp_app.call_tool("test_tool", {"x": 1}, idempotency_key=123)  # type: ignore
+            await fastmcptx_app.call_tool("test_tool", {"x": 1}, idempotency_key=123)  # type: ignore

@@ -1,17 +1,17 @@
-"""FastRMCP Example - Decorator-based RMCP reliability.
+"""FastMCPTx Example - Decorator-based MCP-Tx reliability.
 
-This example demonstrates how to use FastRMCP to add RMCP reliability features
+This example demonstrates how to use FastMCPTx to add MCP-Tx reliability features
 to MCP tools using decorators, similar to FastMCP but for client-side reliability.
 """
 
 import asyncio
 from datetime import datetime
 
-from rmcp import FastRMCP, RetryPolicy, RMCPConfig
+from mcp_tx import FastMCPTx, MCPTxConfig, RetryPolicy
 
 
 async def main():
-    """FastRMCP example with decorator-based tool registration."""
+    """FastMCPTx example with decorator-based tool registration."""
 
     # Create a mock MCP session for demonstration
     # In real usage, you would connect to an actual MCP server
@@ -62,20 +62,20 @@ async def main():
     # Create mock MCP session
     mcp_session = MockMCPSession()
 
-    # Create FastRMCP app with custom configuration
-    config = RMCPConfig(
+    # Create FastMCPTx app with custom configuration
+    config = MCPTxConfig(
         default_timeout_ms=10000,  # 10 second default timeout
         max_concurrent_requests=5,
         deduplication_window_ms=300000,  # 5 minute deduplication window
     )
 
-    app = FastRMCP(mcp_session, config=config, name="Example RMCP App")
+    app = FastMCPTx(mcp_session, config=config, name="Example MCP-Tx App")
 
     # Register tools with decorators
 
     @app.tool()
     async def simple_echo(message: str) -> str:
-        """Simple echo tool with default RMCP reliability."""
+        """Simple echo tool with default MCP-Tx reliability."""
         # This tool gets automatic retry, idempotency, and ACK/NACK handling
         return f"Echo: {message}"
 
@@ -111,7 +111,7 @@ async def main():
         """Database query tool with connection reliability."""
         return {"query": query, "params": params or {}}
 
-    # Initialize and use the FastRMCP app
+    # Initialize and use the FastMCPTx app
     async with app:
         print(f"🚀 Started {app.name}")
         print(f"📋 Registered tools: {app.list_tools()}")
@@ -130,10 +130,10 @@ async def main():
         # Example 1: Simple tool call
         print("📞 Example 1: Simple echo tool")
         try:
-            result = await app.call_tool("simple_echo", {"message": "Hello, RMCP!"})
+            result = await app.call_tool("simple_echo", {"message": "Hello, MCP-Tx!"})
             print(f"  ✅ Result: {result.result}")
-            print(f"  📊 Attempts: {result.rmcp_meta.attempts}")
-            print(f"  🔄 Duplicate: {result.rmcp_meta.duplicate}")
+            print(f"  📊 Attempts: {result.mcp_tx_meta.attempts}")
+            print(f"  🔄 Duplicate: {result.mcp_tx_meta.duplicate}")
         except Exception as e:
             print(f"  ❌ Error: {e}")
         print()
@@ -143,8 +143,8 @@ async def main():
         try:
             result = await app.call_tool("unreliable_api", {"endpoint": "/users", "data": {"filter": "active"}})
             print(f"  ✅ Result: {result.result}")
-            print(f"  📊 Attempts: {result.rmcp_meta.attempts}")
-            print(f"  ⏱️  Final status: {result.rmcp_meta.final_status}")
+            print(f"  📊 Attempts: {result.mcp_tx_meta.attempts}")
+            print(f"  ⏱️  Final status: {result.mcp_tx_meta.final_status}")
         except Exception as e:
             print(f"  ❌ Error: {e}")
         print()
@@ -159,8 +159,8 @@ async def main():
                 result = await app.call_tool("file_processor", {"filename": filename, "operation": "backup"})
                 print(f"  Call {i + 1}:")
                 print(f"    ✅ Result: {result.result}")
-                print(f"    🔄 Duplicate: {result.rmcp_meta.duplicate}")
-                print(f"    📊 Attempts: {result.rmcp_meta.attempts}")
+                print(f"    🔄 Duplicate: {result.mcp_tx_meta.duplicate}")
+                print(f"    📊 Attempts: {result.mcp_tx_meta.attempts}")
             except Exception as e:
                 print(f"  ❌ Error: {e}")
         print()
@@ -172,8 +172,8 @@ async def main():
                 "db_query", {"query": "SELECT * FROM users WHERE active = ?", "params": {"active": True}}
             )
             print(f"  ✅ Result: {result.result}")
-            print(f"  📊 Attempts: {result.rmcp_meta.attempts}")
-            print(f"  ✅ ACK received: {result.rmcp_meta.ack}")
+            print(f"  📊 Attempts: {result.mcp_tx_meta.attempts}")
+            print(f"  ✅ ACK received: {result.mcp_tx_meta.ack}")
         except Exception as e:
             print(f"  ❌ Error: {e}")
         print()
@@ -196,11 +196,11 @@ async def main():
                 if isinstance(result, Exception):
                     print(f"  Task {i}: ❌ {result}")
                 else:
-                    print(f"  Task {i}: ✅ Attempts: {result.rmcp_meta.attempts}, ACK: {result.rmcp_meta.ack}")
+                    print(f"  Task {i}: ✅ Attempts: {result.mcp_tx_meta.attempts}, ACK: {result.mcp_tx_meta.ack}")
         except Exception as e:
             print(f"  ❌ Parallel execution error: {e}")
 
-        print("\n🎉 FastRMCP example completed!")
+        print("\n🎉 FastMCPTx example completed!")
 
 
 if __name__ == "__main__":

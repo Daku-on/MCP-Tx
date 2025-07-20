@@ -1,1 +1,1 @@
-"""RMCP tests."""
+"""MCP-Tx tests."""

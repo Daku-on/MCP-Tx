@@ -1,15 +1,15 @@
-# RMCP Session 1 Implementation Summary
+# MCP-Tx Session 1 Implementation Summary
 
-## 🎯 Goal Achieved: Working Python RMCP with Basic Reliability
+## 🎯 Goal Achieved: Working Python MCP-Tx with Basic Reliability
 
 **Session 1 Status: ✅ COMPLETED**
 
 ## 📦 Implemented Features
 
 ### Core Infrastructure
-- [x] **RMCPSession Class** - Wraps any MCP BaseSession with reliability features
-- [x] **Type System** - Complete type definitions for RMCP metadata and responses
-- [x] **Configuration** - Flexible configuration system with RMCPConfig and RetryPolicy
+- [x] **MCP-TxSession Class** - Wraps any MCP BaseSession with reliability features
+- [x] **Type System** - Complete type definitions for MCP-Tx metadata and responses
+- [x] **Configuration** - Flexible configuration system with MCP-TxConfig and RetryPolicy
 - [x] **Error Handling** - Comprehensive error hierarchy with retryable/non-retryable classification
 
 ### Reliability Features  
@@ -23,17 +23,17 @@
 ### MCP Integration
 - [x] **Capability Negotiation** - Uses MCP's `experimental` field for feature detection
 - [x] **Backward Compatibility** - 100% compatible, falls back to standard MCP gracefully
-- [x] **Metadata Enhancement** - Embeds RMCP metadata in `_meta.rmcp` fields
+- [x] **Metadata Enhancement** - Embeds MCP-Tx metadata in `_meta.mcp_tx` fields
 - [x] **Transport Agnostic** - Works with any MCP transport (stdio, WebSocket, HTTP)
 
 ## 📁 Project Structure
 
 ```
-rmcp-python/
-├── src/rmcp/
+mcp-tx-python/
+├── src/mcp_tx/
 │   ├── __init__.py          # Main exports
 │   ├── types.py             # Core types and data structures
-│   ├── session.py           # RMCPSession implementation
+│   ├── session.py           # MCP-TxSession implementation
 │   ├── version.py           # Version info
 │   └── py.typed             # Type hints marker
 ├── tests/
@@ -50,7 +50,7 @@ rmcp-python/
 ## 🧪 Testing & Validation
 
 ### Test Coverage
-- **Type System Tests** - Validates all RMCP types, serialization, and validation
+- **Type System Tests** - Validates all MCP-Tx types, serialization, and validation
 - **Session Tests** - Tests core functionality including:
   - Capability negotiation
   - Successful tool calls
@@ -66,7 +66,7 @@ rmcp-python/
 uv run pytest
 
 # Run with coverage
-uv run pytest --cov=rmcp
+uv run pytest --cov=mcp_tx
 
 # Run specific test file
 uv run pytest tests/test_session.py
@@ -88,15 +88,15 @@ uv run python examples/basic_usage.py
 
 ```python
 import asyncio
-from rmcp import RMCPSession, RMCPConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 async def main():
     # Wrap any existing MCP session
-    rmcp_session = RMCPSession(mcp_session)
-    await rmcp_session.initialize()
+    mcp_tx_session = MCPTxSession(mcp_session)
+    await mcp_tx_session.initialize()
     
     # Enhanced tool calls with reliability guarantees
-    result = await rmcp_session.call_tool(
+    result = await mcp_tx_session.call_tool(
         "file_writer",
         {"path": "/tmp/data.json", "content": "test"},
         idempotency_key="write_config_v1"
@@ -107,7 +107,7 @@ async def main():
     assert result.processed is True
     assert result.final_status == "completed"
     
-    await rmcp_session.close()
+    await mcp_tx_session.close()
 
 asyncio.run(main())
 ```
@@ -122,10 +122,10 @@ asyncio.run(main())
 
 ## 🎯 Session 1 Deliverable: ✅ ACHIEVED
 
-**"Functional Python RMCP client that wraps MCP"**
+**"Functional Python MCP-Tx client that wraps MCP""
 
 The implementation successfully provides:
-1. **Working RMCP wrapper** that enhances any MCP session
+1. **Working MCP-Tx wrapper** that enhances any MCP session
 2. **Basic reliability guarantees** via ACK/NACK and retry
 3. **Request deduplication** preventing duplicate tool execution
 4. **Complete backward compatibility** with existing MCP implementations
@@ -143,7 +143,7 @@ Ready for advanced features:
 
 ## 🏆 Session 1 Success Criteria: ALL MET
 
-- ✅ RMCP client can wrap any MCP session
+- ✅ MCP-Tx client can wrap any MCP session
 - ✅ ACK/NACK mechanism working for tool calls
 - ✅ Basic retry on network failures
 - ✅ Request deduplication prevents duplicate execution

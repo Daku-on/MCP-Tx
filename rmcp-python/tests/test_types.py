@@ -1,24 +1,24 @@
-"""Test RMCP types and data structures."""
+"""Test MCP-Tx types and data structures."""
 
 from datetime import datetime
 
 import pytest
 
-from rmcp.types import (
+from mcp_tx.types import (
+    MCPTxConfig,
+    MCPTxMeta,
+    MCPTxResponse,
+    MCPTxResult,
     MessageStatus,
     RequestTracker,
     RetryPolicy,
-    RMCPConfig,
-    RMCPMeta,
-    RMCPResponse,
-    RMCPResult,
     TransactionStatus,
 )
 
 
-def test_rmcp_meta_creation():
-    """Test RMCPMeta creation and serialization."""
-    meta = RMCPMeta(idempotency_key="test-key", timeout_ms=5000)
+def test_mcp_tx_meta_creation():
+    """Test MCPTxMeta creation and serialization."""
+    meta = MCPTxMeta(idempotency_key="test-key", timeout_ms=5000)
 
     assert meta.version == "0.1.0"
     assert meta.idempotency_key == "test-key"
@@ -35,9 +35,9 @@ def test_rmcp_meta_creation():
     assert "timeout_ms" in data
 
 
-def test_rmcp_response():
-    """Test RMCPResponse creation."""
-    response = RMCPResponse(ack=True, processed=True, attempts=2, final_status="completed")
+def test_mcp_tx_response():
+    """Test MCPTxResponse creation."""
+    response = MCPTxResponse(ack=True, processed=True, attempts=2, final_status="completed")
 
     assert response.ack is True
     assert response.processed is True
@@ -52,11 +52,11 @@ def test_rmcp_response():
     assert data["attempts"] == 2
 
 
-def test_rmcp_result():
-    """Test RMCPResult wrapper."""
-    response_meta = RMCPResponse(ack=True, processed=True, attempts=1, final_status="completed")
+def test_mcp_tx_result():
+    """Test MCPTxResult wrapper."""
+    response_meta = MCPTxResponse(ack=True, processed=True, attempts=1, final_status="completed")
 
-    result = RMCPResult(result={"data": "test"}, rmcp_meta=response_meta)
+    result = MCPTxResult(result={"data": "test"}, mcp_tx_meta=response_meta)
 
     # Test convenience properties
     assert result.ack is True
@@ -94,9 +94,9 @@ def test_retry_policy_validation():
         RetryPolicy(max_attempts=20)  # Too high
 
 
-def test_rmcp_config_defaults():
-    """Test RMCPConfig default values."""
-    config = RMCPConfig()
+def test_mcp_tx_config_defaults():
+    """Test MCPTxConfig default values."""
+    config = MCPTxConfig()
 
     assert config.enabled is True
     assert config.default_timeout_ms == 30000
