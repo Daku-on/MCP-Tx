@@ -103,14 +103,14 @@ await rmcp_session.call_tool(
 )
 ```
 
-## FastMCP-Txデコレータ機能
+## FastMCPTxデコレータ機能
 
 ### ツールレベル設定
 
 ```python
-from mcp_tx import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 
-app = FastMCP-Tx(mcp_session)
+app = FastMCPTx(mcp_session)
 
 @app.tool(
     retry_policy=RetryPolicy(max_attempts=3),
@@ -124,7 +124,7 @@ async def process_data(id: str, data: dict) -> dict:
 
 ### 自動機能
 
-FastMCP-Txデコレータ使用時の自動機能：
+FastMCPTxデコレータ使用時の自動機能：
 - 入力検証
 - 型チェック
 - スレッドセーフ実行

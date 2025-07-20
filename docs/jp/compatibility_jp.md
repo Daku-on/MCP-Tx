@@ -129,13 +129,13 @@ import anyio
 
 # asyncioで動作（デフォルト）
 import asyncio
-app = FastMCP-Tx(mcp_session)  # asyncioを使用
+app = FastMCPTx(mcp_session)  # asyncioを使用
 
 # trioでも動作
 import trio
 async def with_trio():
     async with anyio.create_task_group() as tg:
-        app = FastMCP-Tx(mcp_session)
+        app = FastMCPTx(mcp_session)
         tg.start_soon(app.initialize)
 ```
 
@@ -278,7 +278,7 @@ async def safe_call_tool(app, name, arguments):
 
 ```python
 import pytest
-from mcp_tx import FastMCP-Tx, MCPTxSession
+from mcp_tx import FastMCPTx, MCPTxSession
 
 @pytest.mark.compatibility
 class TestCompatibility:
@@ -310,7 +310,7 @@ class TestCompatibility:
     async def test_feature_degradation(self, limited_server):
         """優雅な機能劣化をテスト"""
         # サーバーはACKのみをサポート、リトライはなし
-        app = FastMCP-Tx(limited_server)
+        app = FastMCPTx(limited_server)
         
         @app.tool(retry_policy=RetryPolicy(max_attempts=3))
         async def test_tool():

@@ -5,15 +5,15 @@
 ## トランザクション追跡付きマルチステップワークフロー
 
 ```python
-from mcp_tx import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 import uuid
 
-app = FastMCP-Tx(mcp_session)
+app = FastMCPTx(mcp_session)
 
 class WorkflowManager:
     """MCP-Tx信頼性を持つ複雑なマルチステップワークフローを管理"""
     
-    def __init__(self, app: FastMCP-Tx):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.workflows = {}
     
@@ -174,7 +174,7 @@ trace_context = contextvars.ContextVar('trace_context', default=None)
 class TracedMCP-Tx:
     """分散トレーシングサポート付きMCP-Tx"""
     
-    def __init__(self, app: FastMCP-Tx):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.tracer = trace.get_tracer(__name__)
     
@@ -254,7 +254,7 @@ class RateLimiter:
 class ThrottledMCP-Tx:
     """レート制限付きMCP-Tx"""
     
-    def __init__(self, app: FastMCP-Tx, requests_per_second: int = 10):
+    def __init__(self, app: FastMCPTx, requests_per_second: int = 10):
         self.app = app
         self.limiter = RateLimiter(requests_per_second, requests_per_second * 2)
     
@@ -299,7 +299,7 @@ class SagaStep:
 class DistributedSaga:
     """分散トランザクション用Sagaパターンの実装"""
     
-    def __init__(self, app: FastMCP-Tx):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.logger = logging.getLogger(__name__)
     
@@ -382,7 +382,7 @@ result = await saga.execute(order_saga)
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 
 class MCP-TxMiddleware:
@@ -407,7 +407,7 @@ class MCP-TxMiddleware:
             asyncio.set_event_loop(loop)
             
             mcp_session = self._create_mcp_session()
-            MCP-TxMiddleware._instance = FastMCP-Tx(mcp_session, config)
+            MCP-TxMiddleware._instance = FastMCPTx(mcp_session, config)
             
             loop.run_until_complete(MCP-TxMiddleware._instance.initialize())
     
@@ -461,7 +461,7 @@ class HealthMetrics:
 class MonitoredMCP-Tx:
     """包括的なモニタリング付きMCP-Tx"""
     
-    def __init__(self, app: FastMCP-Tx, alert_threshold: float = 0.95):
+    def __init__(self, app: FastMCPTx, alert_threshold: float = 0.95):
         self.app = app
         self.alert_threshold = alert_threshold
         self.metrics = defaultdict(HealthMetrics)
@@ -529,7 +529,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 api = FastAPI()
-rmcp_app = FastMCP-Tx(mcp_session)
+rmcp_app = FastMCPTx(mcp_session)
 
 class ToolRequest(BaseModel):
     tool_name: str

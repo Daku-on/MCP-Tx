@@ -9,7 +9,7 @@
 ```python
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioTransport
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 
 async def connect_to_mcp_server():
@@ -28,7 +28,7 @@ async def connect_to_mcp_server():
             enable_request_logging=True
         )
         
-        app = FastMCP-Tx(mcp_session, config)
+        app = FastMCPTx(mcp_session, config)
         
         # ツールラッパーを登録
         @app.tool()
@@ -63,7 +63,7 @@ class MultiServerMCP-Tx:
         session = ClientSession(transport)
         await session.__aenter__()
         
-        app = FastMCP-Tx(session, name=f"MCP-Tx-{name}")
+        app = FastMCPTx(session, name=f"MCP-Tx-{name}")
         await app.initialize()
         
         self.servers[name] = session
@@ -129,7 +129,7 @@ file_result = await multi_server.call_server_tool(
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 
 class MCP-TxMiddleware:
@@ -154,7 +154,7 @@ class MCP-TxMiddleware:
             asyncio.set_event_loop(loop)
             
             mcp_session = self._create_mcp_session()
-            MCP-TxMiddleware._instance = FastMCP-Tx(mcp_session, config)
+            MCP-TxMiddleware._instance = FastMCPTx(mcp_session, config)
             
             loop.run_until_complete(MCP-TxMiddleware._instance.initialize())
     
@@ -191,7 +191,7 @@ def process_with_rmcp(request):
 ```python
 # rmcp_flask/extension.py
 from flask import Flask, g
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 from functools import wraps
 
@@ -224,7 +224,7 @@ class FlaskMCP-Tx:
         
         # セッションとMCP-Txを作成
         mcp_session = self._create_mcp_session()
-        self._rmcp = FastMCP-Tx(mcp_session, config)
+        self._rmcp = FastMCPTx(mcp_session, config)
         
         # イベントループで初期化
         loop = asyncio.new_event_loop()
@@ -267,7 +267,7 @@ def execute_tool(tool_name):
 ```python
 # rmcp_celery/tasks.py
 from celery import Celery, Task
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 import asyncio
 
 app = Celery('rmcp_tasks')
@@ -287,7 +287,7 @@ class MCP-TxTask(Task):
             )
             
             mcp_session = self._create_mcp_session()
-            MCP-TxTask._rmcp = FastMCP-Tx(mcp_session, config)
+            MCP-TxTask._rmcp = FastMCPTx(mcp_session, config)
             
             # 初期化
             loop = asyncio.new_event_loop()
@@ -366,7 +366,7 @@ class MCP-TxOperation(Base):
 class DatabaseTrackedMCP-Tx:
     """データベース追跡付きMCP-Tx"""
     
-    def __init__(self, app: FastMCP-Tx, db_url: str):
+    def __init__(self, app: FastMCPTx, db_url: str):
         self.app = app
         self.engine = create_engine(db_url)
         Base.metadata.create_all(self.engine)
@@ -447,7 +447,7 @@ import json
 class RabbitMQMCP-Tx:
     """非同期処理用RabbitMQ付きMCP-Tx"""
     
-    def __init__(self, app: FastMCP-Tx, amqp_url: str):
+    def __init__(self, app: FastMCPTx, amqp_url: str):
         self.app = app
         self.amqp_url = amqp_url
         self.connection = None
@@ -541,7 +541,7 @@ class RabbitMQMCP-Tx:
 # lambda_handler.py
 import json
 import asyncio
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 
 # 接続再利用のためハンドラー外で初期化
 rmcp_app = None
@@ -561,7 +561,7 @@ def get_rmcp_app():
         
         # MCPセッションを作成（実装固有）
         mcp_session = create_lambda_mcp_session()
-        rmcp_app = FastMCP-Tx(mcp_session, config)
+        rmcp_app = FastMCPTx(mcp_session, config)
         
         # 初期化
         loop = asyncio.new_event_loop()
@@ -632,7 +632,7 @@ class ConnectionPool:
         self.connections = []
         self.available = asyncio.Queue(maxsize=max_connections)
     
-    async def acquire(self) -> FastMCP-Tx:
+    async def acquire(self) -> FastMCPTx:
         """プールから接続を取得"""
         if not self.connections:
             # 初期接続を作成
@@ -643,14 +643,14 @@ class ConnectionPool:
         
         return await self.available.get()
     
-    async def release(self, app: FastMCP-Tx):
+    async def release(self, app: FastMCPTx):
         """接続をプールに戻す"""
         await self.available.put(app)
     
-    async def _create_connection(self) -> FastMCP-Tx:
+    async def _create_connection(self) -> FastMCPTx:
         """新しいMCP-Tx接続を作成"""
         mcp_session = await create_mcp_session()
-        app = FastMCP-Tx(mcp_session)
+        app = FastMCPTx(mcp_session)
         await app.initialize()
         return app
 ```
@@ -662,7 +662,7 @@ class IntegrationErrorHandler:
     """統合用の統一エラーハンドリング"""
     
     @staticmethod
-    async def safe_call(app: FastMCP-Tx, tool_name: str, arguments: dict):
+    async def safe_call(app: FastMCPTx, tool_name: str, arguments: dict):
         """包括的なエラーハンドリング付きの安全なツール呼び出し"""
         try:
             return await app.call_tool(tool_name, arguments)
@@ -697,7 +697,7 @@ from unittest.mock import AsyncMock
 @pytest.fixture
 async def mock_rmcp_app():
     """MCP-Txでのテスト用フィクスチャ"""
-    app = AsyncMock(spec=FastMCP-Tx)
+    app = AsyncMock(spec=FastMCPTx)
     
     # 成功レスポンスをモック
     app.call_tool.return_value = MCP-TxResult(

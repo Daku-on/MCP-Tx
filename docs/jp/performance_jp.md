@@ -14,7 +14,7 @@ MCP-Txは最小限のオーバーヘッドで信頼性機能を追加：
 ### 1. タイムアウト最適化
 
 ```python
-from mcp_tx import MCPTxConfig, FastMCP-Tx
+from mcp_tx import MCPTxConfig, FastMCPTx
 
 # インタラクティブアプリケーション用の高速失敗設定
 config = MCPTxConfig(
@@ -25,7 +25,7 @@ config = MCPTxConfig(
     )
 )
 
-app = FastMCP-Tx(mcp_session, config)
+app = FastMCPTx(mcp_session, config)
 ```
 
 ### 2. バッチ操作
@@ -53,7 +53,7 @@ results = await asyncio.gather(*[
 
 ```python
 # 複数の操作でセッションを再利用
-async with FastMCP-Tx(mcp_session) as app:
+async with FastMCPTx(mcp_session) as app:
     # すべての操作が同じ接続プールを共有
     for i in range(1000):
         await app.call_tool("operation", {"id": i})
@@ -127,7 +127,7 @@ config = MCPTxConfig(
 
 ```python
 # ツールレジストリサイズを制限
-app = FastMCP-Tx(
+app = FastMCPTx(
     mcp_session,
     max_tools=100  # 無制限の増加を防止
 )
@@ -135,7 +135,7 @@ app = FastMCP-Tx(
 # 動的ツール登録/クリーンアップ
 class ManagedApp:
     def __init__(self, mcp_session):
-        self.app = FastMCP-Tx(mcp_session)
+        self.app = FastMCPTx(mcp_session)
         self.tool_usage = {}
     
     def register_tool_with_ttl(self, tool_func, ttl_seconds=3600):
@@ -236,7 +236,7 @@ import psutil
 import asyncio
 
 class ResourceMonitor:
-    def __init__(self, app: FastMCP-Tx):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.baseline_memory = psutil.Process().memory_info().rss
     
@@ -264,7 +264,7 @@ class LoadBalancedMCP-Tx:
     """複数のMCPセッション間で負荷分散"""
     
     def __init__(self, mcp_sessions: list):
-        self.apps = [FastMCP-Tx(session) for session in mcp_sessions]
+        self.apps = [FastMCPTx(session) for session in mcp_sessions]
         self.current = 0
     
     async def call_tool(self, name: str, arguments: dict) -> MCP-TxResult:
@@ -284,7 +284,7 @@ import hashlib
 class CachedMCP-Tx:
     """冪等操作にキャッシュを追加"""
     
-    def __init__(self, app: FastMCP-Tx):
+    def __init__(self, app: FastMCPTx):
         self.app = app
         self.cache = {}
         self.cache_ttl = 300  # 5分
@@ -311,7 +311,7 @@ class CachedMCP-Tx:
 ### 接続ウォームアップ
 
 ```python
-async def warmup_rmcp(app: FastMCP-Tx):
+async def warmup_rmcp(app: FastMCPTx):
     """より良いレイテンシのため接続を事前ウォームアップ"""
     # 接続プールを初期化
     await app.initialize()
@@ -333,7 +333,7 @@ async def warmup_rmcp(app: FastMCP-Tx):
 ### ベースライン性能
 
 ```python
-async def benchmark_rmcp(app: FastMCP-Tx, iterations: int = 1000):
+async def benchmark_rmcp(app: FastMCPTx, iterations: int = 1000):
     """MCP-Txパフォーマンス特性を測定"""
     
     # シーケンシャル性能

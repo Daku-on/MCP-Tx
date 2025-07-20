@@ -64,7 +64,7 @@ else:
 | 例 | 説明 |
 |----|------|
 | [**基本的な使用方法**](examples/basic_jp.md) | 一般的な使用パターン |
-| [**AIエージェント**](ai-agents_jp.md) | FastMCP-Txで信頼性の高いAIエージェント構築 |
+| [**AIエージェント**](ai-agents_jp.md) | FastMCPTxで信頼性の高いAIエージェント構築 |
 | [**高度な例**](examples/advanced_jp.md) | 複雑なワークフローと統合 |
 | [**フレームワーク統合**](examples/integration_jp.md) | Django、Flask、Celery統合 |
 

@@ -69,20 +69,20 @@ config = MCPTxConfig(
 | `jitter` | bool | True | サンダリングハード防止のためのランダム性追加 |
 | `retry_on_timeout` | bool | True | タイムアウトエラーをリトライ |
 
-## FastMCP-Tx設定
+## FastMCPTx設定
 
 ### アプリレベル設定
 
 ```python
-from mcp_tx import FastMCP-Tx, MCPTxConfig
+from mcp_tx import FastMCPTx, MCPTxConfig
 
-# FastMCP-Txアプリを設定
+# FastMCPTxアプリを設定
 config = MCPTxConfig(
     default_timeout_ms=20000,
     enable_request_logging=True
 )
 
-app = FastMCP-Tx(
+app = FastMCPTx(
     mcp_session,
     config=config,
     name="Production App",
