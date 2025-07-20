@@ -1,84 +1,37 @@
-#!/usr/bin/env python3
 """
-Quick launcher for Smart Research Assistant Frontend
-
-This script provides an easy way to start the Streamlit frontend
-with proper environment setup and error handling.
+Launcher for the Multi-Agent Research Assistant Frontend
 """
 
 import subprocess
-import sys
-import time
-import webbrowser
 from pathlib import Path
 
 
-def check_dependencies():
-    """Check if required dependencies are installed."""
-    try:
-        import streamlit  # noqa: F401
-
-        import mcp_tx  # noqa: F401
-
-        print("✅ All dependencies available")
-        return True
-    except ImportError as e:
-        print(f"❌ Missing dependency: {e}")
-        print("Please run: uv sync")
-        return False
-
-
 def start_frontend():
-    """Start the Streamlit frontend."""
-    if not check_dependencies():
-        return
-
-    # Get the directory of this script
+    """Starts the Streamlit frontend for the multi-agent demo."""
     script_dir = Path(__file__).parent
-    frontend_path = script_dir / "research_frontend.py"
+    frontend_path = script_dir / "multi_agent_frontend.py"
 
     if not frontend_path.exists():
-        print("❌ Frontend file not found!")
+        print(f"❌ Frontend file not found at: {frontend_path}")
         return
 
-    print("🚀 Starting Smart Research Assistant Frontend...")
-    print("📍 Frontend will be available at: http://localhost:8501")
-    print("⏳ Opening browser in 3 seconds...")
+    print("🚀 Starting Multi-Agent Research Assistant Frontend...")
+    print("📍 Your browser will open at: http://localhost:8501")
 
-    # Start Streamlit
+    cmd = [
+        "streamlit",
+        "run",
+        str(frontend_path),
+        "--server.port",
+        "8501",
+        "--server.address",
+        "localhost",
+    ]
+
     try:
-        # Schedule browser opening
-        import threading
-
-        def open_browser():
-            time.sleep(3)
-            webbrowser.open("http://localhost:8501")
-
-        browser_thread = threading.Thread(target=open_browser)
-        browser_thread.daemon = True
-        browser_thread.start()
-
-        # Start Streamlit with browser auto-open disabled
-        cmd = [
-            sys.executable,
-            "-m",
-            "streamlit",
-            "run",
-            str(frontend_path),
-            "--server.port",
-            "8501",
-            "--server.address",
-            "localhost",
-            "--browser.gatherUsageStats",
-            "false",
-            "--server.headless",
-            "true",
-        ]
-
-        subprocess.run(cmd)
-
+        subprocess.run(cmd, check=True)
     except KeyboardInterrupt:
-        print("\n👋 Frontend stopped by user")
+        print("\n👋 Frontend stopped by user.")
     except Exception as e:
         print(f"❌ Error starting frontend: {e}")
 
