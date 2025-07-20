@@ -526,10 +526,10 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 ### Community Resources
 
-- **GitHub Issues**: [reliable-MCP-draft/issues](https://github.com/takako/reliable-MCP-draft/issues)
+- **GitHub Issues**: [reliable-MCP-draft/issues](https://github.com/Daku-on/reliable-MCP-draft/issues)
 - **Documentation**: This docs directory
 - **Examples**: `docs/examples/` directory
 
 ---
 
-**Previous**: [FAQ](faq.md) | **Next**: [Performance Guide](performance.md)
+**Previous**: [FAQ](faq.md) | **Next**: [API Reference](api/rmcp-session.md)
