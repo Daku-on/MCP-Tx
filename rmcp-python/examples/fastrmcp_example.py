@@ -33,9 +33,10 @@ async def main():
             # Simulate different responses based on tool name
             if name == "unreliable_api":
                 # Sometimes fail to demonstrate retry
+                # NOTE: Using random for demo only - use secrets module for production randomness
                 import random
 
-                if random.random() < 0.3:  # 30% failure rate
+                if random.random() < 0.3:  # 30% failure rate (demo only)
                     raise Exception("Simulated network error")
                 return {"status": "success", "data": f"API result for {arguments}"}
 

@@ -6,6 +6,7 @@ to easily add RMCP reliability features (retry, idempotency, ACK/NACK) to their 
 
 from __future__ import annotations
 
+import copy
 import inspect
 import logging
 from collections.abc import Awaitable, Callable
@@ -58,8 +59,12 @@ class ToolRegistry:
         logger.debug(f"Registered tool: {name}")
 
     def get_tool(self, name: str) -> dict[str, Any] | None:
-        """Get tool configuration by name."""
-        return self._tools.get(name)
+        """Get tool configuration by name.
+
+        Returns a deep copy to prevent mutation of cached tool configurations.
+        """
+        tool = self._tools.get(name)
+        return copy.deepcopy(tool) if tool is not None else None
 
     def list_tools(self) -> list[str]:
         """List all registered tool names."""
@@ -77,6 +82,19 @@ class ToolRegistry:
             "is_async": tool["is_async"],
             "has_retry_policy": tool["retry_policy"] is not None,
             "timeout_ms": tool["timeout_ms"],
+        }
+
+    def get_all_tools_info(self) -> dict[str, dict[str, Any]]:
+        """Get information about all registered tools efficiently."""
+        return {
+            name: {
+                "name": name,
+                "description": tool["description"],
+                "is_async": tool["is_async"],
+                "has_retry_policy": tool["retry_policy"] is not None,
+                "timeout_ms": tool["timeout_ms"],
+            }
+            for name, tool in self._tools.items()
         }
 
 
@@ -136,6 +154,11 @@ class FastRMCP:
 
     async def initialize(self) -> None:
         """Initialize the RMCP session."""
+        # Fast path: check if already initialized without acquiring lock
+        if self._initialized:
+            return
+
+        # Double-check pattern: verify state after acquiring lock
         async with self._init_lock:
             if self._initialized:
                 return
@@ -233,9 +256,19 @@ class FastRMCP:
             RMCPResult with tool execution result and reliability metadata
 
         Raises:
-            ValueError: If tool is not registered
+            ValueError: If tool is not registered or arguments are invalid
             RuntimeError: If FastRMCP is not initialized
         """
+        # Input validation
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Tool name must be a non-empty string")
+
+        if not isinstance(arguments, dict):
+            raise ValueError("Arguments must be a dictionary")
+
+        if idempotency_key is not None and not isinstance(idempotency_key, str):
+            raise ValueError("Idempotency key must be a string or None")
+
         if not self._initialized or not self._rmcp_session:
             raise RuntimeError("FastRMCP not initialized. Use 'async with app:' or call 'await app.initialize()'")
 
@@ -269,7 +302,7 @@ class FastRMCP:
 
     def get_all_tools_info(self) -> dict[str, dict[str, Any]]:
         """Get information about all registered tools."""
-        return {name: info for name in self._registry.list_tools() if (info := self.get_tool_info(name)) is not None}
+        return self._registry.get_all_tools_info()
 
 
 # Convenience exports
