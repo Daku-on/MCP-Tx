@@ -43,7 +43,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (MCP-Tx) Pyt
 
 ## 📝 Contributing
 
-Found an issue with the documentation? Please [open an issue](https://github.com/Daku-on/reliable-MCP-draft/issues) or submit a pull request.
+Found an issue with the documentation? Please [open an issue](https://github.com/Daku-on/MCP-Tx/issues) or submit a pull request.
 
 ---
 

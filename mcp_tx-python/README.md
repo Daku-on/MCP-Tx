@@ -4,10 +4,9 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
 
-> **MCP-Tx: Production-ready Python SDK for Reliable Model Context Protocol (MCP-Tx)**  
-> Transforms any MCP session into a **reliable ecosystem** where AI agents, tools, and **human operators** can collaboratively execute complex workflows with delivery guarantees, automatic retry, and request deduplication.
+MCP-Tx is a production-ready Python SDK that transforms any Model Context Protocol (MCP) session into a reliable ecosystem. It enables AI agents, tools, and human operators to collaboratively execute complex workflows with delivery guarantees, automatic retry, and request deduplication.
 
-🌟 **Revolutionary Concept**: MCP-Tx treats **humans as servers** in the workflow, allowing seamless integration of human approval, judgment, and interaction within automated AI agent processes—all with the same reliability guarantees.
+A core concept of MCP-Tx is treating humans as servers within the workflow, allowing seamless integration of human approval, judgment, and interaction into automated AI agent processes with the same reliability guarantees as automated tools.
 
 ## Quick Start
 
