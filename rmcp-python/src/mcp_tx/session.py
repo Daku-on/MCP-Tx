@@ -66,7 +66,7 @@ class MCPTxSession:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.close()
 
@@ -97,7 +97,7 @@ class MCPTxSession:
 
         return error_str
 
-    async def initialize(self, **kwargs) -> Any:
+    async def initialize(self, **kwargs: Any) -> Any:
         """
         Initialize the session with MCP-Tx capability negotiation.
         """

@@ -173,7 +173,7 @@ class FastMCPTx:
         await self.initialize()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         """Async context manager exit."""
         if self._mcp_tx_session:
             await self._mcp_tx_session.__aexit__(exc_type, exc_val, exc_tb)
