@@ -9,23 +9,19 @@ A reliability layer for MCP tool calls providing:
 - 100% MCP compatibility
 """
 
-from .fastrmcp import FastRMCP
 from .session import RMCPSession
 from .types import (
     RetryPolicy,
     RMCPConfig,
     RMCPError,
     RMCPResult,
-    RMCPResponse,
 )
 from .version import __version__
 
 __all__ = [
-    "FastRMCP",
     "RMCPConfig",
     "RMCPError",
     "RMCPResult",
-    "RMCPResponse",
     "RMCPSession",
     "RetryPolicy",
     "__version__",

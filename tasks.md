@@ -83,21 +83,6 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
   - [ ] Circuit breaker pattern for failing tools ⚠️ **REMAINING**
   - [x] Backoff strategy selection (exponential with jitter)
 
-### P1.0: FastRMCP Decorator API ✅ **COMPLETED**
-- [x] **P1.0.1** Implement FastRMCP decorator framework ✅
-  - [x] Create `FastRMCP` class wrapping existing `RMCPSession`
-  - [x] Implement `@app.tool()` decorator for function registration
-  - [x] Automatic RMCP reliability feature application (retry, idempotency, ACK/NACK)
-  - [x] Support for custom retry policies per tool
-  
-- [x] **P1.0.2** Enhance decorator functionality ✅
-  - [x] Support async and sync tool functions
-  - [x] Tool metadata support (name, description, title)
-  - [x] Custom idempotency key generators
-  - [x] Tool discovery and listing capabilities
-  - [x] Comprehensive test suite (18 tests, 100% pass rate)
-  - [x] Working example with parallel execution
-
 ### P1.2: Transaction Management
 - [ ] **P1.2.1** Implement transaction tracking
   - [ ] Transaction ID generation and lifecycle management
@@ -166,49 +151,6 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
   - [ ] Request trace visualization
   - [ ] Performance profiling hooks
   - [ ] Debug mode with detailed logging
-
----
-
-## Package Distribution Tasks
-
-### DIST.1: Package Preparation
-- [ ] **DIST.1.1** Prepare package metadata
-  - [ ] Update `pyproject.toml` with proper package info
-  - [ ] Create comprehensive `README.md` for PyPI
-  - [ ] Add `CHANGELOG.md` with version history
-  - [ ] Set up semantic versioning strategy
-  
-- [ ] **DIST.1.2** Package build and validation
-  - [ ] Configure build system (setuptools/hatchling)
-  - [ ] Test package installation with `uv pip install -e .`
-  - [ ] Validate package structure and imports
-  - [ ] Create distribution builds (`uv build`)
-
-### DIST.2: Integration and Compatibility
-- [ ] **DIST.2.1** MCP SDK integration tests  
-  - [ ] Test against official MCP Python SDK examples
-  - [ ] Validate compatibility with existing MCP servers
-  - [ ] Test FastRMCP decorator with real MCP tools
-  - [ ] Performance comparison: RMCP vs raw MCP overhead
-  
-- [ ] **DIST.2.2** Production deployment validation
-  - [ ] Test installation from PyPI test server
-  - [ ] Validate import paths and public API
-  - [ ] Integration with popular MCP clients (Claude Desktop, etc.)
-  - [ ] Multi-platform testing (Linux, macOS, Windows)
-
-### DIST.3: Release Preparation
-- [ ] **DIST.3.1** Documentation finalization
-  - [ ] API documentation completeness check
-  - [ ] Migration guide from raw MCP to RMCP
-  - [ ] FastRMCP usage examples and best practices
-  - [ ] Performance tuning and configuration guide
-  
-- [ ] **DIST.3.2** Release automation
-  - [ ] GitHub Actions for automated PyPI publishing
-  - [ ] Version bumping automation
-  - [ ] Release notes generation
-  - [ ] Security vulnerability scanning
 
 ---
 
@@ -320,17 +262,15 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 - [x] Cross-platform async backend support (asyncio/trio) ✅ **COMPLETED THIS SESSION**
 - **Deliverable**: ✅ Production-ready Python RMCP client with 93% test coverage
 
-### Session 2: FastRMCP & Production Features  
-**Goal**: Complete decorator-based API and production features
+### Session 2: Python Polish & Production Features  
+**Goal**: Complete production-ready Python RMCP SDK
 - [x] ~~Advanced retry policies (P1.1.1-1.1.2)~~ ✅ **COMPLETED IN SESSION 1**
 - [x] ~~Request deduplication (P0.3.1)~~ ✅ **COMPLETED IN SESSION 1** 
-- [x] **FastRMCP decorator API (P1.0.1-1.0.2)** ✅ **COMPLETED THIS SESSION**
 - [ ] Transaction management (P1.2.1-1.2.2)
 - [ ] Flow control and rate limiting (P1.3.1-1.3.2)
 - [ ] Enhanced error handling and circuit breaker patterns
 - [ ] Integration tests with real MCP servers (TEST.2.1)
-- [ ] Package distribution preparation (DIST.1.1-1.1.2)
-- **Deliverable**: Production-ready Python RMCP SDK with decorator API ✅ **PARTIALLY COMPLETE**
+- **Deliverable**: Enterprise-grade Python RMCP SDK
 
 ### Session 3: TypeScript SDK Implementation
 **Goal**: Port proven Python design to TypeScript
@@ -417,27 +357,19 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 
 ---
 
-## Recently Completed (Session 2) ✅
+## Recently Fixed (This Session) ✅
 
-### **Major Feature Implementation**
-- ✅ **FastRMCP Decorator API** - Complete decorator-based RMCP framework
-  - ✅ `FastRMCP` class with `@app.tool()` decorators 
-  - ✅ Automatic RMCP reliability features (retry, idempotency, ACK/NACK)
-  - ✅ Custom retry policies and timeout per tool
-  - ✅ Idempotency key generators and tool metadata
-  - ✅ Async/sync function support with context management
+### **Critical Bug Fixes**
+- ✅ **Idempotency test failure** - First call incorrectly marked as duplicate
+- ✅ **Timeout test failure** - anyio timeout handling incorrect
+- ✅ **CI/CD failures** - trio backend compatibility issues
+- ✅ **Linting errors** - ruff formatting and import issues
 
-### **Development Infrastructure**
-- ✅ **Comprehensive test suite** - 18 FastRMCP tests, 50 total tests
-- ✅ **Working examples** - FastRMCP demonstration with parallel execution
-- ✅ **Documentation updates** - Updated tasks.md with new priorities
-- ✅ **Package exports** - FastRMCP available from main rmcp module
-
-### **Session 1 Achievements (Previous)**
-- ✅ **Core RMCP MVP** - Production-ready with 93% test coverage
-- ✅ **Idempotency and retry** - Exponential backoff with jitter
-- ✅ **Cross-platform support** - Full anyio compatibility (asyncio/trio)
-- ✅ **CI/CD pipeline** - All quality gates passing
+### **Infrastructure Improvements** 
+- ✅ **Trio async backend support** - Full anyio compatibility 
+- ✅ **Robust CI/CD pipeline** - All quality gates passing
+- ✅ **Dependency management** - Proper uv configuration
+- ✅ **Cross-platform testing** - Both asyncio and trio verified
 
 ---
 
