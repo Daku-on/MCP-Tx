@@ -31,7 +31,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = []
+dev = [
+    "mypy>=1.17.0",
+    "pytest>=8.4.1",
+    "pytest-anyio>=0.0.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.4",
+    "trio>=0.30.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Daku-on/MCP-Tx"
@@ -65,8 +72,9 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
-files = ["src/"]
+files = ["src/", "."]
 exclude = ["examples/", "tests/", ".venv/", ".git/"]
+plugins = ["pydantic.mypy"]
 
 [tool.pyright]
 include = ["src"]
@@ -88,14 +96,4 @@ anyio_backends = ["asyncio"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
-]
-
-[dependency-groups]
-dev = [
-    "mypy>=1.17.0",
-    "pytest>=8.4.1",
-    "pytest-anyio>=0.0.0",
-    "pytest-cov>=6.2.1",
-    "ruff>=0.12.4",
-    "trio>=0.30.0",
 ]
