@@ -64,6 +64,7 @@ else:
 | 例 | 説明 |
 |----|------|
 | [**基本的な使用方法**](examples/basic_jp.md) | 一般的な使用パターン |
+| [**AIエージェント**](ai-agents_jp.md) | FastRMCPで信頼性の高いAIエージェント構築 |
 | [**高度な例**](examples/advanced_jp.md) | 複雑なワークフローと統合 |
 | [**フレームワーク統合**](examples/integration_jp.md) | Django、Flask、Celery統合 |
 
@@ -132,7 +133,7 @@ pip install rmcp
 
 1. **[トラブルシューティングガイド](troubleshooting.jp.md)** をチェック
 2. **[FAQ](faq.jp.md)** で一般的な質問を確認
-3. **[GitHub Issues](https://github.com/takako/reliable-MCP-draft/issues)** で問題を報告
+3. **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** で問題を報告
 
 ### 📚 詳細情報
 

@@ -15,6 +15,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Pytho
 
 ### Usage Examples
 - [**Basic Examples**](examples/basic.md) - Simple tool calls and error handling
+- [**AI Agents**](ai-agents.md) - Building reliable AI agents with FastRMCP
 
 ### Migration & Compatibility
 - [**Migration from MCP**](migration.md) - Step-by-step upgrade guide

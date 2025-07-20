@@ -33,7 +33,6 @@ pip install rmcp
 ```bash
 git clone https://github.com/Daku-on/reliable-MCP-draft
 cd reliable-MCP-draft/rmcp-python
-cd rmcp-python
 uv sync --dev
 ```
 

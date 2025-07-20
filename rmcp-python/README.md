@@ -126,6 +126,7 @@ async def user_operation(user_id: str, action: str, data: dict) -> dict:
 ## Examples
 
 - **[Basic Example](examples/fastrmcp_example.py)** - Complete working example
+- **[Smart Research Assistant](examples/smart_research_assistant.py)** - AI agent with reliability
 - **[Flask Integration](../docs/en/examples/integration.md#flask-integration)** - Web framework integration  
 - **[Celery Integration](../docs/en/examples/integration.md#celery-integration)** - Background task processing
 - **[AWS Lambda](../docs/en/examples/integration.md#aws-lambda-integration)** - Serverless deployment
