@@ -17,7 +17,7 @@ MCP-Tx実装と使用に関する一般的な質問。
 
 ```python
 # 任意のMCPサーバーで動作
-rmcp_session = MCP-TxSession(your_mcp_session)
+rmcp_session = MCPTxSession(your_mcp_session)
 await rmcp_session.initialize()
 
 print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
@@ -47,7 +47,7 @@ print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
 from mcp.client.sse import SseClientTransport
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 # 標準MCPクライアント
 mcp_session = ClientSession(StdioClientTransport(...))
@@ -55,7 +55,7 @@ mcp_session = ClientSession(StdioClientTransport(...))
 mcp_session = ClientSession(SseClientTransport(...))
 
 # MCP-Txでラップ
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 ```
 
 ## 設定に関する質問
@@ -65,7 +65,7 @@ rmcp_session = MCP-TxSession(mcp_session)
 セッションまたは呼び出しごとに`RetryPolicy`を使用してリトライ動作を設定：
 
 ```python
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # セッションレベルリトライポリシー
 aggressive_retry = RetryPolicy(
@@ -78,8 +78,8 @@ aggressive_retry = RetryPolicy(
     ]
 )
 
-config = MCP-TxConfig(retry_policy=aggressive_retry)
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(retry_policy=aggressive_retry)
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # または呼び出しごとのオーバーライド
 quick_retry = RetryPolicy(max_attempts=2, base_delay_ms=500)
@@ -141,11 +141,11 @@ result = await rmcp_session.call_tool(
 
 ```python
 # デフォルトタイムアウト設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=10000,  # ほとんどの操作で10秒
 )
 
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # 高速操作 - 短いタイムアウト
 result = await rmcp_session.call_tool(
@@ -267,7 +267,7 @@ rmcp_logger.setLevel(logging.DEBUG)
 # - サーバー機能ネゴシエーション
 # - エラー詳細
 
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     # デバッグ情報をログで確認
@@ -287,21 +287,21 @@ async with MCP-TxSession(mcp_session) as rmcp:
 
 ```python
 # 異なる設定の複数サーバー
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # 高速、信頼性のあるサーバー - 最小限リトライ
-fast_config = MCP-TxConfig(
+fast_config = MCPTxConfig(
     retry_policy=RetryPolicy(max_attempts=2, base_delay_ms=500),
     default_timeout_ms=5000
 )
-fast_rmcp = MCP-TxSession(fast_mcp_session, fast_config)
+fast_rmcp = MCPTxSession(fast_mcp_session, fast_config)
 
 # 低速、信頼性の低いサーバー - 積極的リトライ
-slow_config = MCP-TxConfig(
+slow_config = MCPTxConfig(
     retry_policy=RetryPolicy(max_attempts=5, base_delay_ms=2000),
     default_timeout_ms=30000
 )
-slow_rmcp = MCP-TxSession(slow_mcp_session, slow_config)
+slow_rmcp = MCPTxSession(slow_mcp_session, slow_config)
 
 # 各操作に適切なセッションを使用
 fast_result = await fast_rmcp.call_tool("cache_lookup", {"key": "data"})
@@ -373,7 +373,7 @@ async def call_with_circuit_breaker(tool_name: str, arguments: dict):
 
 ```python
 from fastapi import FastAPI, Depends, HTTPException
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 import asyncio
 
 app = FastAPI()
@@ -381,13 +381,13 @@ app = FastAPI()
 # グローバルMCP-Txセッション（または依存性注入を使用）
 _rmcp_session = None
 
-async def get_rmcp_session() -> MCP-TxSession:
+async def get_rmcp_session() -> MCPTxSession:
     """MCP-Txセッション用FastAPI依存性"""
     global _rmcp_session
     if _rmcp_session is None:
         # MCP-Txセッションを初期化
         mcp_session = await setup_mcp_session()
-        _rmcp_session = MCP-TxSession(mcp_session)
+        _rmcp_session = MCPTxSession(mcp_session)
         await _rmcp_session.initialize()
     
     return _rmcp_session
@@ -395,7 +395,7 @@ async def get_rmcp_session() -> MCP-TxSession:
 @app.post("/process-file")
 async def process_file(
     file_path: str,
-    rmcp: MCP-TxSession = Depends(get_rmcp_session)
+    rmcp: MCPTxSession = Depends(get_rmcp_session)
 ):
     """MCP-Txを使用してファイル処理"""
     try:
@@ -493,11 +493,11 @@ if result.ack:
 
 ```python
 # ❌ 間違い: 初期化を忘れた
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # エラー
 
 # ✅ 正しい: 常に最初に初期化
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()  # 必須ステップ
 result = await rmcp_session.call_tool("test", {})
 ```
@@ -506,12 +506,12 @@ result = await rmcp_session.call_tool("test", {})
 
 ```python
 # メモリリークを防ぐためキャッシュ制限を設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=300000,  # デフォルト10分ではなく5分
     max_concurrent_requests=5,       # 並行リクエストを制限
 )
 
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ---

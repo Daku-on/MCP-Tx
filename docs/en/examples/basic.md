@@ -8,13 +8,13 @@ Practical examples of common MCP-Tx usage patterns.
 
 ```python
 import asyncio
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 async def file_operations_example():
     """Basic file operations with MCP-Tx reliability."""
     
     # Assume mcp_session is your configured MCP session
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # Read a file
@@ -50,12 +50,12 @@ asyncio.run(file_operations_example())
 ```python
 import asyncio
 import os
-from rmcp import MCP-TxSession, RetryPolicy
+from mcp_tx import MCPTxSession, RetryPolicy
 
 async def api_calls_example():
     """API calls with custom retry policies."""
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # API call with aggressive retry for critical operations
@@ -95,7 +95,7 @@ asyncio.run(api_calls_example())
 ```python
 import asyncio
 import logging
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 from rmcp.types import MCP-TxTimeoutError, MCP-TxNetworkError
 
 async def error_handling_example():
@@ -104,7 +104,7 @@ async def error_handling_example():
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # Example 1: Timeout handling with fallback
@@ -161,12 +161,12 @@ asyncio.run(error_handling_example())
 
 ```python
 import asyncio
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 async def validation_example():
     """Input validation and sanitization patterns."""
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         def validate_file_path(path: str) -> str:
@@ -258,12 +258,12 @@ asyncio.run(validation_example())
 
 ```python
 import asyncio
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 async def parallel_execution_example():
     """Execute multiple tools concurrently with MCP-Tx."""
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # Example 1: Independent parallel operations
@@ -353,7 +353,7 @@ asyncio.run(parallel_execution_example())
 
 ```python
 import asyncio
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 class RateLimiter:
     """Simple rate limiter for API calls."""
@@ -378,7 +378,7 @@ async def rate_limited_example():
     # Limit to 2 calls per second
     rate_limiter = RateLimiter(calls_per_second=2.0)
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         async def rate_limited_api_call(endpoint: str) -> dict:
@@ -413,15 +413,15 @@ asyncio.run(rate_limited_example())
 
 ```python
 import os
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
-def create_rmcp_config() -> MCP-TxConfig:
+def create_rmcp_config() -> MCPTxConfig:
     """Create environment-specific MCP-Tx configuration."""
     
     environment = os.getenv("ENVIRONMENT", "development")
     
     if environment == "production":
-        return MCP-TxConfig(
+        return MCPTxConfig(
             default_timeout_ms=30000,  # 30 seconds
             retry_policy=RetryPolicy(
                 max_attempts=5,
@@ -436,7 +436,7 @@ def create_rmcp_config() -> MCP-TxConfig:
         )
     
     elif environment == "staging":
-        return MCP-TxConfig(
+        return MCPTxConfig(
             default_timeout_ms=15000,  # 15 seconds
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -449,7 +449,7 @@ def create_rmcp_config() -> MCP-TxConfig:
         )
     
     else:  # development
-        return MCP-TxConfig(
+        return MCPTxConfig(
             default_timeout_ms=5000,   # 5 seconds
             retry_policy=RetryPolicy(
                 max_attempts=2,
@@ -466,7 +466,7 @@ async def environment_config_example():
     
     config = create_rmcp_config()
     
-    async with MCP-TxSession(mcp_session, config) as rmcp:
+    async with MCPTxSession(mcp_session, config) as rmcp:
         await rmcp.initialize()
         
         print(f"Environment: {os.getenv('ENVIRONMENT', 'development')}")

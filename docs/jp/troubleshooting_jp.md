@@ -48,13 +48,13 @@ uv add mcp_tx
 
 **問題**: セッションを初期化せずに`call_tool()`を呼び出し
 ```python
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # エラー！
 ```
 
 **解決策**: 常に最初に`initialize()`を呼び出し
 ```python
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()  # 必須！
 result = await rmcp_session.call_tool("test", {})
 ```
@@ -86,7 +86,7 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 **悪いパターン**:
 ```python
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 await rmcp.initialize()
 # ... rmcpを使用
 # セッションがクローズされない - リソースリーク！
@@ -95,13 +95,13 @@ await rmcp.initialize()
 **良いパターン**:
 ```python
 # ✅ 最良: 非同期コンテキストマネージャーを使用
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... rmcpを使用
     # 自動的にクローズ
 
 # ✅ 許容: 手動クリーンアップ
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... rmcpを使用
@@ -181,8 +181,8 @@ result = await rmcp_session.call_tool(
 )
 
 # 解決策2: セッションデフォルトを設定
-config = MCP-TxConfig(default_timeout_ms=60000)  # 1分デフォルト
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=60000)  # 1分デフォルト
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # 解決策3: 環境固有設定
 def get_timeout_for_environment():
@@ -194,7 +194,7 @@ def get_timeout_for_environment():
     else:
         return 5000   # 5秒（高速開発サイクル）
 
-config = MCP-TxConfig(default_timeout_ms=get_timeout_for_environment())
+config = MCPTxConfig(default_timeout_ms=get_timeout_for_environment())
 ```
 
 ### メモリ使用量の時間的増加
@@ -209,7 +209,7 @@ config = MCP-TxConfig(default_timeout_ms=get_timeout_for_environment())
 **解決策**:
 ```python
 # キャッシュウィンドウを減らす
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=300000,  # デフォルト10分ではなく5分
     max_concurrent_requests=5,       # 並行リクエストを制限
 )
@@ -364,14 +364,14 @@ print(f"MCP-Txオーバーヘッド: {duration_ms - direct_duration:.1f}ms")
 **一般的な原因と解決策**:
 ```python
 # リソース競合を引き起こす高い並行性制限
-config = MCP-TxConfig(max_concurrent_requests=5)  # デフォルト10から削減
+config = MCPTxConfig(max_concurrent_requests=5)  # デフォルト10から削減
 
 # 不必要なリトライ試行
 quick_policy = RetryPolicy(max_attempts=1)  # 単純操作にはリトライなし
 result = await rmcp_session.call_tool("fast_op", {}, retry_policy=quick_policy)
 
 # メモリ圧迫を引き起こす大きな重複排除キャッシュ
-config = MCP-TxConfig(deduplication_window_ms=60000)  # 10分ではなく1分
+config = MCPTxConfig(deduplication_window_ms=60000)  # 10分ではなく1分
 ```
 
 ### 高いリトライ率
@@ -433,7 +433,7 @@ rmcp_logger.setLevel(logging.DEBUG)
 ### セッション内省
 
 ```python
-async def debug_session_state(rmcp_session: MCP-TxSession):
+async def debug_session_state(rmcp_session: MCPTxSession):
     print("=== MCP-Txセッションデバッグ情報 ===")
     print(f"MCP-Tx有効: {rmcp_session.rmcp_enabled}")
     print(f"アクティブリクエスト: {len(rmcp_session.active_requests)}")

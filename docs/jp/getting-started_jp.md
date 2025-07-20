@@ -22,7 +22,7 @@ python -c "import rmcp; print(f'MCP-Tx {rmcp.__version__} installed')"
 ```python
 import asyncio
 import os
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
 
@@ -32,7 +32,7 @@ async def main():
     mcp_session = ClientSession(transport)
     
     # MCP-Txで信頼性機能を追加
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     # 初期化（必須）
     await rmcp_session.initialize()
@@ -73,7 +73,7 @@ if result.ack:
 
 ```python
 async def reliable_file_operations():
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 冪等性付きファイル書き込み
@@ -103,7 +103,7 @@ async def reliable_file_operations():
 ### API呼び出しの信頼性
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 async def reliable_api_calls():
     # API用のカスタムリトライポリシー
@@ -117,7 +117,7 @@ async def reliable_api_calls():
         ]
     )
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         result = await rmcp.call_tool(
@@ -143,14 +143,14 @@ async def reliable_api_calls():
 ### 環境固有の設定
 
 ```python
-from rmcp import MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 import os
 
 def create_config():
     env = os.getenv("ENVIRONMENT", "development")
     
     if env == "production":
-        return MCP-TxConfig(
+        return MCPTxConfig(
             default_timeout_ms=30000,      # 30秒
             retry_policy=RetryPolicy(
                 max_attempts=5,
@@ -161,7 +161,7 @@ def create_config():
             deduplication_window_ms=600000 # 10分間の重複排除
         )
     else:
-        return MCP-TxConfig(
+        return MCPTxConfig(
             default_timeout_ms=5000,       # 5秒（開発用）
             retry_policy=RetryPolicy(
                 max_attempts=2,
@@ -172,14 +172,14 @@ def create_config():
 
 # 設定を使用
 config = create_config()
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ### 操作別設定
 
 ```python
 async def operation_specific_config():
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 高速操作 - 短いタイムアウト
@@ -243,7 +243,7 @@ async def robust_error_handling():
 import asyncio
 
 async def concurrent_operations():
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         # 複数のファイルを並列処理
@@ -296,7 +296,7 @@ rmcp_logger.setLevel(logging.DEBUG)
 
 ```python
 async def monitor_session():
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         print(f"MCP-Tx有効: {rmcp.rmcp_enabled}")
@@ -329,7 +329,7 @@ if result.ack:
 USE_MCP-Tx = os.getenv("USE_MCP-Tx", "false").lower() == "true"
 
 if USE_MCP-Tx:
-    session = MCP-TxSession(mcp_session)
+    session = MCPTxSession(mcp_session)
     await session.initialize()
 else:
     session = mcp_session
@@ -351,7 +351,7 @@ async def batch_processing(items):
     results = []
     failed = []
     
-    async with MCP-TxSession(mcp_session) as rmcp:
+    async with MCPTxSession(mcp_session) as rmcp:
         await rmcp.initialize()
         
         for item in items:
@@ -378,20 +378,20 @@ async def batch_processing(items):
 
 ### 📚 さらに学ぶ
 
-- **[アーキテクチャ](architecture.jp.md)** - MCP-Txの内部動作を理解
-- **[移行ガイド](migration.jp.md)** - 既存のMCPコードをアップグレード
-- **[FAQ](faq.jp.md)** - よくある質問と回答
+- **[アーキテクチャ](architecture_jp.md)** - MCP-Txの内部動作を理解
+- **[移行ガイド](migration_jp.md)** - 既存のMCPコードをアップグレード
+- **[FAQ](faq_jp.md)** - よくある質問と回答
 
 ### 🔧 詳細設定
 
-- **[APIリファレンス](api/rmcp-session.jp.md)** - 完全なAPIドキュメント
-- **[例集](examples/basic.jp.md)** - より多くの実用例
+- **[APIリファレンス](api/rmcp-session_jp.md)** - 完全なAPIドキュメント
+- **[例集](examples/basic_jp.md)** - より多くの実用例
 
 ### 🆘 サポート
 
-- **[トラブルシューティング](troubleshooting.jp.md)** - 問題解決ガイド
+- **[トラブルシューティング](troubleshooting_jp.md)** - 問題解決ガイド
 - **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** - バグ報告・機能要求
 
 ---
 
-**次へ**: [アーキテクチャ](architecture.jp.md) → | **前へ**: [ドキュメント](README.jp.md) ←
+**次へ**: [アーキテクチャ](architecture_jp.md) → | **前へ**: [ドキュメント](README_jp.md) ←

@@ -22,15 +22,15 @@ Understanding how MCP-Tx enhances MCP with reliability guarantees.
 
 ## Core Components
 
-### 1. MCP-TxSession (Wrapper)
+### 1. MCPTxSession (Wrapper)
 
 The main interface that wraps any existing MCP session:
 
 ```python
-class MCP-TxSession:
-    def __init__(self, mcp_session: BaseSession, config: MCP-TxConfig = None):
+class MCPTxSession:
+    def __init__(self, mcp_session: BaseSession, config: MCPTxConfig = None):
         self.mcp_session = mcp_session  # Your existing MCP session
-        self.config = config or MCP-TxConfig()
+        self.config = config or MCPTxConfig()
         # ... reliability infrastructure
 ```
 
@@ -150,7 +150,7 @@ def calculate_delay(attempt: int, policy: RetryPolicy) -> int:
 
 **Cache-based Deduplication**:
 ```python
-class MCP-TxSession:
+class MCPTxSession:
     def __init__(self):
         # LRU cache with TTL for memory safety
         self._deduplication_cache: dict[str, tuple[MCP-TxResult, datetime]] = {}
@@ -173,8 +173,8 @@ class MCP-TxSession:
 ### 4. Concurrent Request Management
 
 ```python
-class MCP-TxSession:
-    def __init__(self, config: MCP-TxConfig):
+class MCPTxSession:
+    def __init__(self, config: MCPTxConfig):
         # Semaphore for concurrency control
         self._request_semaphore = anyio.Semaphore(config.max_concurrent_requests)
         
@@ -286,9 +286,9 @@ def _sanitize_error_message(self, error: Exception) -> str:
 ## Next Steps
 
 - [**Getting Started**](getting-started.md) - Quick start with configuration examples
-- [**API Reference**](api/rmcp-session.md) - Detailed method documentation
+- [**API Reference**](api/mcp-tx-session.md) - Detailed method documentation
 - [**Examples**](examples/basic.md) - Practical usage patterns
 
 ---
 
-**Previous**: [Getting Started](getting-started.md) | **Next**: [API Reference](api/rmcp-session.md)
+**Previous**: [Getting Started](getting-started.md) | **Next**: [API Reference](api/mcp-tx-session.md)

@@ -48,13 +48,13 @@ uv add mcp_tx
 
 **Problem**: Calling `call_tool()` without initializing session
 ```python
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # Error!
 ```
 
 **Solution**: Always call `initialize()` first
 ```python
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()  # Required!
 result = await rmcp_session.call_tool("test", {})
 ```
@@ -86,7 +86,7 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 **Bad Pattern**:
 ```python
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 await rmcp.initialize()
 # ... use rmcp
 # Session never closed - resource leak!
@@ -95,13 +95,13 @@ await rmcp.initialize()
 **Good Patterns**:
 ```python
 # ✅ Best: Use async context manager
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... use rmcp
     # Automatically closed
 
 # ✅ Acceptable: Manual cleanup
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... use rmcp
@@ -181,8 +181,8 @@ result = await rmcp_session.call_tool(
 )
 
 # Solution 2: Configure session defaults
-config = MCP-TxConfig(default_timeout_ms=60000)  # 1 minute default
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=60000)  # 1 minute default
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # Solution 3: Environment-specific configuration
 def get_timeout_for_environment():
@@ -194,7 +194,7 @@ def get_timeout_for_environment():
     else:
         return 5000   # 5 seconds (fast dev cycles)
 
-config = MCP-TxConfig(default_timeout_ms=get_timeout_for_environment())
+config = MCPTxConfig(default_timeout_ms=get_timeout_for_environment())
 ```
 
 ### Memory Usage Growing Over Time
@@ -209,7 +209,7 @@ config = MCP-TxConfig(default_timeout_ms=get_timeout_for_environment())
 **Solutions**:
 ```python
 # Reduce cache window
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=300000,  # 5 minutes instead of default 10
     max_concurrent_requests=5,       # Limit concurrent requests
 )
@@ -364,14 +364,14 @@ print(f"MCP-Tx overhead: {duration_ms - direct_duration:.1f}ms")
 **Common Causes & Solutions**:
 ```python
 # High concurrency limit causing resource contention
-config = MCP-TxConfig(max_concurrent_requests=5)  # Reduce from default 10
+config = MCPTxConfig(max_concurrent_requests=5)  # Reduce from default 10
 
 # Unnecessary retry attempts
 quick_policy = RetryPolicy(max_attempts=1)  # No retries for simple operations
 result = await rmcp_session.call_tool("fast_op", {}, retry_policy=quick_policy)
 
 # Large deduplication cache causing memory pressure
-config = MCP-TxConfig(deduplication_window_ms=60000)  # 1 minute instead of 10
+config = MCPTxConfig(deduplication_window_ms=60000)  # 1 minute instead of 10
 ```
 
 ### High Retry Rates
@@ -433,7 +433,7 @@ rmcp_logger.setLevel(logging.DEBUG)
 ### Session Introspection
 
 ```python
-async def debug_session_state(rmcp_session: MCP-TxSession):
+async def debug_session_state(rmcp_session: MCPTxSession):
     print("=== MCP-Tx Session Debug Info ===")
     print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
     print(f"Active requests: {len(rmcp_session.active_requests)}")
@@ -532,4 +532,4 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 ---
 
-**Previous**: [FAQ](faq.md) | **Next**: [API Reference](api/rmcp-session.md)
+**Previous**: [FAQ](faq.md) | **Next**: [API Reference](api/mcp-tx-session.md)

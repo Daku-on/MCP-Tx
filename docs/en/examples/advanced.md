@@ -5,7 +5,7 @@ This guide demonstrates advanced usage patterns and production-ready implementat
 ## Multi-Step Workflows with Transaction Tracking
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 import uuid
 
 app = FastMCP-Tx(mcp_session)

@@ -12,7 +12,7 @@ MCP-Tx is 100% backward compatible with standard MCP:
 # Works with any MCP server
 async def use_with_any_mcp_server(mcp_session):
     # MCP-Tx wraps existing sessions
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     # If server doesn't support MCP-Tx, it works like standard MCP
     result = await rmcp_session.call_tool("any_tool", {})
@@ -164,19 +164,19 @@ async def with_trio():
 
 ```python
 import sys
-from rmcp import MCP-TxConfig
+from mcp_tx import MCPTxConfig
 
-def get_platform_config() -> MCP-TxConfig:
+def get_platform_config() -> MCPTxConfig:
     """Get platform-optimized configuration."""
     if sys.platform == "win32":
         # Windows-specific optimizations
-        return MCP-TxConfig(
+        return MCPTxConfig(
             max_concurrent_requests=50,  # Windows has different limits
             use_uvloop=False  # Not available on Windows
         )
     else:
         # Unix-like systems
-        return MCP-TxConfig(
+        return MCPTxConfig(
             max_concurrent_requests=100,
             use_uvloop=True  # Better performance
         )
@@ -258,7 +258,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
 
 ```python
 # Some MCP servers have message size limits
-config = MCP-TxConfig(
+config = MCPTxConfig(
     max_message_size=1024 * 1024,  # 1MB limit
     enable_compression=True  # Compress large messages
 )
@@ -278,7 +278,7 @@ async def safe_call_tool(app, name, arguments):
 
 ```python
 import pytest
-from rmcp import FastMCP-Tx, MCP-TxSession
+from mcp_tx import FastMCP-Tx, MCPTxSession
 
 @pytest.mark.compatibility
 class TestCompatibility:
@@ -286,7 +286,7 @@ class TestCompatibility:
     
     async def test_standard_mcp_fallback(self, standard_mcp_session):
         """Test MCP-Tx works with non-MCP-Tx servers."""
-        rmcp = MCP-TxSession(standard_mcp_session)
+        rmcp = MCPTxSession(standard_mcp_session)
         
         # Should work without MCP-Tx features
         result = await rmcp.call_tool("echo", {"text": "hello"})
@@ -353,7 +353,7 @@ async def check_compatibility(server_url: str):
         
         # Test MCP-Tx features if available
         if rmcp_support['supported']:
-            rmcp_session = MCP-TxSession(session)
+            rmcp_session = MCPTxSession(session)
             
             # Test ACK
             result = await rmcp_session.call_tool("ping", {})
@@ -381,7 +381,7 @@ MCP-Tx is designed to be forward-compatible:
 
 ```python
 # Future features will be optional
-future_config = MCP-TxConfig(
+future_config = MCPTxConfig(
     # Current features
     enable_retry=True,
     enable_deduplication=True,

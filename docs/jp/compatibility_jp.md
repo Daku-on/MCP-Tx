@@ -12,7 +12,7 @@ MCP-Txは標準MCPと100%後方互換性があります：
 # 任意のMCPサーバーで動作
 async def use_with_any_mcp_server(mcp_session):
     # MCP-Txは既存のセッションをラップ
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     # サーバーがMCP-Txをサポートしない場合、標準MCPのように動作
     result = await rmcp_session.call_tool("any_tool", {})
@@ -164,19 +164,19 @@ async def with_trio():
 
 ```python
 import sys
-from rmcp import MCP-TxConfig
+from mcp_tx import MCPTxConfig
 
-def get_platform_config() -> MCP-TxConfig:
+def get_platform_config() -> MCPTxConfig:
     """プラットフォーム最適化設定を取得"""
     if sys.platform == "win32":
         # Windows固有の最適化
-        return MCP-TxConfig(
+        return MCPTxConfig(
             max_concurrent_requests=50,  # Windowsは異なる制限
             use_uvloop=False  # Windowsでは利用不可
         )
     else:
         # Unix系システム
-        return MCP-TxConfig(
+        return MCPTxConfig(
             max_concurrent_requests=100,
             use_uvloop=True  # より良いパフォーマンス
         )
@@ -258,7 +258,7 @@ if sys.platform == "win32" and sys.version_info < (3, 8):
 
 ```python
 # 一部のMCPサーバーはメッセージサイズ制限がある
-config = MCP-TxConfig(
+config = MCPTxConfig(
     max_message_size=1024 * 1024,  # 1MB制限
     enable_compression=True  # 大きなメッセージを圧縮
 )
@@ -278,7 +278,7 @@ async def safe_call_tool(app, name, arguments):
 
 ```python
 import pytest
-from rmcp import FastMCP-Tx, MCP-TxSession
+from mcp_tx import FastMCP-Tx, MCPTxSession
 
 @pytest.mark.compatibility
 class TestCompatibility:
@@ -286,7 +286,7 @@ class TestCompatibility:
     
     async def test_standard_mcp_fallback(self, standard_mcp_session):
         """MCP-Txが非MCP-Txサーバーで動作することをテスト"""
-        rmcp = MCP-TxSession(standard_mcp_session)
+        rmcp = MCPTxSession(standard_mcp_session)
         
         # MCP-Tx機能なしで動作するべき
         result = await rmcp.call_tool("echo", {"text": "hello"})
@@ -353,7 +353,7 @@ async def check_compatibility(server_url: str):
         
         # 利用可能な場合はMCP-Tx機能をテスト
         if rmcp_support['supported']:
-            rmcp_session = MCP-TxSession(session)
+            rmcp_session = MCPTxSession(session)
             
             # ACKをテスト
             result = await rmcp_session.call_tool("ping", {})
@@ -381,7 +381,7 @@ MCP-Txは前方互換性を持つよう設計されています：
 
 ```python
 # 将来の機能はオプション
-future_config = MCP-TxConfig(
+future_config = MCPTxConfig(
     # 現在の機能
     enable_retry=True,
     enable_deduplication=True,

@@ -54,7 +54,7 @@ async def mcp_example():
 import asyncio
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
-from rmcp import MCP-TxSession  # MCP-Txインポート追加
+from mcp_tx import MCPTxSession  # MCP-Txインポート追加
 
 async def rmcp_example():
     # 同じMCPセットアップ
@@ -62,7 +62,7 @@ async def rmcp_example():
     mcp_session = ClientSession(transport)
     
     # 信頼性のためにMCP-Txでラップ
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     await rmcp_session.initialize()  # 同じインターフェース
     
@@ -85,8 +85,8 @@ async def rmcp_example():
 
 **移行ステップ**：
 1. ✅ MCP-Txをインストール: `uv add mcp_tx`
-2. ✅ MCP-TxSessionをインポート: `from rmcp import MCP-TxSession`
-3. ✅ MCPセッションをラップ: `rmcp_session = MCP-TxSession(mcp_session)`
+2. ✅ MCPTxSessionをインポート: `from mcp_tx import MCPTxSession`
+3. ✅ MCPセッションをラップ: `rmcp_session = MCPTxSession(mcp_session)`
 4. ✅ 結果処理を更新: `result.ack`と`result.result`を使用
 5. ✅ 既存サーバーでテスト（MCP-Tx未サポート時自動フォールバック）
 
@@ -99,7 +99,7 @@ async def rmcp_example():
 class ApplicationClient:
     def __init__(self, mcp_session):
         # フェーズ1: 基本MCP-Txでラップ
-        self.session = MCP-TxSession(mcp_session)
+        self.session = MCPTxSession(mcp_session)
         self.initialized = False
     
     async def initialize(self):
@@ -142,7 +142,7 @@ class ApplicationClient:
 ```python
     async def api_call(self, endpoint: str, data: dict = None) -> dict:
         """フェーズ3: 外部API用カスタムリトライ"""
-        from rmcp import RetryPolicy
+        from mcp_tx import RetryPolicy
         
         # 外部API用積極的リトライ
         api_retry = RetryPolicy(
@@ -174,7 +174,7 @@ class ApplicationClient:
 import os
 from typing import Union
 from mcp.client.session import ClientSession
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 class ConfigurableClient:
     def __init__(self, mcp_session: ClientSession):
@@ -185,12 +185,12 @@ class ConfigurableClient:
         
         if use_rmcp:
             print("🚀 拡張信頼性のためMCP-Txを使用")
-            self.session = MCP-TxSession(mcp_session)
+            self.session = MCPTxSession(mcp_session)
         else:
             print("📡 標準MCPを使用")
             self.session = mcp_session
         
-        self.is_rmcp = isinstance(self.session, MCP-TxSession)
+        self.is_rmcp = isinstance(self.session, MCPTxSession)
     
     async def call_tool_with_fallback(self, name: str, arguments: dict) -> dict:
         """MCP-Tx利用可能時使用、MCPエラーハンドリングにフォールバック"""
@@ -325,11 +325,11 @@ class MCPClient:
 #### 移行後（MCP-Tx）
 ```python
 # 宣言的MCP-Tx設定
-from rmcp import MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 class MCP-TxClient:
     def __init__(self):
-        config = MCP-TxConfig(
+        config = MCPTxConfig(
             default_timeout_ms=30000,
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -341,7 +341,7 @@ class MCP-TxClient:
             deduplication_window_ms=300000
         )
         
-        self.session = MCP-TxSession(mcp_session, config)
+        self.session = MCPTxSession(mcp_session, config)
         # 信頼性機能は自動処理
 ```
 
@@ -358,7 +358,7 @@ class MCP-TxClient:
 ### 移行実行
 
 - [ ] **MCP-Txインストール**: `uv add mcp_tx`
-- [ ] **インポート更新**: `from rmcp import MCP-TxSession`を追加
+- [ ] **インポート更新**: `from mcp_tx import MCPTxSession`を追加
 - [ ] **MCPセッションラップ**: 直接MCP使用をMCP-Txラッパーに置換
 - [ ] **結果処理更新**: `result.ack`と`result.result`パターンを使用
 - [ ] **MCP-Tx設定**: 適切なタイムアウト、リトライポリシー、並行性制限を設定
@@ -379,7 +379,7 @@ class MCP-TxClient:
 
 ```python
 # ❌ 問題
-from rmcp import MCP-TxSession  # ModuleNotFoundError
+from mcp_tx import MCPTxSession  # ModuleNotFoundError
 
 # ✅ 解決  
 # 最初にMCP-Txをインストール
@@ -409,7 +409,7 @@ else:
 # サーバーがMCP-Tx実験的機能をサポートしていない
 
 # ✅ 解決 - 自動フォールバック
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()
 
 if rmcp_session.rmcp_enabled:
@@ -429,7 +429,7 @@ else:
 class HybridClient:
     def __init__(self, mcp_session):
         self.mcp_session = mcp_session
-        self.rmcp_session = MCP-TxSession(mcp_session)
+        self.rmcp_session = MCPTxSession(mcp_session)
     
     async def simple_call(self, tool: str, args: dict):
         # 単純、非重要操作にはMCPを使用

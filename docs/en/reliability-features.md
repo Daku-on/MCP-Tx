@@ -28,7 +28,7 @@ else:
 MCP-Tx automatically retries failed operations:
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # Configure retry behavior
 retry_policy = RetryPolicy(
@@ -108,7 +108,7 @@ await rmcp_session.call_tool(
 ### Tool-Level Configuration
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 
 app = FastMCP-Tx(mcp_session)
 
@@ -252,7 +252,7 @@ logger.info("Operation completed", extra={
 
 - [Architecture Overview](architecture.md) - How MCP-Tx enhances MCP
 - [Getting Started](getting-started.md) - Quick start guide
-- [API Reference](api/rmcp-session.md) - Detailed API documentation
+- [API Reference](api/mcp-tx-session.md) - Detailed API documentation
 
 ---
 

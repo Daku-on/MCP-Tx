@@ -1,11 +1,11 @@
-# MCP-TxSession API Reference
+# MCPTxSession API Reference
 
 The main interface for reliable MCP tool calls.
 
-## Class: MCP-TxSession
+## Class: MCPTxSession
 
 ```python
-class MCP-TxSession:
+class MCPTxSession:
     """
     MCP-Tx Session that wraps an existing MCP session with reliability features.
     
@@ -21,21 +21,21 @@ class MCP-TxSession:
 ### Constructor
 
 ```python
-def __init__(self, mcp_session: BaseSession, config: MCP-TxConfig | None = None)
+def __init__(self, mcp_session: BaseSession, config: MCPTxConfig | None = None)
 ```
 
 **Parameters**:
 - `mcp_session` (`BaseSession`): Existing MCP session to wrap
-- `config` (`MCP-TxConfig`, optional): MCP-Tx configuration. Defaults to `MCP-TxConfig()`
+- `config` (`MCPTxConfig`, optional): MCP-Tx configuration. Defaults to `MCPTxConfig()`
 
 **Example**:
 ```python
-from rmcp import MCP-TxSession, MCP-TxConfig
+from mcp_tx import MCPTxSession, MCPTxConfig
 from mcp.client.session import ClientSession
 
 mcp_session = ClientSession(...)
-config = MCP-TxConfig(default_timeout_ms=10000)
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=10000)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ### Methods
@@ -137,7 +137,7 @@ Close the MCP-Tx session and underlying MCP session.
 await rmcp_session.close()
 
 # Or use as async context manager
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     result = await rmcp.call_tool("echo", {"msg": "Hello"})
     # Automatically closed on exit
@@ -185,16 +185,16 @@ for request_id, tracker in rmcp_session.active_requests.items():
 
 ### Async Context Manager
 
-`MCP-TxSession` supports async context manager protocol:
+`MCPTxSession` supports async context manager protocol:
 
 ```python
-async def __aenter__(self) -> MCP-TxSession: ...
+async def __aenter__(self) -> MCPTxSession: ...
 async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
 ```
 
 **Example**:
 ```python
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     result = await rmcp.call_tool("test", {})
@@ -302,13 +302,13 @@ except ValueError as e:
 
 ```python
 # ✅ Good: Use async context manager
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... use rmcp
     # Automatically cleaned up
 
 # ⚠️ Acceptable: Manual cleanup  
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... use rmcp
@@ -360,19 +360,19 @@ except Exception:
 ```python
 # ✅ Good: Environment-specific configuration
 if environment == "production":
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=30000,
         retry_policy=RetryPolicy(max_attempts=5),
         max_concurrent_requests=20
     )
 else:
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=5000, 
         retry_policy=RetryPolicy(max_attempts=2),
         max_concurrent_requests=5
     )
 
-rmcp = MCP-TxSession(mcp_session, config)
+rmcp = MCPTxSession(mcp_session, config)
 ```
 
 ---

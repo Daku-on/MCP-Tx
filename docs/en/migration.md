@@ -54,7 +54,7 @@ async def mcp_example():
 import asyncio
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
-from rmcp import MCP-TxSession  # Add MCP-Tx import
+from mcp_tx import MCPTxSession  # Add MCP-Tx import
 
 async def rmcp_example():
     # Same MCP setup
@@ -62,7 +62,7 @@ async def rmcp_example():
     mcp_session = ClientSession(transport)
     
     # Wrap with MCP-Tx for reliability
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     await rmcp_session.initialize()  # Same interface
     
@@ -85,8 +85,8 @@ async def rmcp_example():
 
 **Migration Steps**:
 1. ✅ Install MCP-Tx: `uv add mcp_tx`
-2. ✅ Import MCP-TxSession: `from rmcp import MCP-TxSession`
-3. ✅ Wrap MCP session: `rmcp_session = MCP-TxSession(mcp_session)`
+2. ✅ Import MCPTxSession: `from mcp_tx import MCPTxSession`
+3. ✅ Wrap MCP session: `rmcp_session = MCPTxSession(mcp_session)`
 4. ✅ Update result handling: Use `result.ack` and `result.result`
 5. ✅ Test with existing servers (automatic fallback if no MCP-Tx support)
 
@@ -99,7 +99,7 @@ async def rmcp_example():
 class ApplicationClient:
     def __init__(self, mcp_session):
         # Phase 1: Wrap with basic MCP-Tx
-        self.session = MCP-TxSession(mcp_session)
+        self.session = MCPTxSession(mcp_session)
         self.initialized = False
     
     async def initialize(self):
@@ -142,7 +142,7 @@ class ApplicationClient:
 ```python
     async def api_call(self, endpoint: str, data: dict = None) -> dict:
         """Phase 3: Custom retry for external APIs."""
-        from rmcp import RetryPolicy
+        from mcp_tx import RetryPolicy
         
         # Aggressive retry for external APIs
         api_retry = RetryPolicy(
@@ -174,7 +174,7 @@ class ApplicationClient:
 import os
 from typing import Union
 from mcp.client.session import ClientSession
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 class ConfigurableClient:
     def __init__(self, mcp_session: ClientSession):
@@ -185,12 +185,12 @@ class ConfigurableClient:
         
         if use_rmcp:
             print("🚀 Using MCP-Tx for enhanced reliability")
-            self.session = MCP-TxSession(mcp_session)
+            self.session = MCPTxSession(mcp_session)
         else:
             print("📡 Using standard MCP")
             self.session = mcp_session
         
-        self.is_rmcp = isinstance(self.session, MCP-TxSession)
+        self.is_rmcp = isinstance(self.session, MCPTxSession)
     
     async def call_tool_with_fallback(self, name: str, arguments: dict) -> dict:
         """Call tool with MCP-Tx if available, fallback to MCP error handling."""
@@ -325,11 +325,11 @@ class MCPClient:
 #### After (MCP-Tx)
 ```python
 # Declarative MCP-Tx configuration
-from rmcp import MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 class MCP-TxClient:
     def __init__(self):
-        config = MCP-TxConfig(
+        config = MCPTxConfig(
             default_timeout_ms=30000,
             retry_policy=RetryPolicy(
                 max_attempts=3,
@@ -341,7 +341,7 @@ class MCP-TxClient:
             deduplication_window_ms=300000
         )
         
-        self.session = MCP-TxSession(mcp_session, config)
+        self.session = MCPTxSession(mcp_session, config)
         # Reliability features handled automatically
 ```
 
@@ -358,7 +358,7 @@ class MCP-TxClient:
 ### Migration Execution
 
 - [ ] **Install MCP-Tx**: `uv add mcp_tx`
-- [ ] **Update imports**: Add `from rmcp import MCP-TxSession`
+- [ ] **Update imports**: Add `from mcp_tx import MCPTxSession`
 - [ ] **Wrap MCP sessions**: Replace direct MCP usage with MCP-Tx wrapper
 - [ ] **Update result handling**: Use `result.ack` and `result.result` pattern
 - [ ] **Configure MCP-Tx**: Set appropriate timeouts, retry policies, concurrency limits
@@ -379,7 +379,7 @@ class MCP-TxClient:
 
 ```python
 # ❌ Problem
-from rmcp import MCP-TxSession  # ModuleNotFoundError
+from mcp_tx import MCPTxSession  # ModuleNotFoundError
 
 # ✅ Solution  
 # Install MCP-Tx first
@@ -409,7 +409,7 @@ else:
 # Server doesn't support MCP-Tx experimental capabilities
 
 # ✅ Solution - Automatic fallback
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()
 
 if rmcp_session.rmcp_enabled:
@@ -429,7 +429,7 @@ else:
 class HybridClient:
     def __init__(self, mcp_session):
         self.mcp_session = mcp_session
-        self.rmcp_session = MCP-TxSession(mcp_session)
+        self.rmcp_session = MCPTxSession(mcp_session)
     
     async def simple_call(self, tool: str, args: dict):
         # Use MCP for simple, non-critical operations

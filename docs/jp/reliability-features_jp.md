@@ -28,7 +28,7 @@ else:
 MCP-Txは失敗した操作を自動的にリトライします：
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # リトライ動作を設定
 retry_policy = RetryPolicy(
@@ -108,7 +108,7 @@ await rmcp_session.call_tool(
 ### ツールレベル設定
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 
 app = FastMCP-Tx(mcp_session)
 

@@ -14,10 +14,10 @@ MCP-Txは最小限のオーバーヘッドで信頼性機能を追加：
 ### 1. タイムアウト最適化
 
 ```python
-from rmcp import MCP-TxConfig, FastMCP-Tx
+from mcp_tx import MCPTxConfig, FastMCP-Tx
 
 # インタラクティブアプリケーション用の高速失敗設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=5000,  # 最大5秒待機
     retry_policy=RetryPolicy(
         max_attempts=2,  # クイックリトライのみ
@@ -65,7 +65,7 @@ async with FastMCP-Tx(mcp_session) as app:
 
 ```python
 # 高同時実行設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     max_concurrent_requests=50,  # 並列操作を増加
     default_timeout_ms=10000
 )
@@ -110,12 +110,12 @@ async def inefficient_io(url: str) -> dict:
 
 ```python
 # 短期間操作: 小さなウィンドウ
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=60000  # 1分
 )
 
 # 長時間実行ワークフロー: 大きなウィンドウ
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=3600000  # 1時間
 )
 
@@ -153,7 +153,7 @@ class ManagedApp:
 
 ```python
 # 大きなペイロード用の圧縮を有効化
-config = MCP-TxConfig(
+config = MCPTxConfig(
     enable_compression=True,  # 1KB超のメッセージをGzip
     compression_threshold_bytes=1024
 )
@@ -168,7 +168,7 @@ async def transfer_large_data(data: dict) -> dict:
 ### リトライ戦略最適化
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # ネットワーク最適化リトライ
 network_retry = RetryPolicy(

@@ -11,7 +11,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (MCP-Tx) Pyt
 - [**Architecture Overview**](architecture.md) - How MCP-Tx enhances MCP
 
 ### API Reference
-- [**MCP-TxSession**](api/mcp-tx-session.md) - Main client interface
+- [**MCPTxSession**](api/mcp-tx-session.md) - Main client interface
 
 ### Usage Examples
 - [**Basic Examples**](examples/basic.md) - Simple tool calls and error handling
@@ -33,7 +33,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (MCP-Tx) Pyt
 1. [Migration Guide](migration.md) → [Examples](examples/basic.md)
 
 ### For Developers
-1. [Architecture](architecture.md) → [API Reference](api/rmcp-session.md)
+1. [Architecture](architecture.md) → [API Reference](api/mcp-tx-session.md)
 
 ## 🔗 External Resources
 

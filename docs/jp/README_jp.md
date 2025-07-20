@@ -18,12 +18,12 @@ Reliable Model Context Protocol (MCP-Tx) の完全なドキュメント
 ## クイックスタート
 
 ```python
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 from mcp.client.session import ClientSession
 
 # 既存のMCPセッションをラップ
 mcp_session = ClientSession(...)
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 
 await rmcp_session.initialize()
 
@@ -57,7 +57,7 @@ else:
 
 | API | 説明 |
 |-----|------|
-| [**MCP-TxSession**](api/mcp-tx-session_jp.md) | メインインターフェース |
+| [**MCPTxSession**](api/mcp-tx-session_jp.md) | メインインターフェース |
 
 ### 💡 実用的な例
 
@@ -95,11 +95,11 @@ result = await rmcp_session.call_tool(
 ### ⚡ 高負荷システム
 ```python
 # 並行制御付き設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     max_concurrent_requests=20,
     default_timeout_ms=15000
 )
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ## パフォーマンス概要
@@ -131,16 +131,16 @@ pip install mcp_tx
 
 ### 🆘 ヘルプが必要ですか？
 
-1. **[トラブルシューティングガイド](troubleshooting.jp.md)** をチェック
-2. **[FAQ](faq.jp.md)** で一般的な質問を確認
+1. **[トラブルシューティングガイド](troubleshooting_jp.md)** をチェック
+2. **[FAQ](faq_jp.md)** で一般的な質問を確認
 3. **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** で問題を報告
 
 ### 📚 詳細情報
 
-- **初心者**: [はじめる](getting-started.jp.md) から開始
-- **開発者**: [アーキテクチャ](architecture.jp.md) で技術詳細を確認
-- **既存ユーザー**: [移行ガイド](migration.jp.md) でアップグレード方法を確認
+- **初心者**: [はじめる](getting-started_jp.md) から開始
+- **開発者**: [アーキテクチャ](architecture_jp.md) で技術詳細を確認
+- **既存ユーザー**: [移行ガイド](migration_jp.md) でアップグレード方法を確認
 
 ---
 
-**🚀 今すぐ始める**: [はじめる](getting-started.jp.md) →
+**🚀 今すぐ始める**: [はじめる](getting-started_jp.md) →

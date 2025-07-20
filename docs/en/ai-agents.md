@@ -49,7 +49,7 @@ MCP-Tx addresses these challenges with automatic retry, idempotency, and deliver
 ### 1. Core Agent Setup
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, RetryPolicy, MCPTxConfig
 import openai
 import aiohttp
 import json
@@ -57,7 +57,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 # Configure for AI workloads
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=30000,  # AI APIs can be slow
     max_concurrent_requests=5,  # Rate limit consideration
     enable_request_logging=True,

@@ -5,7 +5,7 @@
 ## トランザクション追跡付きマルチステップワークフロー
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy
+from mcp_tx import FastMCP-Tx, RetryPolicy
 import uuid
 
 app = FastMCP-Tx(mcp_session)
@@ -382,7 +382,7 @@ result = await saga.execute(order_saga)
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 import asyncio
 
 class MCP-TxMiddleware:
@@ -397,7 +397,7 @@ class MCP-TxMiddleware:
     def _setup_rmcp(self):
         """MCP-Tx接続を初期化"""
         if not MCP-TxMiddleware._instance:
-            config = MCP-TxConfig(
+            config = MCPTxConfig(
                 default_timeout_ms=settings.MCP-Tx_TIMEOUT,
                 enable_request_logging=settings.DEBUG
             )

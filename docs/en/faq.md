@@ -17,7 +17,7 @@ Common questions about MCP-Tx implementation and usage.
 
 ```python
 # Works with any MCP server
-rmcp_session = MCP-TxSession(your_mcp_session)
+rmcp_session = MCPTxSession(your_mcp_session)
 await rmcp_session.initialize()
 
 print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
@@ -47,7 +47,7 @@ print(f"MCP-Tx enabled: {rmcp_session.rmcp_enabled}")
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
 from mcp.client.sse import SseClientTransport
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 
 # Standard MCP clients
 mcp_session = ClientSession(StdioClientTransport(...))
@@ -55,7 +55,7 @@ mcp_session = ClientSession(StdioClientTransport(...))
 mcp_session = ClientSession(SseClientTransport(...))
 
 # Wrap with MCP-Tx
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 ```
 
 ## Configuration Questions
@@ -65,7 +65,7 @@ rmcp_session = MCP-TxSession(mcp_session)
 Use `RetryPolicy` to configure retry behavior per session or per call:
 
 ```python
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # Session-level retry policy
 aggressive_retry = RetryPolicy(
@@ -78,8 +78,8 @@ aggressive_retry = RetryPolicy(
     ]
 )
 
-config = MCP-TxConfig(retry_policy=aggressive_retry)
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(retry_policy=aggressive_retry)
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # Or per-call override
 quick_retry = RetryPolicy(max_attempts=2, base_delay_ms=500)
@@ -141,11 +141,11 @@ result = await rmcp_session.call_tool(
 
 ```python
 # Default timeout configuration
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=10000,  # 10 seconds for most operations
 )
 
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 
 # Quick operations - shorter timeout
 result = await rmcp_session.call_tool(
@@ -267,7 +267,7 @@ rmcp_logger.setLevel(logging.DEBUG)
 # - Server capability negotiation
 # - Error details
 
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     # Debug information in logs
@@ -287,21 +287,21 @@ async with MCP-TxSession(mcp_session) as rmcp:
 
 ```python
 # Multiple servers with different configurations
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # Fast, reliable server - minimal retry
-fast_config = MCP-TxConfig(
+fast_config = MCPTxConfig(
     retry_policy=RetryPolicy(max_attempts=2, base_delay_ms=500),
     default_timeout_ms=5000
 )
-fast_rmcp = MCP-TxSession(fast_mcp_session, fast_config)
+fast_rmcp = MCPTxSession(fast_mcp_session, fast_config)
 
 # Slow, unreliable server - aggressive retry
-slow_config = MCP-TxConfig(
+slow_config = MCPTxConfig(
     retry_policy=RetryPolicy(max_attempts=5, base_delay_ms=2000),
     default_timeout_ms=30000
 )
-slow_rmcp = MCP-TxSession(slow_mcp_session, slow_config)
+slow_rmcp = MCPTxSession(slow_mcp_session, slow_config)
 
 # Use appropriate session for each operation
 fast_result = await fast_rmcp.call_tool("cache_lookup", {"key": "data"})
@@ -370,7 +370,7 @@ async def call_with_circuit_breaker(tool_name: str, arguments: dict):
 **Override retry behavior** with custom policies:
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # Custom retry for different error types
 class SmartRetryPolicy(RetryPolicy):
@@ -431,7 +431,7 @@ result = await rmcp_session.call_tool(
 
 ```python
 from fastapi import FastAPI, Depends, HTTPException
-from rmcp import MCP-TxSession
+from mcp_tx import MCPTxSession
 import asyncio
 
 app = FastAPI()
@@ -439,13 +439,13 @@ app = FastAPI()
 # Global MCP-Tx session (or use dependency injection)
 _rmcp_session = None
 
-async def get_rmcp_session() -> MCP-TxSession:
+async def get_rmcp_session() -> MCPTxSession:
     """FastAPI dependency for MCP-Tx session."""
     global _rmcp_session
     if _rmcp_session is None:
         # Initialize MCP-Tx session
         mcp_session = await setup_mcp_session()
-        _rmcp_session = MCP-TxSession(mcp_session)
+        _rmcp_session = MCPTxSession(mcp_session)
         await _rmcp_session.initialize()
     
     return _rmcp_session
@@ -453,7 +453,7 @@ async def get_rmcp_session() -> MCP-TxSession:
 @app.post("/process-file")
 async def process_file(
     file_path: str,
-    rmcp: MCP-TxSession = Depends(get_rmcp_session)
+    rmcp: MCPTxSession = Depends(get_rmcp_session)
 ):
     """Process file using MCP-Tx."""
     try:
@@ -551,11 +551,11 @@ if result.ack:
 
 ```python
 # ❌ Wrong: Forgot to initialize
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 result = await rmcp_session.call_tool("test", {})  # Error
 
 # ✅ Correct: Always initialize first
-rmcp_session = MCP-TxSession(mcp_session)
+rmcp_session = MCPTxSession(mcp_session)
 await rmcp_session.initialize()  # Required step
 result = await rmcp_session.call_tool("test", {})
 ```
@@ -564,12 +564,12 @@ result = await rmcp_session.call_tool("test", {})
 
 ```python
 # Configure cache limits to prevent memory leaks
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=300000,  # 5 minutes instead of default 10
     max_concurrent_requests=5,       # Limit concurrent requests
 )
 
-rmcp_session = MCP-TxSession(mcp_session, config)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ---

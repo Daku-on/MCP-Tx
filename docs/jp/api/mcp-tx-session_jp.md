@@ -1,11 +1,11 @@
-# MCP-TxSession APIリファレンス
+# MCPTxSession APIリファレンス
 
 信頼性のあるMCPツール呼び出しのメインインターフェース。
 
-## クラス: MCP-TxSession
+## クラス: MCPTxSession
 
 ```python
-class MCP-TxSession:
+class MCPTxSession:
     """
     信頼性機能付きで既存のMCPセッションをラップするMCP-Txセッション。
     
@@ -21,21 +21,21 @@ class MCP-TxSession:
 ### コンストラクタ
 
 ```python
-def __init__(self, mcp_session: BaseSession, config: MCP-TxConfig | None = None)
+def __init__(self, mcp_session: BaseSession, config: MCPTxConfig | None = None)
 ```
 
 **パラメータ**:
 - `mcp_session` (`BaseSession`): ラップする既存のMCPセッション
-- `config` (`MCP-TxConfig`, オプション): MCP-Tx設定。デフォルトは`MCP-TxConfig()`
+- `config` (`MCPTxConfig`, オプション): MCP-Tx設定。デフォルトは`MCPTxConfig()`
 
 **例**:
 ```python
-from rmcp import MCP-TxSession, MCP-TxConfig
+from mcp_tx import MCPTxSession, MCPTxConfig
 from mcp.client.session import ClientSession
 
 mcp_session = ClientSession(...)
-config = MCP-TxConfig(default_timeout_ms=10000)
-rmcp_session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig(default_timeout_ms=10000)
+rmcp_session = MCPTxSession(mcp_session, config)
 ```
 
 ### メソッド
@@ -137,7 +137,7 @@ MCP-Txセッションと基盤となるMCPセッションをクローズ。
 await rmcp_session.close()
 
 # または非同期コンテキストマネージャーとして使用
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     result = await rmcp.call_tool("echo", {"msg": "Hello"})
     # 終了時に自動的にクローズ
@@ -185,16 +185,16 @@ for request_id, tracker in rmcp_session.active_requests.items():
 
 ### 非同期コンテキストマネージャー
 
-`MCP-TxSession`は非同期コンテキストマネージャープロトコルをサポート：
+`MCPTxSession`は非同期コンテキストマネージャープロトコルをサポート：
 
 ```python
-async def __aenter__(self) -> MCP-TxSession: ...
+async def __aenter__(self) -> MCPTxSession: ...
 async def __aexit__(self, exc_type, exc_val, exc_tb) -> None: ...
 ```
 
 **例**:
 ```python
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     
     result = await rmcp.call_tool("test", {})
@@ -302,13 +302,13 @@ except ValueError as e:
 
 ```python
 # ✅ 良い: 非同期コンテキストマネージャーを使用
-async with MCP-TxSession(mcp_session) as rmcp:
+async with MCPTxSession(mcp_session) as rmcp:
     await rmcp.initialize()
     # ... rmcpを使用
     # 自動的にクリーンアップ
 
 # ⚠️ 許容: 手動クリーンアップ  
-rmcp = MCP-TxSession(mcp_session)
+rmcp = MCPTxSession(mcp_session)
 try:
     await rmcp.initialize()
     # ... rmcpを使用
@@ -360,19 +360,19 @@ except Exception:
 ```python
 # ✅ 良い: 環境固有設定
 if environment == "production":
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=30000,
         retry_policy=RetryPolicy(max_attempts=5),
         max_concurrent_requests=20
     )
 else:
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=5000, 
         retry_policy=RetryPolicy(max_attempts=2),
         max_concurrent_requests=5
     )
 
-rmcp = MCP-TxSession(mcp_session, config)
+rmcp = MCPTxSession(mcp_session, config)
 ```
 
 ---

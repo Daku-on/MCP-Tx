@@ -49,7 +49,7 @@ MCP-Txは自動リトライ、冪等性、配信保証でこれらの課題に�
 ### 1. コアエージェントセットアップ
 
 ```python
-from rmcp import FastMCP-Tx, RetryPolicy, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, RetryPolicy, MCPTxConfig
 import openai
 import aiohttp
 import json
@@ -57,7 +57,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 
 # AIワークロード用の設定
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=30000,  # AI APIは遅い場合がある
     max_concurrent_requests=5,  # レート制限の考慮
     enable_request_logging=True,

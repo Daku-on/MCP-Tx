@@ -14,10 +14,10 @@ MCP-Tx adds reliability features with minimal overhead:
 ### 1. Optimize Timeouts
 
 ```python
-from rmcp import MCP-TxConfig, FastMCP-Tx
+from mcp_tx import MCPTxConfig, FastMCP-Tx
 
 # Fast-fail configuration for interactive applications
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=5000,  # 5 seconds max wait
     retry_policy=RetryPolicy(
         max_attempts=2,  # Quick retry only
@@ -65,7 +65,7 @@ async with FastMCP-Tx(mcp_session) as app:
 
 ```python
 # High-concurrency configuration
-config = MCP-TxConfig(
+config = MCPTxConfig(
     max_concurrent_requests=50,  # Increase parallel operations
     default_timeout_ms=10000
 )
@@ -110,12 +110,12 @@ async def inefficient_io(url: str) -> dict:
 
 ```python
 # Short-lived operations: smaller window
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=60000  # 1 minute
 )
 
 # Long-running workflows: larger window
-config = MCP-TxConfig(
+config = MCPTxConfig(
     deduplication_window_ms=3600000  # 1 hour
 )
 
@@ -153,7 +153,7 @@ class ManagedApp:
 
 ```python
 # Enable compression for large payloads
-config = MCP-TxConfig(
+config = MCPTxConfig(
     enable_compression=True,  # Gzip for messages > 1KB
     compression_threshold_bytes=1024
 )
@@ -168,7 +168,7 @@ async def transfer_large_data(data: dict) -> dict:
 ### Retry Strategy Optimization
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # Network-optimized retry
 network_retry = RetryPolicy(
@@ -386,4 +386,4 @@ async def benchmark_rmcp(app: FastMCP-Tx, iterations: int = 1000):
 
 ---
 
-**Previous**: [Configuration Guide](configuration.md) | **Next**: [API Reference](api/rmcp-session.md)
+**Previous**: [Configuration Guide](configuration.md) | **Next**: [API Reference](api/mcp-tx-session.md)

@@ -42,7 +42,7 @@ uv sync --dev
 
 ```python
 import asyncio
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 from mcp.client.session import ClientSession  # Your existing MCP client
 ```
 
@@ -54,7 +54,7 @@ async def main():
     mcp_session = ClientSession(...)  # Configure as usual
     
     # Wrap with MCP-Tx for reliability
-    rmcp_session = MCP-TxSession(mcp_session)
+    rmcp_session = MCPTxSession(mcp_session)
     
     # Initialize (handles capability negotiation)
     await rmcp_session.initialize()
@@ -117,7 +117,7 @@ asyncio.run(main())
 ```python
 import asyncio
 import logging
-from rmcp import MCP-TxSession, MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxSession, MCPTxConfig, RetryPolicy
 
 # Mock MCP session for demonstration
 class MockMCPSession:
@@ -146,7 +146,7 @@ async def complete_example():
     mcp_session = MockMCPSession()
     
     # Configure MCP-Tx with custom settings
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=5000,
         retry_policy=RetryPolicy(
             max_attempts=3,
@@ -158,7 +158,7 @@ async def complete_example():
     )
     
     # Create MCP-Tx session
-    async with MCP-TxSession(mcp_session, config) as rmcp:
+    async with MCPTxSession(mcp_session, config) as rmcp:
         await rmcp.initialize()
         
         print(f"🚀 MCP-Tx enabled: {rmcp.rmcp_enabled}")
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 ### Learn Core Concepts
 - [Architecture Overview](architecture.md) - Understand how MCP-Tx works
 - [Architecture Overview](architecture.md) - Deep dive into MCP-Tx reliability features
-- [API Reference](api/rmcp-session.md) - Detailed API documentation
+- [API Reference](api/mcp-tx-session.md) - Detailed API documentation
 
 ### Explore Examples
 - [Basic Usage Examples](examples/basic.md) - Common patterns and use cases
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 - 📖 Check the [FAQ](faq.md) for common questions
 - 🐛 Review [Troubleshooting](troubleshooting.md) for issues
 - 💬 [Open an issue](https://github.com/Daku-on/reliable-MCP-draft/issues) on GitHub
-- 📧 Read the [API Reference](api/rmcp-session.md) for detailed documentation
+- 📧 Read the [API Reference](api/mcp-tx-session.md) for detailed documentation
 
 ---
 

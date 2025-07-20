@@ -7,20 +7,20 @@ This guide covers all configuration options available in MCP-Tx, from basic sett
 ### Basic Setup
 
 ```python
-from rmcp import MCP-TxConfig, MCP-TxSession
+from mcp_tx import MCPTxConfig, MCPTxSession
 
 # Default configuration (recommended for most use cases)
-config = MCP-TxConfig()
-session = MCP-TxSession(mcp_session, config)
+config = MCPTxConfig()
+session = MCPTxSession(mcp_session, config)
 ```
 
 ### Common Customizations
 
 ```python
-from rmcp import MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 # Production-ready configuration
-config = MCP-TxConfig(
+config = MCPTxConfig(
     # Timeouts
     default_timeout_ms=30000,        # 30 seconds
     
@@ -45,7 +45,7 @@ config = MCP-TxConfig(
 
 ## Configuration Options
 
-### MCP-TxConfig Parameters
+### MCPTxConfig Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -74,10 +74,10 @@ config = MCP-TxConfig(
 ### App-Level Configuration
 
 ```python
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 
 # Configure FastMCP-Tx app
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=20000,
     enable_request_logging=True
 )
@@ -117,10 +117,10 @@ async def critical_tool(id: str, data: dict) -> dict:
 
 ```python
 import os
-from rmcp import MCP-TxConfig
+from mcp_tx import MCPTxConfig
 
 # Read from environment
-config = MCP-TxConfig(
+config = MCPTxConfig(
     default_timeout_ms=int(os.getenv("MCP-Tx_TIMEOUT", "30000")),
     max_concurrent_requests=int(os.getenv("MCP-Tx_MAX_CONCURRENT", "10")),
     enable_request_logging=os.getenv("MCP-Tx_LOGGING", "false").lower() == "true"
@@ -132,7 +132,7 @@ config = MCP-TxConfig(
 ```python
 import json
 from pathlib import Path
-from rmcp import MCP-TxConfig, RetryPolicy
+from mcp_tx import MCPTxConfig, RetryPolicy
 
 # Load from JSON file
 config_path = Path("rmcp_config.json")
@@ -140,13 +140,13 @@ if config_path.exists():
     with open(config_path) as f:
         config_data = json.load(f)
     
-    config = MCP-TxConfig(
+    config = MCPTxConfig(
         default_timeout_ms=config_data.get("timeout_ms", 30000),
         retry_policy=RetryPolicy(**config_data.get("retry", {})),
         **config_data.get("options", {})
     )
 else:
-    config = MCP-TxConfig()  # Defaults
+    config = MCPTxConfig()  # Defaults
 ```
 
 Example `rmcp_config.json`:
@@ -170,7 +170,7 @@ Example `rmcp_config.json`:
 ### Custom Retry Strategies
 
 ```python
-from rmcp import RetryPolicy
+from mcp_tx import RetryPolicy
 
 # Different strategies for different scenarios
 AGGRESSIVE_RETRY = RetryPolicy(
@@ -198,11 +198,11 @@ async def expensive_operation(): ...
 ### Dynamic Configuration
 
 ```python
-class DynamicMCP-TxConfig:
+class DynamicMCPTxConfig:
     """Configuration that can be updated at runtime."""
     
     def __init__(self):
-        self._config = MCP-TxConfig()
+        self._config = MCPTxConfig()
         self._overrides = {}
     
     def update_timeout(self, operation: str, timeout_ms: int):
@@ -216,7 +216,7 @@ class DynamicMCP-TxConfig:
         return base
 
 # Usage
-dynamic_config = DynamicMCP-TxConfig()
+dynamic_config = DynamicMCPTxConfig()
 dynamic_config.update_timeout("slow_operation", 120000)  # 2 minutes
 ```
 
@@ -224,7 +224,7 @@ dynamic_config.update_timeout("slow_operation", 120000)  # 2 minutes
 
 ```python
 # High-throughput configuration
-high_throughput_config = MCP-TxConfig(
+high_throughput_config = MCPTxConfig(
     max_concurrent_requests=50,
     default_timeout_ms=10000,  # Fail fast
     retry_policy=RetryPolicy(
@@ -236,7 +236,7 @@ high_throughput_config = MCP-TxConfig(
 )
 
 # High-reliability configuration
-high_reliability_config = MCP-TxConfig(
+high_reliability_config = MCPTxConfig(
     max_concurrent_requests=5,  # Limit load
     default_timeout_ms=60000,  # Patient timeouts
     retry_policy=RetryPolicy(
@@ -254,11 +254,11 @@ high_reliability_config = MCP-TxConfig(
 ### Metrics Collection
 
 ```python
-from rmcp import MCP-TxConfig
+from mcp_tx import MCPTxConfig
 import logging
 
 # Configure with metrics
-config = MCP-TxConfig(
+config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG"
 )
@@ -282,12 +282,12 @@ logger.addHandler(MetricsHandler())
 class HealthCheckConfig:
     """Configuration with built-in health monitoring."""
     
-    def __init__(self, base_config: MCP-TxConfig):
+    def __init__(self, base_config: MCPTxConfig):
         self.base_config = base_config
         self.health_threshold = 0.95  # 95% success rate
         self.check_interval_ms = 30000  # 30 seconds
     
-    async def health_check(self, session: MCP-TxSession) -> bool:
+    async def health_check(self, session: MCPTxSession) -> bool:
         """Check if session is healthy."""
         try:
             result = await session.call_tool(
@@ -306,7 +306,7 @@ class HealthCheckConfig:
 
 ```python
 # Good: Use defaults unless you have specific requirements
-config = MCP-TxConfig()
+config = MCPTxConfig()
 
 # Only customize what you need
 config.default_timeout_ms = 45000  # Specific requirement
@@ -316,14 +316,14 @@ config.default_timeout_ms = 45000  # Specific requirement
 
 ```python
 # Development
-dev_config = MCP-TxConfig(
+dev_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     retry_policy=RetryPolicy(max_attempts=1)  # Fail fast in dev
 )
 
 # Production
-prod_config = MCP-TxConfig(
+prod_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="INFO",
     retry_policy=RetryPolicy(max_attempts=5),
@@ -335,7 +335,7 @@ prod_config = MCP-TxConfig(
 
 ```python
 # Configuration for high-frequency trading system
-config = MCP-TxConfig(
+config = MCPTxConfig(
     # Low timeout because market data is time-sensitive
     default_timeout_ms=500,
     
@@ -353,7 +353,7 @@ config = MCP-TxConfig(
 
 ```python
 # Enable all debugging features
-debug_config = MCP-TxConfig(
+debug_config = MCPTxConfig(
     enable_request_logging=True,
     log_level="DEBUG",
     # Slow down retries for debugging
@@ -387,7 +387,7 @@ debug_config = MCP-TxConfig(
 ## See Also
 
 - [Getting Started](getting-started.md) - Quick start guide
-- [API Reference](api/rmcp-session.md) - Detailed API documentation
+- [API Reference](api/mcp-tx-session.md) - Detailed API documentation
 - [Performance Guide](performance.md) - Optimization tips
 
 ---

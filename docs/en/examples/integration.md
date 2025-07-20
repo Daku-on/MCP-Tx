@@ -9,7 +9,7 @@ This guide shows how to integrate MCP-Tx with existing MCP servers and popular f
 ```python
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioTransport
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 import asyncio
 
 async def connect_to_mcp_server():
@@ -23,7 +23,7 @@ async def connect_to_mcp_server():
     
     async with ClientSession(transport) as mcp_session:
         # Wrap with MCP-Tx
-        config = MCP-TxConfig(
+        config = MCPTxConfig(
             default_timeout_ms=30000,
             enable_request_logging=True
         )
@@ -129,7 +129,7 @@ file_result = await multi_server.call_server_tool(
 ```python
 # rmcp_django/middleware.py
 from django.conf import settings
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 import asyncio
 
 class MCP-TxMiddleware:
@@ -144,7 +144,7 @@ class MCP-TxMiddleware:
     def _setup_rmcp(self):
         """Initialize MCP-Tx connection."""
         if not MCP-TxMiddleware._instance:
-            config = MCP-TxConfig(
+            config = MCPTxConfig(
                 default_timeout_ms=settings.MCP-Tx_TIMEOUT,
                 enable_request_logging=settings.DEBUG
             )
@@ -191,7 +191,7 @@ def process_with_rmcp(request):
 ```python
 # rmcp_flask/extension.py
 from flask import Flask, g
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 import asyncio
 from functools import wraps
 
@@ -215,7 +215,7 @@ class FlaskMCP-Tx:
     
     def _setup_rmcp(self):
         """Initialize MCP-Tx connection."""
-        config = MCP-TxConfig(
+        config = MCPTxConfig(
             default_timeout_ms=self.app.config['MCP-Tx_TIMEOUT'],
             retry_policy=RetryPolicy(
                 max_attempts=self.app.config['MCP-Tx_MAX_RETRIES']
@@ -267,7 +267,7 @@ def execute_tool(tool_name):
 ```python
 # rmcp_celery/tasks.py
 from celery import Celery, Task
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 import asyncio
 
 app = Celery('rmcp_tasks')
@@ -281,7 +281,7 @@ class MCP-TxTask(Task):
     def rmcp(self):
         if MCP-TxTask._rmcp is None:
             # Initialize MCP-Tx
-            config = MCP-TxConfig(
+            config = MCPTxConfig(
                 default_timeout_ms=60000,  # Longer timeout for background tasks
                 retry_policy=RetryPolicy(max_attempts=5)
             )
@@ -541,7 +541,7 @@ class RabbitMQMCP-Tx:
 # lambda_handler.py
 import json
 import asyncio
-from rmcp import FastMCP-Tx, MCP-TxConfig
+from mcp_tx import FastMCP-Tx, MCPTxConfig
 
 # Initialize outside handler for connection reuse
 rmcp_app = None
@@ -551,7 +551,7 @@ def get_rmcp_app():
     global rmcp_app
     if rmcp_app is None:
         # Configure for Lambda environment
-        config = MCP-TxConfig(
+        config = MCPTxConfig(
             default_timeout_ms=25000,  # Lambda timeout buffer
             retry_policy=RetryPolicy(
                 max_attempts=2,  # Quick retries
@@ -729,4 +729,4 @@ async def test_integration(mock_rmcp_app):
 
 ---
 
-**Previous**: [Advanced Examples](advanced.md) | **Next**: [API Reference](../api/rmcp-session.md)
+**Previous**: [Advanced Examples](advanced.md) | **Next**: [API Reference](../api/mcp-tx-session.md)

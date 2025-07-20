@@ -22,15 +22,15 @@ MCP-TxがどのようにMCPに信頼性保証を追加するかを理解する�
 
 ## コアコンポーネント
 
-### 1. MCP-TxSession（ラッパー）
+### 1. MCPTxSession（ラッパー）
 
 既存のMCPセッションをラップするメインインターフェース：
 
 ```python
-class MCP-TxSession:
-    def __init__(self, mcp_session: BaseSession, config: MCP-TxConfig = None):
+class MCPTxSession:
+    def __init__(self, mcp_session: BaseSession, config: MCPTxConfig = None):
         self.mcp_session = mcp_session  # 既存のMCPセッション
-        self.config = config or MCP-TxConfig()
+        self.config = config or MCPTxConfig()
         # ... 信頼性インフラストラクチャ
 ```
 
@@ -150,7 +150,7 @@ def calculate_delay(attempt: int, policy: RetryPolicy) -> int:
 
 **キャッシュベース重複排除**：
 ```python
-class MCP-TxSession:
+class MCPTxSession:
     def __init__(self):
         # メモリ安全性のためのTTL付きLRUキャッシュ
         self._deduplication_cache: dict[str, tuple[MCP-TxResult, datetime]] = {}
@@ -173,8 +173,8 @@ class MCP-TxSession:
 ### 4. 並行リクエスト管理
 
 ```python
-class MCP-TxSession:
-    def __init__(self, config: MCP-TxConfig):
+class MCPTxSession:
+    def __init__(self, config: MCPTxConfig):
         # 並行性制御用セマフォ
         self._request_semaphore = anyio.Semaphore(config.max_concurrent_requests)
         
