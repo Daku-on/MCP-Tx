@@ -34,6 +34,7 @@ async def main():
             if name == "unreliable_api":
                 # Sometimes fail to demonstrate retry
                 import random
+
                 if random.random() < 0.3:  # 30% failure rate
                     raise Exception("Simulated network error")
                 return {"status": "success", "data": f"API result for {arguments}"}
@@ -44,17 +45,14 @@ async def main():
                     "processed": True,
                     "filename": filename,
                     "size": len(filename) * 100,  # Mock file size
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
 
             elif name == "database_query":
                 query = arguments.get("query", "")
                 return {
-                    "rows": [
-                        {"id": 1, "name": "Alice", "query": query},
-                        {"id": 2, "name": "Bob", "query": query}
-                    ],
-                    "count": 2
+                    "rows": [{"id": 1, "name": "Alice", "query": query}, {"id": 2, "name": "Bob", "query": query}],
+                    "count": 2,
                 }
 
             else:
@@ -85,9 +83,9 @@ async def main():
             max_attempts=5,
             base_delay_ms=1000,  # 1 second base delay
             backoff_multiplier=2.0,
-            jitter=True
+            jitter=True,
         ),
-        timeout_ms=30000  # 30 second timeout for this tool
+        timeout_ms=30000,  # 30 second timeout for this tool
     )
     async def unreliable_api(endpoint: str, data: dict) -> dict:
         """API call with aggressive retry policy."""
@@ -96,7 +94,7 @@ async def main():
 
     @app.tool(
         retry_policy=RetryPolicy(max_attempts=2),  # Quick retry for file operations
-        idempotency_key_generator=lambda args: f"file-{args['filename']}-{args.get('operation', 'process')}"
+        idempotency_key_generator=lambda args: f"file-{args['filename']}-{args.get('operation', 'process')}",
     )
     async def file_processor(filename: str, operation: str = "process") -> dict:
         """File processing tool with custom idempotency."""
@@ -106,7 +104,7 @@ async def main():
     @app.tool(
         name="db_query",  # Custom tool name
         timeout_ms=15000,  # 15 second timeout for database operations
-        description="Execute database query with connection retry"
+        description="Execute database query with connection retry",
     )
     async def database_query(query: str, params: dict | None = None) -> dict:
         """Database query tool with connection reliability."""
@@ -142,10 +140,7 @@ async def main():
         # Example 2: Unreliable API with retry
         print("📞 Example 2: Unreliable API (with retry)")
         try:
-            result = await app.call_tool("unreliable_api", {
-                "endpoint": "/users",
-                "data": {"filter": "active"}
-            })
+            result = await app.call_tool("unreliable_api", {"endpoint": "/users", "data": {"filter": "active"}})
             print(f"  ✅ Result: {result.result}")
             print(f"  📊 Attempts: {result.rmcp_meta.attempts}")
             print(f"  ⏱️  Final status: {result.rmcp_meta.final_status}")
@@ -160,11 +155,8 @@ async def main():
         # Call the same operation twice
         for i in range(2):
             try:
-                result = await app.call_tool("file_processor", {
-                    "filename": filename,
-                    "operation": "backup"
-                })
-                print(f"  Call {i+1}:")
+                result = await app.call_tool("file_processor", {"filename": filename, "operation": "backup"})
+                print(f"  Call {i + 1}:")
                 print(f"    ✅ Result: {result.result}")
                 print(f"    🔄 Duplicate: {result.rmcp_meta.duplicate}")
                 print(f"    📊 Attempts: {result.rmcp_meta.attempts}")
@@ -175,10 +167,9 @@ async def main():
         # Example 4: Database query with custom timeout
         print("📞 Example 4: Database query (custom timeout)")
         try:
-            result = await app.call_tool("db_query", {
-                "query": "SELECT * FROM users WHERE active = ?",
-                "params": {"active": True}
-            })
+            result = await app.call_tool(
+                "db_query", {"query": "SELECT * FROM users WHERE active = ?", "params": {"active": True}}
+            )
             print(f"  ✅ Result: {result.result}")
             print(f"  📊 Attempts: {result.rmcp_meta.attempts}")
             print(f"  ✅ ACK received: {result.rmcp_meta.ack}")
@@ -190,11 +181,13 @@ async def main():
         print("📞 Example 5: Parallel tool execution")
         tasks = []
         for i in range(3):
-            tasks.extend([
-                app.call_tool("simple_echo", {"message": f"Message {i}"}),
-                app.call_tool("file_processor", {"filename": f"file_{i}.txt"}),
-                app.call_tool("db_query", {"query": f"SELECT * FROM table_{i}"})
-            ])
+            tasks.extend(
+                [
+                    app.call_tool("simple_echo", {"message": f"Message {i}"}),
+                    app.call_tool("file_processor", {"filename": f"file_{i}.txt"}),
+                    app.call_tool("db_query", {"query": f"SELECT * FROM table_{i}"}),
+                ]
+            )
 
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)

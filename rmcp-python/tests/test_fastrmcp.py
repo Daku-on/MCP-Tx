@@ -73,10 +73,7 @@ class TestFastRMCP:
         app = FastRMCP(mock_mcp_session)
 
         @app.tool(
-            name="custom_tool",
-            retry_policy=retry_policy,
-            timeout_ms=30000,
-            description="Custom tool description"
+            name="custom_tool", retry_policy=retry_policy, timeout_ms=30000, description="Custom tool description"
         )
         def tool_func(arg: str) -> str:
             return f"Result: {arg}"
@@ -97,6 +94,7 @@ class TestFastRMCP:
         app = FastRMCP(mock_mcp_session)
 
         with pytest.raises(TypeError, match="requires parentheses"):
+
             @app.tool
             def bad_tool():
                 pass
@@ -104,22 +102,19 @@ class TestFastRMCP:
     @pytest.mark.anyio
     async def test_call_tool_success(self, fastrmcp_app, mock_mcp_session):
         """Test successful tool call through FastRMCP."""
+
         # Register a tool
         @fastrmcp_app.tool()
         def test_tool(x: int) -> str:
             return str(x)
 
         # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(return_value=RMCPResult(
-            result={"output": "42"},
-            rmcp_meta=RMCPResponse(
-                ack=True,
-                processed=True,
-                duplicate=False,
-                attempts=1,
-                final_status="success"
+        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
+            return_value=RMCPResult(
+                result={"output": "42"},
+                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
             )
-        ))
+        )
 
         # Call tool
         result = await fastrmcp_app.call_tool("test_tool", {"x": 42})
@@ -148,16 +143,12 @@ class TestFastRMCP:
             return data.upper()
 
         # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(return_value=RMCPResult(
-            result={"output": "HELLO"},
-            rmcp_meta=RMCPResponse(
-                ack=True,
-                processed=True,
-                duplicate=False,
-                attempts=2,
-                final_status="success"
+        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
+            return_value=RMCPResult(
+                result={"output": "HELLO"},
+                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=2, final_status="success"),
             )
-        ))
+        )
 
         # Call tool
         result = await fastrmcp_app.call_tool("custom_tool", {"data": "hello"})
@@ -186,16 +177,12 @@ class TestFastRMCP:
             return f"Processed {action} for {id}"
 
         # Mock RMCP session response
-        fastrmcp_app._rmcp_session.call_tool = AsyncMock(return_value=RMCPResult(
-            result={"output": "Processed update for user123"},
-            rmcp_meta=RMCPResponse(
-                ack=True,
-                processed=True,
-                duplicate=False,
-                attempts=1,
-                final_status="success"
+        fastrmcp_app._rmcp_session.call_tool = AsyncMock(
+            return_value=RMCPResult(
+                result={"output": "Processed update for user123"},
+                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success"),
             )
-        ))
+        )
 
         # Call tool
         arguments = {"id": "user123", "action": "update"}
@@ -243,10 +230,14 @@ class TestFastRMCP:
                 return "works"
 
             # Should be able to call tools within context
-            app._rmcp_session.call_tool = AsyncMock(return_value=RMCPResult(
-                result={"output": "works"},
-                rmcp_meta=RMCPResponse(ack=True, processed=True, duplicate=False, attempts=1, final_status="success")
-            ))
+            app._rmcp_session.call_tool = AsyncMock(
+                return_value=RMCPResult(
+                    result={"output": "works"},
+                    rmcp_meta=RMCPResponse(
+                        ack=True, processed=True, duplicate=False, attempts=1, final_status="success"
+                    ),
+                )
+            )
 
             result = await app.call_tool("context_tool", {})
             assert result.rmcp_meta.ack
@@ -293,6 +284,7 @@ class TestFastRMCP:
 
         # Third tool should raise error
         with pytest.raises(ValueError, match="Registry full"):
+
             @app.tool()
             def tool3() -> str:
                 return "tool3"
@@ -307,6 +299,7 @@ class TestFastRMCP:
 
         # Second tool with same name should raise error
         with pytest.raises(ValueError, match="already registered"):
+
             @app.tool(name="duplicate_tool")
             def another_duplicate_tool() -> str:  # Different function, same tool name
                 return "second"
@@ -327,12 +320,14 @@ class TestFastRMCP:
     @pytest.mark.anyio
     async def test_get_all_tools_info_with_none_values(self, fastrmcp_app):
         """Test get_all_tools_info handles None values correctly."""
+
         @fastrmcp_app.tool()
         def test_tool() -> str:
             return "test"
 
         # Mock get_tool_info to return None for some tools
         original_get_tool_info = fastrmcp_app.get_tool_info
+
         def mock_get_tool_info(name: str):
             if name == "test_tool":
                 return original_get_tool_info(name)

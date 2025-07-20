@@ -269,11 +269,7 @@ class FastRMCP:
 
     def get_all_tools_info(self) -> dict[str, dict[str, Any]]:
         """Get information about all registered tools."""
-        return {
-            name: info
-            for name in self._registry.list_tools()
-            if (info := self.get_tool_info(name)) is not None
-        }
+        return {name: info for name in self._registry.list_tools() if (info := self.get_tool_info(name)) is not None}
 
 
 # Convenience exports
