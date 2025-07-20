@@ -49,6 +49,7 @@ asyncio.run(file_operations_example())
 
 ```python
 import asyncio
+import os
 from rmcp import RMCPSession, RetryPolicy
 
 async def api_calls_example():
@@ -70,7 +71,7 @@ async def api_calls_example():
             {
                 "method": "GET",
                 "url": "https://api.example.com/critical-data",
-                "headers": {"Authorization": "Bearer token"}
+                "headers": {"Authorization": f"Bearer {os.environ['API_TOKEN']}"}}
             },
             retry_policy=critical_retry,
             timeout_ms=30000
@@ -174,7 +175,13 @@ async def validation_example():
                 raise ValueError("File path cannot be empty")
             
             # Remove potential directory traversal
-            path = path.replace("..", "").replace("//", "/")
+            import os.path
+            path = os.path.normpath(os.path.abspath(path))
+            
+            # Ensure path is within safe directory
+            safe_base = "/safe_directory"
+            if not path.startswith(safe_base):
+                raise ValueError(f"Path must be within {safe_base}")
             
             # Ensure absolute path
             if not path.startswith("/"):
@@ -190,7 +197,7 @@ async def validation_example():
             
             # Create deterministic hash from parameters
             params_str = json.dumps(params, sort_keys=True)
-            params_hash = hashlib.md5(params_str.encode()).hexdigest()[:8]
+            params_hash = hashlib.sha256(params_str.encode()).hexdigest()[:16]
             
             # Include timestamp for uniqueness
             timestamp = datetime.now().strftime("%Y%m%d")

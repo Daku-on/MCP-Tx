@@ -21,6 +21,7 @@ python -c "import rmcp; print(f'RMCP {rmcp.__version__} installed')"
 
 ```python
 import asyncio
+import os
 from rmcp import RMCPSession
 from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioClientTransport
@@ -124,7 +125,7 @@ async def reliable_api_calls():
             {
                 "method": "GET",
                 "url": "https://api.example.com/users",
-                "headers": {"Authorization": "Bearer token"}
+                "headers": {"Authorization": f"Bearer {os.environ['API_TOKEN']}"}
             },
             retry_policy=api_retry,
             timeout_ms=30000  # 30秒タイムアウト

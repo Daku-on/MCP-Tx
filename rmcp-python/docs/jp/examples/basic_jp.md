@@ -49,6 +49,7 @@ asyncio.run(file_operations_example())
 
 ```python
 import asyncio
+import os
 from rmcp import RMCPSession, RetryPolicy
 
 async def api_calls_example():
@@ -70,7 +71,7 @@ async def api_calls_example():
             {
                 "method": "GET",
                 "url": "https://api.example.com/critical-data",
-                "headers": {"Authorization": "Bearer token"}
+                "headers": {"Authorization": f"Bearer {os.environ['API_TOKEN']}"}
             },
             retry_policy=critical_retry,
             timeout_ms=30000
