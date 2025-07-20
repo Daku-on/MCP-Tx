@@ -163,7 +163,7 @@ class MCPTxSession:
         if not name or not name.strip():
             raise ValueError("Tool name must be a non-empty string")
 
-        if not re.match(r'^[a-zA-Z0-9_-]+$', name):
+        if not re.match(r"^[a-zA-Z0-9_-]+$", name):
             raise ValueError("Tool name must contain only alphanumeric characters, hyphens, and underscores")
 
         if arguments is not None and not isinstance(arguments, dict):

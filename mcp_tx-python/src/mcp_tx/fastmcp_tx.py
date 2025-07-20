@@ -99,33 +99,7 @@ class ToolRegistry:
 
 
 class FastMCPTx:
-    """FastMCPTx - Decorator-based MCP-Tx reliability for MCP tools.
-
-    FastMCPTx wraps an existing MCP session and provides a decorator-based interface
-    for adding MCP-Tx reliability features to tool functions. Tools registered with
-    FastMCPTx automatically get retry logic, idempotency, and ACK/NACK handling.
-
-    Example:
-        ```python
-        from mcp_tx import FastMCPTx, RetryPolicy
-
-        # Wrap existing MCP session
-        app = FastMCPTx(mcp_session)
-
-        @app.tool()
-        async def my_tool(arg: str) -> str:
-            """A reliable tool with automatic retry."""
-            return f"Result: {arg}"
-
-        @app.tool(retry_policy=RetryPolicy(max_attempts=5))
-        async def critical_tool(data: dict) -> dict:
-            """Critical tool with custom retry policy."""
-            return {"processed": data}
-
-        # Call tools with automatic MCP-Tx reliability
-        result = await app.call_tool("my_tool", {"arg": "test"})
-        ```
-    """
+    """FastMCPTx - Decorator-based MCP-Tx reliability for MCP tools."""
 
     def __init__(
         self,
