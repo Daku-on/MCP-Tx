@@ -1,4 +1,4 @@
-# Reliable MCP (RMCP) 設計書
+# MCP-Tx 設計書
 
 ## 1. システムアーキテクチャ
 
@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   Agent     │────▶│   RMCP Wrapper   │────▶│    Tool     │
+│   Agent     │────▶│   MCP-Tx Wrapper │────▶│    Tool     │
 │   (Host)    │◀────│  + MCP Session   │◀────│  (Server)   │
 └─────────────┘     └──────────────────┘     └─────────────┘
        │                     │                       │
@@ -17,7 +17,7 @@
        │              └─────────────┘                │
        └─────────────────────┴───────────────────────┘
                      MCP Protocol (JSON-RPC)
-                   + RMCP Reliability Layer
+                   + MCP-Tx Reliability Layer
 ```
 
 ### 1.2 レイヤー構成（MCP統合モデル）
@@ -26,7 +26,7 @@
 ┌────────────────────────────────────┐
 │        Application Layer           │
 ├────────────────────────────────────┤
-│         RMCP Wrapper               │
+│         MCP-Tx Wrapper             │
 │  ┌─────────────┬────────────────┐ │
 │  │ Reliability │ State Manager  │ │
 │  ├─────────────┼────────────────┤ │
@@ -54,14 +54,14 @@
 ```typescript
 interface MessageManager {
   // メッセージのシーケンス管理
-  assignSequence(message: RMCPMessage): number;
-  validateSequence(message: RMCPMessage): boolean;
+  assignSequence(message: MCPTxMessage): number;
+  validateSequence(message: MCPTxMessage): boolean;
   resetSequence(connectionId: string): void;
   
   // メッセージキューイング
-  enqueue(message: RMCPMessage): void;
-  dequeue(): RMCPMessage | null;
-  peekQueue(): RMCPMessage[];
+  enqueue(message: MCPTxMessage): void;
+  dequeue(): MCPTxMessage | null;
+  peekQueue(): MCPTxMessage[];
   clearQueue(transactionId?: string): void;
   
   // メッセージ追跡
@@ -92,8 +92,8 @@ interface TransactionManager {
 ```typescript
 interface RetryManager {
   // 再送制御
-  shouldRetry(message: RMCPMessage, error?: Error): boolean;
-  scheduleRetry(message: RMCPMessage): void;
+  shouldRetry(message: MCPTxMessage, error?: Error): boolean;
+  scheduleRetry(message: MCPTxMessage): void;
   cancelRetry(messageId: string): void;
   getPendingRetries(): RetryQueueItem[];
   
@@ -125,7 +125,7 @@ interface FlowController {
   updateRateCounter(): void;
   
   // トークン管理
-  checkTokenLimit(message: RMCPMessage): boolean;
+  checkTokenLimit(message: MCPTxMessage): boolean;
   updateTokenCount(tokens: number): void;
   
   // ウィンドウ制御
@@ -135,9 +135,9 @@ interface FlowController {
 
 ### 2.2 データ構造
 
-#### 2.2.1 RMCP Message
+#### 2.2.1 MCP-Tx Message
 ```typescript
-interface RMCPMessage {
+interface MCPTxMessage {
   // 基本MCP構造
   jsonrpc: "2.0";
   method?: string;
@@ -146,8 +146,8 @@ interface RMCPMessage {
   error?: any;
   id: string | number;
   
-  // RMCP拡張
-  rmcp: {
+  // MCP-Tx拡張
+  mcp_tx: {
     version: string;
     sequence: number;
     transaction_id: string;
@@ -178,7 +178,7 @@ interface TransactionContext {
   state: TransactionState;
   created_at: Date;
   updated_at: Date;
-  messages: RMCPMessage[];
+  messages: MCPTxMessage[];
   retry_attempts: number;
   final_status?: FinalStatus;
 }
@@ -186,7 +186,7 @@ interface TransactionContext {
 
 #### 2.2.3 Configuration
 ```typescript
-interface RMCPConfig {
+interface MCPTxConfig {
   // 基本設定
   version: string;
   enabled: boolean;
@@ -231,7 +231,7 @@ interface RMCPConfig {
 
 #### 3.1.1 基本的な成功フロー
 ```
-Agent                    RMCP Layer                    Tool
+Agent                  MCP-Tx Layer                    Tool
   │                          │                          │
   ├──── Request ────────────▶│                          │
   │    (seq: 1)              ├──── Forward Request ────▶│
@@ -245,7 +245,7 @@ Agent                    RMCP Layer                    Tool
 
 #### 3.1.2 再送フロー
 ```
-Agent                    RMCP Layer                    Tool
+Agent                  MCP-Tx Layer                    Tool
   │                          │                          │
   ├──── Request ────────────▶│                          │
   │    (seq: 1)              ├──── Forward Request ────▶│
@@ -289,14 +289,14 @@ Agent                    RMCP Layer                    Tool
 
 | エラータイプ | エラーコード | 説明 | 再送可否 | 処理方法 |
 |------------|------------|------|---------|----------|
-| Network Error | RMCP_NETWORK_ERROR | ネットワーク接続エラー | 可 | 自動再送 |
-| Timeout | RMCP_TIMEOUT | 応答タイムアウト | 可 | 自動再送 |
-| Sequence Error | RMCP_SEQUENCE_ERROR | シーケンス番号不整合 | 不可 | エラー通知 |
-| Transaction Error | RMCP_TRANSACTION_ERROR | トランザクション失敗 | 条件付き | ロールバック |
-| Rate Limit | RMCP_RATE_LIMIT | レート制限超過 | 可 | 遅延後再送 |
-| Invalid Message | RMCP_INVALID_MESSAGE | メッセージ形式エラー | 不可 | エラー通知 |
-| Protocol Version | RMCP_VERSION_MISMATCH | プロトコルバージョン不一致 | 不可 | ネゴシエーション |
-| Resource Exhausted | RMCP_RESOURCE_EXHAUSTED | リソース枯渇 | 可 | バックプレッシャー |
+| Network Error | MCP_TX_NETWORK_ERROR | ネットワーク接続エラー | 可 | 自動再送 |
+| Timeout | MCP_TX_TIMEOUT | 応答タイムアウト | 可 | 自動再送 |
+| Sequence Error | MCP_TX_SEQUENCE_ERROR | シーケンス番号不整合 | 不可 | エラー通知 |
+| Transaction Error | MCP_TX_TRANSACTION_ERROR | トランザクション失敗 | 条件付き | ロールバック |
+| Rate Limit | MCP_TX_RATE_LIMIT | レート制限超過 | 可 | 遅延後再送 |
+| Invalid Message | MCP_TX_INVALID_MESSAGE | メッセージ形式エラー | 不可 | エラー通知 |
+| Protocol Version | MCP_TX_VERSION_MISMATCH | プロトコルバージョン不一致 | 不可 | ネゴシエーション |
+| Resource Exhausted | MCP_TX_RESOURCE_EXHAUSTED | リソース枯渇 | 可 | バックプレッシャー |
 
 ### 4.2 エラーレスポンス形式
 ```json
@@ -418,7 +418,7 @@ class ChunkManager {
 
 ### 7.1 メトリクス
 ```typescript
-interface RMCPMetrics {
+interface MCPTxMetrics {
   // 基本メトリクス
   total_requests: number;
   successful_requests: number;
@@ -472,21 +472,21 @@ interface RMCPMetrics {
 
 #### クライアント側
 ```typescript
-class RMCPClient implements MCPClient {
+class MCPTxClient implements MCPClient {
   private messageManager: MessageManager;
   private transactionManager: TransactionManager;
   private retryManager: RetryManager;
   
   async send(request: MCPRequest): Promise<MCPResponse> {
-    // RMCPメタデータを追加
-    const rmcpMessage = this.wrapMessage(request);
+    // MCP-Txメタデータを追加
+    const mcpTxMessage = this.wrapMessage(request);
     
     // トランザクション開始
     const tx = this.transactionManager.beginTransaction();
     
     try {
       // メッセージ送信と再送制御
-      const response = await this.sendWithRetry(rmcpMessage, tx);
+      const response = await this.sendWithRetry(mcpTxMessage, tx);
       
       // トランザクションコミット
       this.transactionManager.commitTransaction(tx.id);
@@ -503,11 +503,11 @@ class RMCPClient implements MCPClient {
 
 #### サーバー側
 ```typescript
-class RMCPServer implements MCPServer {
+class MCPTxServer implements MCPServer {
   private sequenceValidator: SequenceValidator;
   private ackManager: AcknowledgmentManager;
   
-  async handleRequest(request: RMCPMessage): Promise<RMCPMessage> {
+  async handleRequest(request: MCPTxMessage): Promise<MCPTxMessage> {
     // シーケンス検証
     if (!this.sequenceValidator.validate(request)) {
       return this.createErrorResponse(request, "SEQUENCE_ERROR");
@@ -529,7 +529,7 @@ class RMCPServer implements MCPServer {
 
 ### 8.2 設定例
 ```yaml
-rmcp:
+mcp_tx:
   version: "1.0"
   enabled: true
   
@@ -614,38 +614,38 @@ rmcp:
 ### 12.1 BaseSessionラッパー実装
 
 ```typescript
-class RMCPSession extends BaseSession {
+class MCPTxSession extends BaseSession {
   private mcpSession: BaseSession;
-  private rmcpEnabled: boolean;
+  private mcpTxEnabled: boolean;
   private sequenceManager: SequenceManager;
   private transactionManager: TransactionManager;
   private retryManager: RetryManager;
   
-  constructor(mcpSession: BaseSession, config: RMCPConfig) {
+  constructor(mcpSession: BaseSession, config: MCPTxConfig) {
     super();
     this.mcpSession = mcpSession;
-    this.rmcpEnabled = false; // 初期化時に決定
+    this.mcpTxEnabled = false; // 初期化時に決定
   }
   
   async initialize(params: InitializeParams): Promise<InitializeResult> {
-    // MCP初期化にRMCPケイパビリティを追加
-    const extendedParams = this.addRMCPCapabilities(params);
+    // MCP初期化にMCP-Txケイパビリティを追加
+    const extendedParams = this.addMCPTxCapabilities(params);
     const result = await this.mcpSession.initialize(extendedParams);
     
-    // サーバーのRMCPサポートを確認
-    this.rmcpEnabled = this.checkRMCPSupport(result);
+    // サーバーのMCP-Txサポートを確認
+    this.mcpTxEnabled = this.checkMCPTxSupport(result);
     
     return result;
   }
   
   async send(request: JSONRPCRequest): Promise<JSONRPCResponse> {
-    if (!this.rmcpEnabled) {
+    if (!this.mcpTxEnabled) {
       // 標準MCPとして動作
       return this.mcpSession.send(request);
     }
     
-    // RMCP機能付きで送信
-    return this.sendWithRMCP(request);
+    // MCP-Tx機能付きで送信
+    return this.sendWithMCPTx(request);
   }
 }
 ```
@@ -653,10 +653,10 @@ class RMCPSession extends BaseSession {
 ### 12.2 メタデータ統合戦略
 
 ```typescript
-interface MCPMessageWithRMCP extends JSONRPCRequest {
+interface MCPMessageWithMCPTx extends JSONRPCRequest {
   params?: {
     _meta?: {
-      rmcp?: {
+      mcp_tx?: {
         sequence: number;
         transaction_id: string;
         retry_count: number;
@@ -672,19 +672,19 @@ interface MCPMessageWithRMCP extends JSONRPCRequest {
 
 ```typescript
 class ErrorMapper {
-  static mapMCPToRMCP(mcpError: McpError): RMCPError {
+  static mapMCPToMCPTx(mcpError: McpError): MCPTxError {
     switch (mcpError.code) {
       case CONNECTION_CLOSED:
-        return new RMCPError("RMCP_CONNECTION_ERROR", mcpError.message);
+        return new MCPTxError("MCP_TX_CONNECTION_ERROR", mcpError.message);
       case INVALID_PARAMS:
-        return new RMCPError("RMCP_INVALID_MESSAGE", mcpError.message);
+        return new MCPTxError("MCP_TX_INVALID_MESSAGE", mcpError.message);
       default:
-        return new RMCPError("RMCP_UNKNOWN_ERROR", mcpError.message);
+        return new MCPTxError("MCP_TX_UNKNOWN_ERROR", mcpError.message);
     }
   }
   
-  static mapRMCPToMCP(rmcpError: RMCPError): McpError {
-    // RMCPエラーを適切なMCPエラーコードに変換
+  static mapMCPTxToMCP(mcpTxError: MCPTxError): McpError {
+    // MCP-Txエラーを適切なMCPエラーコードに変換
   }
 }
 ```
@@ -697,7 +697,7 @@ class ProgressIntegration {
     progressToken: ProgressToken,
     notification: ProgressNotification
   ): Promise<void> {
-    // MCPのプログレス通知をRMCPトランザクション状態と同期
+    // MCPのプログレス通知をMCP-Txトランザクション状態と同期
     const transactionId = this.getTransactionForProgress(progressToken);
     await this.transactionManager.updateProgress(transactionId, notification);
   }
@@ -709,9 +709,9 @@ class ProgressIntegration {
 ```typescript
 class CancellationIntegration {
   async handleCancellation(requestId: RequestId): Promise<void> {
-    // MCPのキャンセル機能とRMCPのタイムアウト管理を連携
+    // MCPのキャンセル機能とMCP-Txのタイムアウト管理を連携
     await this.mcpSession.cancel(requestId);
-    await this.rmcpManager.markAsCancelled(requestId);
+    await this.mcpTxManager.markAsCancelled(requestId);
   }
 }
 ```
@@ -748,7 +748,7 @@ graph TD
 ## 日本語要約
 
 ### システムアーキテクチャ
-- MCPセッションをラップするRMCP層
+- MCPセッションをラップするMCP-Tx層
 - BaseSessionの拡張による透過的統合
 - `experimental`フィールドでの機能ネゴシエーション
 
@@ -774,7 +774,7 @@ graph TD
 - OpenTelemetry対応
 
 ### MCP統合設計
-- `_meta.rmcp`フィールドでメタデータ埋め込み
+- `_meta.mcp_tx`フィールドでメタデータ埋め込み
 - MCPエラーコードとの連携
 - プログレス通知・キャンセル機能の統合
 - 段階的移行パス（実験→選択→デフォルト）

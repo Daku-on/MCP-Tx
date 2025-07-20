@@ -1,4 +1,4 @@
-# Reliable MCP (RMCP) 要件定義書
+# MCP-Tx 要件定義書
 
 ## 1. プロジェクト概要
 
@@ -14,7 +14,7 @@ Model Context Protocol (MCP)は、LLMが外部ツールやデータソースと�
 - JSON-RPC IDによるリクエスト-レスポンスの対応付け
 - プログレス通知とキャンセル機能
 
-**未実装の機能（RMCPで解決すべき課題）：**
+**未実装の機能（MCP-Txで解決すべき課題）：**
 - 自動再送機能：ネットワークエラー時の自動リトライなし
 - 接続管理：長期接続維持や自動再接続なし
 - メッセージ永続化：未送信メッセージの保持機能なし
@@ -24,7 +24,7 @@ Model Context Protocol (MCP)は、LLMが外部ツールやデータソースと�
 - ツール状態管理：ツール別の負荷制限や競合検出なし
 
 ### 1.2 目的
-Reliable MCP (RMCP)は、MCPの上位レイヤーとして、エージェントと外部ツール間の通信に対して**ツール呼び出しに最適化された信頼性保証**を提供することを目的とする。
+MCP-Txは、MCPの上位レイヤーとして、エージェントと外部ツール間の通信に対して**ツール呼び出しに最適化された信頼性保証**を提供することを目的とする。
 
 ### 1.3 スコープ
 - **対象**: Agent ↔ Tool間の通信
@@ -86,7 +86,7 @@ Reliable MCP (RMCP)は、MCPの上位レイヤーとして、エージェント�
 - **要件ID**: FR-007
 - **説明**: 体系的なエラー処理とリカバリー機能を提供する
 - **詳細**:
-  - エラーコードの標準化（RMCP固有のエラーコード体系）
+  - エラーコードの標準化（MCP-Tx固有のエラーコード体系）
   - エラーの分類（一時的エラー、永続的エラー、ビジネスエラー）
   - エラー時の自動リカバリー戦略
   - カスタムエラーハンドラーの登録機能
@@ -123,7 +123,7 @@ Reliable MCP (RMCP)は、MCPの上位レイヤーとして、エージェント�
 ### 3.4 互換性要件
 - **要件ID**: NFR-004
 - **MCP互換性**: 既存のMCP実装との後方互換性維持
-- **段階的移行**: RMCPの機能を選択的に有効化可能
+- **段階的移行**: MCP-Txの機能を選択的に有効化可能
 - **プロトコルバージョニング**: バージョン管理とネゴシエーション機能
 
 ### 3.5 データサイズ制限と大ファイル処理
@@ -138,13 +138,13 @@ Reliable MCP (RMCP)は、MCPの上位レイヤーとして、エージェント�
 
 ### 4.1 MCPとの統合アプローチ
 
-RMCPはMCPの既存機能とシームレスに統合される：
+MCP-TxはMCPの既存機能とシームレスに統合される：
 
 #### MCPの`experimental`フィールドを活用
 ```typescript
 interface ClientCapabilities {
   experimental?: {
-    rmcp?: {
+    mcp_tx?: {
       version: string;
       features: string[];  // ["sequencing", "ack", "retry", "transactions"]
     };
@@ -161,7 +161,7 @@ interface ClientCapabilities {
     "name": "file_reader",
     "arguments": {...},
     "_meta": {
-      "rmcp": {
+      "mcp_tx": {
         "sequence": 42,
         "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
         "retry_count": 0,
@@ -175,7 +175,7 @@ interface ClientCapabilities {
 
 ### 4.3 MCPエラー処理システムとの統合
 - MCPの既存エラーコード体系を拡張
-- RMCPエラーを`_meta.rmcp.error`フィールドで提供
+- MCP-Txエラーを`_meta.mcp_tx.error`フィールドで提供
 - MCPの`CONNECTION_CLOSED`、`INVALID_PARAMS`等との連携
 
 ### 4.4 確認応答フォーマット
@@ -184,7 +184,7 @@ interface ClientCapabilities {
   "jsonrpc": "2.0",
   "result": {...},
   "id": "original-request-id",
-  "rmcp": {
+  "mcp_tx": {
     "ack": true,
     "sequence": 42,
     "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -200,16 +200,16 @@ interface ClientCapabilities {
   "jsonrpc": "2.0",
   "error": {
     "code": -32001,
-    "message": "RMCP Protocol Error",
+    "message": "MCP-Tx Protocol Error",
     "data": {
-      "rmcp_error_code": "RMCP_SEQUENCE_ERROR",
+      "mcp_tx_error_code": "MCP_TX_SEQUENCE_ERROR",
       "severity": "error",
       "retryable": false,
       "details": "Sequence number 43 expected, but received 45"
     }
   },
   "id": "original-request-id",
-  "rmcp": {
+  "mcp_tx": {
     "ack": false,
     "sequence": 45,
     "transaction_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -222,7 +222,7 @@ interface ClientCapabilities {
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "rmcp.health",
+  "method": "mcp_tx.health",
   "params": {
     "include_details": true
   },
@@ -257,7 +257,7 @@ interface ClientCapabilities {
 1. **信頼性**: 99.9%以上のメッセージ配信成功率
 2. **パフォーマンス**: MCPと比較して許容範囲内のオーバーヘッド
 3. **採用率**: 主要なMCP実装での採用
-4. **エコシステム**: RMCPをサポートするツールやライブラリの登場
+4. **エコシステム**: MCP-Txをサポートするツールやライブラリの登場
 
 ## 7. リスクと対策
 
@@ -272,7 +272,7 @@ interface ClientCapabilities {
 ## 8. MCPとの技術的連携
 
 ### 8.1 既存MCP機能の活用
-- **Progress Notifications**: 長時間タスクの進捗通知とRMCPの統合
+- **Progress Notifications**: 長時間タスクの進捗通知とMCP-Txの統合
 - **Cancellation**: MCPのキャンセル機能とRMCPのタイムアウト管理の連携
 - **Error Handling**: MCPのエラーコード体系とRMCPのエラー分類の統合
 - **Transport Layer**: MCPの既存トランスポート（stdio、WebSocket、HTTP）の拡張
@@ -309,7 +309,7 @@ interface ClientCapabilities {
 ## 日本語要約
 
 ### プロジェクト概要
-RMCP（Reliable MCP）は、MCPの上位レイヤーとしてツール呼び出しに信頼性保証を追加するプロトコル拡張。MCPの現状調査により、自動再送・接続管理・冪等性保証・ACK/NACK機構が未実装であることを確認。
+MCP-Txは、MCPの上位レイヤーとしてツール呼び出しに信頼性保証を追加するプロトコル拡張。MCPの現状調査により、自動再送・接続管理・冪等性保証・ACK/NACK機構が未実装であることを確認。
 
 ### 主要機能要件
 - **FR-001**: 冪等性保証 - 重複実行防止とリクエストID管理

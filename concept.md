@@ -1,9 +1,9 @@
-# Reliable MCP (RMCP)
+# MCP-Tx
 
 > **A reliability layer for MCP tool calls**  
-> MCP opens the connection. RMCP guarantees the tools actually executed.
+> MCP opens the connection. MCP-Tx guarantees the tools actually executed.
 
-[![Tests](https://github.com/Daku-on/reliable-MCP-draft/actions/workflows/test.yml/badge.svg)](https://github.com/Daku-on/reliable-MCP-draft/actions/workflows/test.yml)
+[![Tests](https://github.com/Daku-on/MCP-Tx/actions/workflows/test.yml/badge.svg)](https://github.com/Daku-on/MCP-Tx/actions/workflows/test.yml)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -22,11 +22,11 @@ MCP gives you JSON-RPC with tools, but no **delivery guarantees**. For autonomou
 
 ## The Solution
 
-RMCP adds exactly what MCP is missing:
+MCP-Tx adds exactly what MCP is missing:
 
 ```python
-# RMCP call with guarantees
-result = await rmcp_session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
+# MCP-Tx call with guarantees
+result = await mcp_tx_session.call_tool("file_writer", {"path": "/tmp/data.json", "content": data})
 
 # You now know:
 print(result.ack)          # True - server confirmed receipt
@@ -37,22 +37,22 @@ print(result.attempts)     # How many retries were needed
 
 ## Core Features
 
-| MCP Pain Point | RMCP Solution | Implementation |
+| MCP Pain Point | MCP-Tx Solution | Implementation |
 |----------------|---------------|----------------|
-| **Silent failures** | Required ACK/NACK | `_meta.rmcp.ack: true/false` |
-| **Duplicate execution** | Request deduplication | `_meta.rmcp.request_id` + idempotency |
+| **Silent failures** | Required ACK/NACK | `_meta.mcp_tx.ack: true/false` |
+| **Duplicate execution** | Request deduplication | `_meta.mcp_tx.request_id` + idempotency |
 | **No retry logic** | Automatic retry with backoff | Configurable retry policy |
 | **Can't track progress** | Request lifecycle tracking | Transaction IDs + status objects |
 
-## 🚀 FastRMCP - Decorator-Based Python SDK
+## 🚀 FastMCP-Tx - Decorator-Based Python SDK
 
-**FastRMCP** provides a decorator-based interface similar to FastMCP, making it easy to add RMCP reliability features to your tools:
+**FastMCP-Tx** provides a decorator-based interface similar to FastMCP, making it easy to add MCP-Tx reliability features to your tools:
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 
 # Wrap your existing MCP session
-app = FastRMCP(mcp_session)
+app = FastMCPTx(mcp_session)
 
 @app.tool()
 async def reliable_file_writer(path: str, content: str) -> dict:
@@ -67,16 +67,16 @@ async def critical_api_call(url: str, data: dict) -> dict:
     response = await http_client.post(url, json=data)
     return response.json()
 
-# Use with automatic RMCP reliability
+# Use with automatic MCP-Tx reliability
 async with app:
     result = await app.call_tool("reliable_file_writer", {
         "path": "/tmp/data.json", 
         "content": json.dumps(data)
     })
     
-    print(f"ACK: {result.rmcp_meta.ack}")           # True - confirmed receipt
-    print(f"Processed: {result.rmcp_meta.processed}") # True - actually executed
-    print(f"Attempts: {result.rmcp_meta.attempts}")    # How many retries needed
+    print(f"ACK: {result.mcp_tx_meta.ack}")           # True - confirmed receipt
+    print(f"Processed: {result.mcp_tx_meta.processed}") # True - actually executed
+    print(f"Attempts: {result.mcp_tx_meta.attempts}")    # How many retries needed
 ```
 
 ### Installation
@@ -84,7 +84,7 @@ async with app:
 ```bash
 # Clone the repository
 git clone https://github.com/Daku-on/reliable-MCP-draft.git
-cd reliable-MCP-draft/rmcp-python
+cd reliable-MCP-draft/mcp-tx-python
 
 # Install dependencies
 uv install
@@ -105,28 +105,28 @@ uv run pytest tests/ -v
 
 ## Protocol Specification
 
-RMCP uses MCP's `experimental` capabilities for backward compatibility:
+MCP-Tx uses MCP's `experimental` capabilities for backward compatibility:
 
 ```typescript
 // Client capability negotiation
 const params = {
   capabilities: {
     experimental: {
-      rmcp: { version: "0.1.0", features: ["ack", "retry", "idempotency"] }
+      mcp_tx: { version: "0.1.0", features: ["ack", "retry", "idempotency"] }
     }
   }
 }
 
-// RMCP-enhanced request
+// MCP-Tx-enhanced request
 const request = {
   method: "tools/call",
   params: {
     name: "file_reader",
     arguments: { path: "/data/input.txt" },
     _meta: {
-      rmcp: {
+      mcp_tx: {
         expect_ack: true,
-        request_id: "rmcp-1234567890",
+        request_id: "mcp-tx-1234567890",
         idempotency_key: "read_input_file_v1"
       }
     }
@@ -137,7 +137,7 @@ const request = {
 {
   "result": { /* tool output */ },
   "_meta": {
-    "rmcp": {
+    "mcp_tx": {
       "ack": true,
       "processed": true,
       "duplicate": false,
@@ -149,11 +149,11 @@ const request = {
 
 ## Architecture
 
-RMCP wraps your existing MCP session:
+MCP-Tx wraps your existing MCP session:
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   Agent     │────▶│   RMCP Wrapper   │────▶│    Tool     │
+│   Agent     │────▶│   MCP-Tx Wrapper │────▶│    Tool     │
 │   (Client)  │◀────│  + MCP Session   │◀────│  (Server)   │
 └─────────────┘     └──────────────────┘     └─────────────┘
                            │
@@ -167,19 +167,19 @@ RMCP wraps your existing MCP session:
 
 ## Backward Compatibility
 
-- **100% MCP compatible**: Falls back to standard MCP when RMCP isn't supported
-- **Opt-in only**: RMCP features activate only when both sides support it
+- **100% MCP compatible**: Falls back to standard MCP when MCP-Tx isn't supported
+- **Opt-in only**: MCP-Tx features activate only when both sides support it
 - **No breaking changes**: Existing MCP tools work unchanged
 
 ```python
-# Same code works with both MCP and RMCP servers
-session = RMCPSession(mcp_session)  # Wraps existing session
+# Same code works with both MCP and MCP-Tx servers
+session = MCPTxSession(mcp_session)  # Wraps existing session
 result = await session.call_tool("any_tool", args)  # Auto-detects capabilities
 ```
 
 ## Implementation Status
 
-### ✅ **Python SDK (FastRMCP)** - Production Ready
+### ✅ **Python SDK (FastMCP-Tx)** - Production Ready
 - **Decorator-based API** - `@app.tool()` pattern similar to FastMCP
 - **Input validation** - Type checking and error handling
 - **Thread safety** - Concurrent execution with proper async patterns
@@ -195,18 +195,18 @@ result = await session.call_tool("any_tool", args)  # Auto-detects capabilities
 ### 📁 **Project Structure**
 ```
 reliable-MCP-draft/
-├── rmcp-python/           # Python SDK implementation
-│   ├── src/rmcp/
-│   │   ├── fastrmcp.py   # Decorator-based API
-│   │   ├── session.py    # Core RMCP session
-│   │   └── types.py      # Type definitions
-│   ├── tests/            # Comprehensive test suite
-│   └── examples/         # Usage examples
-├── design.md             # System design documentation
-└── requirements.md       # Requirements specification
+├── mcp-tx-python/         # Python SDK implementation
+│   ├── src/mcp_tx/
+│   │   ├── fastmcp_tx.py  # Decorator-based API
+│   │   ├── session.py     # Core MCP-Tx session
+│   │   └── types.py       # Type definitions
+│   ├── tests/             # Comprehensive test suite
+│   └── examples/          # Usage examples
+├── design.md              # System design documentation
+└── requirements.md        # Requirements specification
 ```
 
-[View full specification →](./rmcp-python/README.md)
+[View full specification →](./mcp-tx-python/README.md)
 
 ## Why You Need This
 
@@ -217,7 +217,7 @@ Autonomous agents require **step-by-step reliability**:
 3. **Multi-step workflows**: "Which steps completed? Which failed?"
 4. **Error recovery**: "Should I retry this operation?"
 
-RMCP makes these questions answerable at the protocol level.
+MCP-Tx makes these questions answerable at the protocol level.
 
 ### 🎯 **Real-World Use Cases**
 
@@ -244,26 +244,26 @@ async def reliable_workflow():
     # Step 3: Upload results (with idempotency)
     upload_result = await app.call_tool("upload_results", {
         "data": process_result.result
-    }, idempotency_key=f"upload-{process_result.rmcp_meta.request_id}")
+    }, idempotency_key=f"upload-{process_result.mcp_tx_meta.request_id}")
     
     # Full audit trail available
     return {
-        "download_attempts": download_result.rmcp_meta.attempts,
-        "process_attempts": process_result.rmcp_meta.attempts,
-        "upload_duplicate": upload_result.rmcp_meta.duplicate,
-        "total_success": all(r.rmcp_meta.ack for r in [download_result, process_result, upload_result])
+        "download_attempts": download_result.mcp_tx_meta.attempts,
+        "process_attempts": process_result.mcp_tx_meta.attempts,
+        "upload_duplicate": upload_result.mcp_tx_meta.duplicate,
+        "total_success": all(r.mcp_tx_meta.ack for r in [download_result, process_result, upload_result])
     }
 ```
 
 ---
 
-**MCP opened the door to tools. RMCP makes sure you can trust what happened next.**
+**MCP opened the door to tools. MCP-Tx makes sure you can trust what happened next.**
 
 ---
 
 ## 日本語概要
 
-**Reliable MCP (RMCP)** は、MCPツール呼び出しに信頼性を追加するプロトコル拡張です。
+**MCP-Tx** は、MCPツール呼び出しに信頼性を追加するプロトコル拡張です。
 
 ### 解決する問題
 
@@ -275,14 +275,14 @@ result = await session.call_tool("file_writer", {"path": "/tmp/data.json", "cont
 # ファイルは書けた？ネットワークエラーで途中で落ちた？再実行すべき？
 ```
 
-### FastRMCP Python SDK - デコレータベースAPI
+### FastMCP-Tx Python SDK - デコレータベースAPI
 
-FastMCPと同様のデコレータAPIで、簡単にRMCP信頼性機能を追加：
+FastMCPと同様のデコレータAPIで、簡単にMCP-Tx信頼性機能を追加：
 
 ```python
-from rmcp import FastRMCP, RetryPolicy
+from mcp_tx import FastMCPTx, RetryPolicy
 
-app = FastRMCP(mcp_session)
+app = FastMCPTx(mcp_session)
 
 @app.tool()
 async def reliable_file_writer(path: str, content: str) -> dict:
@@ -297,21 +297,21 @@ async def critical_api_call(url: str, data: dict) -> dict:
     response = await http_client.post(url, json=data)
     return response.json()
 
-# 自動RMCP信頼性機能付きで使用
+# 自動MCP-Tx信頼性機能付きで使用
 async with app:
     result = await app.call_tool("reliable_file_writer", {
         "path": "/tmp/data.json", 
         "content": json.dumps(data)
     })
     
-    print(result.rmcp_meta.ack)       # True - サーバー受信確認
-    print(result.rmcp_meta.processed) # True - 実際に実行された
-    print(result.rmcp_meta.attempts)  # 必要だったリトライ回数
+    print(result.mcp_tx_meta.ack)       # True - サーバー受信確認
+    print(result.mcp_tx_meta.processed) # True - 実際に実行された
+    print(result.mcp_tx_meta.attempts)  # 必要だったリトライ回数
 ```
 
 ### 実装済み機能
 
-#### ✅ Python SDK (FastRMCP) - 本番利用可能
+#### ✅ Python SDK (FastMCP-Tx) - 本番利用可能
 - **デコレータベースAPI** - `@app.tool()`でツールを簡単登録
 - **入力検証** - 型チェックとエラーハンドリング
 - **スレッドセーフ** - 並行実行対応の適切な非同期パターン
@@ -328,7 +328,7 @@ async with app:
 ### MCP互換性
 
 - 既存MCPコードはそのまま動作
-- RMCP対応時のみ信頼性機能が有効化
+- MCP-Tx対応時のみ信頼性機能が有効化
 - `experimental`フィールドでの機能ネゴシエーション
 
-**MCPがツールへの道を開いた。RMCPはそのツールが確実に動作したことを保証する。**
+**MCPがツールへの道を開いた。MCP-Txはそのツールが確実に動作したことを保証する。**

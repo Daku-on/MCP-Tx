@@ -1,16 +1,16 @@
-# Reliable MCP (RMCP) MVP仕様書
+# MCP-Tx MVP仕様書
 
 ## 概要
-本ドキュメントは、RMCPの段階的実装計画を定義する。P0（MVP/概念検証）から始まり、P1、P2と段階的に機能を追加していく。
+本ドキュメントは、MCP-Txの段階的実装計画を定義する。P0（MVP/概念検証）から始まり、P1、P2と段階的に機能を追加していく。
 
 ## MCP後方互換性の原則
 
-RMCPは既存のMCPエコシステムとの完全な後方互換性を維持することを最優先とする。
+MCP-Txは既存のMCPエコシステムとの完全な後方互換性を維持することを最優先とする。
 
 ### 互換性要件
-1. **透過的な動作**: RMCPメタデータを理解しないMCPサーバー/クライアントとも通信可能
-2. **オプトイン方式**: RMCP機能は明示的に有効化された場合のみ動作
-3. **グレースフルダウングレード**: RMCP非対応の相手との通信時は標準MCPとして動作
+1. **透過的な動作**: MCP-Txメタデータを理解しないMCPサーバー/クライアントとも通信可能
+2. **オプトイン方式**: MCP-Tx機能は明示的に有効化された場合のみ動作
+3. **グレースフルダウングレード**: MCP-Tx非対応の相手との通信時は標準MCPとして動作
 4. **プロトコルネゴシエーション**: 初期化時に双方の能力を確認し、適切なモードを選択
 
 ## 実装フェーズ概要
@@ -26,7 +26,7 @@ RMCPは既存のMCPエコシステムとの完全な後方互換性を維持す�
 ## P0: MVP (概念検証)
 
 ### 目的
-**最小限のACK機能と再送制御**でRMCPの核心である信頼性を実証する。
+**最小限のACK機能と再送制御**でMCP-Txの核心である信頼性を実証する。
 
 ### スコープ
 - **含む**: 基本的なACK/NACK、単純な再送制御
@@ -42,9 +42,9 @@ interface P0Response {
   error?: any;
   id: string | number;
   
-  // RMCP最小拡張
+  // MCP-Tx最小拡張
   _meta?: {
-    rmcp?: {
+    mcp_tx?: {
       ack: boolean;     // 受信確認（必須）
       processed: boolean; // 処理完了確認
     };
@@ -58,14 +58,14 @@ interface P0Response {
 - タイムアウト: 30秒
 - ACKが返らない場合のみ再送
 
-#### 3. MCPの_metaフィールドでRMCP情報
+#### 3. MCPの_metaフィールドでMCP-Tx情報
 ```typescript
 interface P0Request {
   jsonrpc: "2.0";
   method?: string;
   params?: {
     _meta?: {
-      rmcp?: {
+      mcp_tx?: {
         expect_ack: true;  // ACKを期待することを明示
         request_id: string; // 重複検出用の一意ID
       };
@@ -83,7 +83,7 @@ interface P0Request {
 // P0では信頼性の核心機能のみ
 interface P0ClientCapabilities extends ClientCapabilities {
   experimental?: {
-    rmcp?: {
+    mcp_tx?: {
       version: "0.1.0";
       features: ["ack", "retry"];  // ACKと再送の基本機能
     };
@@ -95,8 +95,8 @@ interface P0ClientCapabilities extends ClientCapabilities {
 
 #### クライアント側（ACK付き最小実装）
 ```typescript
-class P0RMCPClient {
-  private rmcpEnabled = false;
+class P0MCPTxClient {
+  private mcpTxEnabled = false;
   
   async initialize(params: InitializeParams): Promise<InitializeResult> {
     const extendedParams = {
@@ -104,29 +104,29 @@ class P0RMCPClient {
       capabilities: {
         ...params.capabilities,
         experimental: {
-          rmcp: { version: "0.1.0", features: ["ack", "retry"] }
+          mcp_tx: { version: "0.1.0", features: ["ack", "retry"] }
         }
       }
     };
     
     const result = await this.baseClient.initialize(extendedParams);
-    this.rmcpEnabled = !!(result.capabilities?.experimental?.rmcp);
+    this.mcpTxEnabled = !!(result.capabilities?.experimental?.mcp_tx);
     return result;
   }
   
   async send(request: any): Promise<any> {
-    if (!this.rmcpEnabled) {
+    if (!this.mcpTxEnabled) {
       return this.baseClient.send(request);
     }
     
-    // RMCPリクエストとして送信
-    const rmcpRequest = {
+    // MCP-Txリクエストとして送信
+    const mcpTxRequest = {
       ...request,
       params: {
         ...request.params,
         _meta: {
           ...request.params?._meta,
-          rmcp: {
+          mcp_tx: {
             expect_ack: true,
             request_id: this.generateRequestId()
           }
@@ -137,12 +137,12 @@ class P0RMCPClient {
     // ACKベースの再送制御
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const response = await this.baseClient.send(rmcpRequest);
+        const response = await this.baseClient.send(mcpTxRequest);
         
         // ACKチェック
-        if (response._meta?.rmcp?.ack === true) {
+        if (response._meta?.mcp_tx?.ack === true) {
           return response;  // 成功
-        } else if (response._meta?.rmcp?.ack === false) {
+        } else if (response._meta?.mcp_tx?.ack === false) {
           throw new Error("Server NACK received");
         }
         // ACKフィールドがない場合は標準MCPレスポンスとして扱う
@@ -156,30 +156,30 @@ class P0RMCPClient {
   }
   
   private generateRequestId(): string {
-    return `rmcp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `mcp-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 ```
 
 #### サーバー側（ACK対応最小実装）
 ```typescript
-class P0RMCPServer {
-  private rmcpEnabled = false;
+class P0MCPTxServer {
+  private mcpTxEnabled = false;
   private processedRequests = new Set<string>(); // 重複検出用
   
   async handleInitialize(params: InitializeParams): Promise<InitializeResult> {
-    const clientRmcp = params.capabilities?.experimental?.rmcp;
-    this.rmcpEnabled = !!clientRmcp;
+    const clientMcpTx = params.capabilities?.experimental?.mcp_tx;
+    this.mcpTxEnabled = !!clientMcpTx;
     
     const baseResult = await this.baseServer.handleInitialize(params);
     
-    if (this.rmcpEnabled) {
+    if (this.mcpTxEnabled) {
       return {
         ...baseResult,
         capabilities: {
           ...baseResult.capabilities,
           experimental: {
-            rmcp: { version: "0.1.0", features: ["ack", "retry"] }
+            mcp_tx: { version: "0.1.0", features: ["ack", "retry"] }
           }
         }
       };
@@ -188,15 +188,15 @@ class P0RMCPServer {
   }
   
   async handleRequest(request: any): Promise<any> {
-    const rmcpMeta = request.params?._meta?.rmcp;
+    const mcpTxMeta = request.params?._meta?.mcp_tx;
     
-    if (!this.rmcpEnabled || !rmcpMeta?.expect_ack) {
+    if (!this.mcpTxEnabled || !mcpTxMeta?.expect_ack) {
       // 標準MCPとして処理
       return this.baseServer.handleRequest(request);
     }
     
     // 重複リクエストチェック
-    if (rmcpMeta.request_id && this.processedRequests.has(rmcpMeta.request_id)) {
+    if (mcpTxMeta.request_id && this.processedRequests.has(mcpTxMeta.request_id)) {
       return this.createDuplicateResponse(request);
     }
     
@@ -204,8 +204,8 @@ class P0RMCPServer {
       const result = await this.baseServer.handleRequest(request);
       
       // リクエストIDを記録
-      if (rmcpMeta.request_id) {
-        this.processedRequests.add(rmcpMeta.request_id);
+      if (mcpTxMeta.request_id) {
+        this.processedRequests.add(mcpTxMeta.request_id);
       }
       
       // ACK付きレスポンス
@@ -213,7 +213,7 @@ class P0RMCPServer {
         ...result,
         _meta: {
           ...result._meta,
-          rmcp: {
+          mcp_tx: {
             ack: true,
             processed: true
           }
@@ -229,7 +229,7 @@ class P0RMCPServer {
         },
         id: request.id,
         _meta: {
-          rmcp: {
+          mcp_tx: {
             ack: false,
             processed: false
           }
@@ -244,7 +244,7 @@ class P0RMCPServer {
       result: { message: "Request already processed" },
       id: request.id,
       _meta: {
-        rmcp: {
+        mcp_tx: {
           ack: true,
           processed: true,
           duplicate: true
@@ -260,28 +260,28 @@ class P0RMCPServer {
 #### 相互運用性マトリクス
 | クライアント | サーバー | 期待動作 |
 |-------------|----------|----------|
-| RMCP対応 | RMCP対応 | RMCP機能有効 |
-| RMCP対応 | MCP標準 | 標準MCPとして動作 |
-| MCP標準 | RMCP対応 | 標準MCPとして動作 |
+| MCP-Tx対応 | MCP-Tx対応 | MCP-Tx機能有効 |
+| MCP-Tx対応 | MCP標準 | 標準MCPとして動作 |
+| MCP標準 | MCP-Tx対応 | 標準MCPとして動作 |
 | MCP標準 | MCP標準 | 標準MCPとして動作 |
 
 #### 互換性テストシナリオ
-1. **RMCP→MCP通信**
-   - RMCPクライアントが標準MCPサーバーに接続
-   - 初期化時にRMCP機能が無効化されることを確認
+1. **MCP-Tx→MCP通信**
+   - MCP-Txクライアントが標準MCPサーバーに接続
+   - 初期化時にMCP-Tx機能が無効化されることを確認
    - 標準MCPメッセージのみが送信されることを確認
 
-2. **MCP→RMCP通信**
-   - 標準MCPクライアントがRMCPサーバーに接続
-   - RMCPメタデータなしでもリクエストが処理されることを確認
-   - レスポンスにRMCPメタデータが含まれないことを確認
+2. **MCP→MCP-Tx通信**
+   - 標準MCPクライアントがMCP-Txサーバーに接続
+   - MCP-Txメタデータなしでもリクエストが処理されることを確認
+   - レスポンスにMCP-Txメタデータが含まれないことを確認
 
 3. **混在環境**
-   - 同一ホストで複数のクライアント（RMCP/MCP混在）を実行
+   - 同一ホストで複数のクライアント（MCP-Tx/MCP混在）を実行
    - 各接続が独立して適切なモードで動作することを確認
 
 ### テスト計画（ACK中心）
-1. **ACK成功ケース**: RMCPリクエスト→ACK付きレスポンス受信
+1. **ACK成功ケース**: MCP-Txリクエスト→ACK付きレスポンス受信
 2. **NACK処理ケース**: サーバーエラー→NACK付きレスポンス受信
 3. **再送ケース**: ACKタイムアウト→再送→ACK受信
 4. **重複検出ケース**: 同一request_idの重複リクエスト処理
@@ -292,7 +292,7 @@ class P0RMCPServer {
 - [ ] ACKがない場合に自動再送される
 - [ ] 重複リクエストが適切に検出・処理される
 - [ ] 既存のMCPクライアント/サーバーとの完全な互換性維持
-- [ ] RMCP機能が標準MCPの動作に影響しない
+- [ ] MCP-Tx機能が標準MCPの動作に影響しない
 
 ---
 
@@ -308,7 +308,7 @@ MCPの用途に最適化された実用的な信頼性機能を実装する。
 interface P1Message {
   params?: {
     _meta?: {
-      rmcp?: {
+      mcp_tx?: {
         expect_ack: true;
         request_id: string;
         idempotency_key: string; // 冪等性キー（新規）
@@ -394,7 +394,7 @@ interface P2ChunkedTransfer {
 interface P2StreamingRequest {
   params?: {
     _meta?: {
-      rmcp?: {
+      mcp_tx?: {
         chunked_transfer?: P2ChunkedTransfer;
         content_length?: number;
       };
@@ -419,7 +419,7 @@ enum ChunkStrategy {
 
 #### 2. 包括的なモニタリング
 ```typescript
-interface RMCPMetrics {
+interface MCPTxMetrics {
   // リアルタイムメトリクス
   requests_per_second: number;
   success_rate: number;
@@ -465,7 +465,7 @@ interface RMCPMetrics {
 #### 6. プロトコル拡張
 ```typescript
 interface P2Message {
-  rmcp?: {
+  mcp_tx?: {
     // P1の機能 + 以下
     version: string;        // プロトコルバージョン
     priority: "low" | "normal" | "high";
@@ -499,7 +499,7 @@ interface P2Message {
 ## 段階的移行シナリオ
 
 ### Phase 1: 早期採用者向け（P0完了後）
-- オプトインでRMCP機能を試験的に利用可能
+- オプトインでMCP-Tx機能を試験的に利用可能
 - 開発環境での検証を推奨
 - フィードバック収集とバグ修正
 
@@ -509,7 +509,7 @@ interface P2Message {
 - パフォーマンスメトリクスの収集
 
 ### Phase 3: 一般提供（P2完了後）
-- デフォルトでRMCP機能を有効化（オプトアウト可能）
+- デフォルトでMCP-Tx機能を有効化（オプトアウト可能）
 - 移行ガイドとツールの提供
 - コミュニティサポートの確立
 

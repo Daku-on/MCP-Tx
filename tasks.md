@@ -1,7 +1,7 @@
-# RMCP Implementation Tasks
+# MCP-Tx Implementation Tasks
 
 ## Overview
-Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP tool calls.
+Implementation roadmap for MCP-Tx - a reliability layer for MCP tool calls.
 
 ## Progress Tracking
 
@@ -12,7 +12,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 - [ ] **Session 4**: Testing & Documentation (0/4 tasks) - Production deployment ready
 
 ### Implementation Priority (Token-Optimized)
-- [ ] **First**: Core RMCP wrapper + ACK/NACK (immediate value)
+- [ ] **First**: Core MCP-Tx wrapper + ACK/NACK (immediate value)
 - [ ] **Second**: Retry logic + idempotency (reliability core)
 - [ ] **Third**: Transaction management (advanced features)
 - [ ] **Fourth**: Testing + documentation (completion)
@@ -29,14 +29,14 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 ## P0: MVP Implementation (Essential)
 
 ### P0.1: Core Infrastructure ✅ **COMPLETED**
-- [x] **P0.1.1** Create RMCP types and message structures ✅
-  - [x] Define `RMCPMeta` interface for `_meta.rmcp` fields
-  - [x] Define request/response wrapper types (`RMCPResult`, `RMCPResponse`)
-  - [x] Define error types and codes (`RMCPError`, `RMCPTimeoutError`, `RMCPNetworkError`)
+- [x] **P0.1.1** Create MCP-Tx types and message structures ✅
+  - [x] Define `MCPTxMeta` interface for `_meta.mcp_tx` fields
+  - [x] Define request/response wrapper types (`MCPTxResult`, `MCPTxResponse`)
+  - [x] Define error types and codes (`MCPTxError`, `MCPTxTimeoutError`, `MCPTxNetworkError`)
   - [x] Add capability negotiation types
   
-- [x] **P0.1.2** Implement RMCP session wrapper ✅
-  - [x] Create `RMCPSession` class wrapping `BaseSession`
+- [x] **P0.1.2** Implement MCP-Tx session wrapper ✅
+  - [x] Create `MCPTxSession` class wrapping `BaseSession`
   - [x] Implement capability negotiation during initialization
   - [x] Add transparent fallback to standard MCP
   - [x] Handle experimental capabilities exchange
@@ -181,7 +181,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
   - [ ] Capability negotiation
   - [ ] Fallback to standard MCP
   - [ ] Cross-compatibility with existing MCP servers
-  - [ ] Error handling across MCP/RMCP boundary
+  - [ ] Error handling across MCP/MCP-Tx boundary
   
 - [ ] **TEST.2.2** End-to-end workflow tests
   - [ ] Multi-step tool execution
@@ -208,7 +208,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 
 ### DOC.1: API Documentation
 - [ ] **DOC.1.1** Python SDK documentation
-  - [ ] RMCPSession API reference
+  - [ ] MCP_TxSession API reference
   - [ ] Configuration options
   - [ ] Error handling guide
   - [ ] Migration guide from MCP
@@ -221,7 +221,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 
 ### DOC.2: Examples and Tutorials
 - [ ] **DOC.2.1** Basic usage examples
-  - [ ] Simple tool call with RMCP
+  - [ ] Simple tool call with MCP-Tx
   - [ ] Error handling patterns
   - [ ] Configuration examples
   - [ ] Migration from existing MCP code
@@ -250,8 +250,8 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 ## Implementation Sessions (Token-Constrained)
 
 ### Session 1: Python Core MVP (✅ COMPLETED)
-**Goal**: Working Python RMCP with basic reliability
-- [x] Python RMCP session wrapper (P0.1.2)
+**Goal**: Working Python MCP-Tx with basic reliability
+- [x] Python MCP-Tx session wrapper (P0.1.2)
 - [x] Request ID tracking (P0.2.1) 
 - [x] ACK/NACK mechanism (P0.2.2)
 - [x] Basic retry logic (P0.4.1)
@@ -260,25 +260,25 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 - [x] Test suite with full coverage (TEST.1.1-1.2) ✅ **COMPLETED THIS SESSION**
 - [x] CI/CD pipeline with quality gates ✅ **COMPLETED THIS SESSION**
 - [x] Cross-platform async backend support (asyncio/trio) ✅ **COMPLETED THIS SESSION**
-- **Deliverable**: ✅ Production-ready Python RMCP client with 93% test coverage
+- **Deliverable**: ✅ Production-ready Python MCP-Tx client with 93% test coverage
 
 ### Session 2: Python Polish & Production Features  
-**Goal**: Complete production-ready Python RMCP SDK
+**Goal**: Complete production-ready Python MCP-Tx SDK
 - [x] ~~Advanced retry policies (P1.1.1-1.1.2)~~ ✅ **COMPLETED IN SESSION 1**
 - [x] ~~Request deduplication (P0.3.1)~~ ✅ **COMPLETED IN SESSION 1** 
 - [ ] Transaction management (P1.2.1-1.2.2)
 - [ ] Flow control and rate limiting (P1.3.1-1.3.2)
 - [ ] Enhanced error handling and circuit breaker patterns
 - [ ] Integration tests with real MCP servers (TEST.2.1)
-- **Deliverable**: Enterprise-grade Python RMCP SDK
+- **Deliverable**: Enterprise-grade Python MCP-Tx SDK
 
 ### Session 3: TypeScript SDK Implementation
 **Goal**: Port proven Python design to TypeScript
 - [ ] TypeScript types and interfaces
-- [ ] TS RMCP session wrapper 
+- [ ] TS MCP-Tx session wrapper 
 - [ ] Port core reliability features
 - [ ] TS-specific optimizations (Promise-based async)
-- **Deliverable**: Feature-complete TypeScript RMCP SDK
+- **Deliverable**: Feature-complete TypeScript MCP-Tx SDK
 
 ### Session 4: Cross-Language Validation
 **Goal**: Both SDKs tested and documented
@@ -286,7 +286,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 - [ ] Performance comparison Python vs TS
 - [ ] Unified API documentation
 - [ ] Release preparation for both SDKs
-- **Deliverable**: Production-ready Python + TypeScript RMCP SDKs
+- **Deliverable**: Production-ready Python + TypeScript MCP-Tx SDKs
 
 ---
 
@@ -316,7 +316,7 @@ Implementation roadmap for Reliable MCP (RMCP) - a reliability layer for MCP too
 ## Success Criteria
 
 ### P0 Success Criteria
-- [ ] RMCP client can wrap any MCP session
+- [ ] MCP-Tx client can wrap any MCP session
 - [ ] ACK/NACK mechanism working for tool calls
 - [ ] Basic retry on network failures
 - [ ] Request deduplication prevents duplicate execution
