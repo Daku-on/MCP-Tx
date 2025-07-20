@@ -632,7 +632,10 @@ class StreamlitResearchAssistant:
 
             self.progress_tracker.complete_step(
                 "content_analysis",
-                f"Completed {analysis_result['sources_analyzed']} analyses (attempts: {analysis_result['total_attempts']})",
+                (
+                    f"Completed {analysis_result['sources_analyzed']} analyses "
+                    f"(attempts: {analysis_result['total_attempts']})"
+                ),
             )
 
             # Step 3: Fact Checking
@@ -653,7 +656,10 @@ class StreamlitResearchAssistant:
 
             self.progress_tracker.complete_step(
                 "fact_checking",
-                f"Completed {fact_check_result['checks_completed']} fact checks (attempts: {fact_check_result['total_attempts']})",
+                (
+                    f"Completed {fact_check_result['checks_completed']} fact checks "
+                    f"(attempts: {fact_check_result['total_attempts']})"
+                ),
             )
 
             # Step 4: Report Generation

@@ -295,11 +295,7 @@ class RealAIService:
         - Content contains {word_count} words indicating {"detailed" if word_count > 100 else "brief"} coverage
         - {"Includes quantitative data" if has_numbers else "Primarily qualitative information"}
         - {"Contains recent date references" if has_dates else "Limited temporal context"}
-        - Content appears to be {
-            "technical"
-            if any(word in content.lower() for word in ["api", "algorithm", "data", "system"])
-            else "general"
-        } in nature
+        - Content appears to be {"technical" if any(word in content.lower() for word in ["api", "algorithm", "data", "system"]) else "general"} in nature  # noqa: E501
 
         ### Credibility Assessment: {credibility}/10
         Based on content structure, use of data, and contextual information.
@@ -393,7 +389,7 @@ class RealAIService:
 
         **Analysis Notes:**
         - Assessment based on claim structure and available context
-        - {"High confidence indicators suggest reliable sourcing" if confidence >= 8 else "Moderate confidence suggests need for additional verification"}
+        - {"High confidence indicators suggest reliable sourcing" if confidence >= 8 else "Moderate confidence suggests need for additional verification"}  # noqa: E501
 
         **Recommendation:** {"Information appears well-supported based on available indicators" if confidence >= 7 else "Additional verification recommended before relying on this information"}
         """
