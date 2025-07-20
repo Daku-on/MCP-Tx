@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
@@ -25,6 +26,9 @@ from .types import (
 )
 
 logger = logging.getLogger(__name__)
+
+CACHE_MAX_SIZE = 1000
+CACHE_CLEANUP_COUNT = 100
 
 
 class BaseSession(Protocol):
@@ -85,8 +89,6 @@ class MCPTxSession:
             r"/home/[^/\s]+",  # User paths
             r"file://[^\s]+",  # File URLs
         ]
-
-        import re
 
         for pattern in sensitive_patterns:
             error_str = re.sub(pattern, "[REDACTED]", error_str, flags=re.IGNORECASE)
@@ -161,7 +163,7 @@ class MCPTxSession:
         if not name or not name.strip():
             raise ValueError("Tool name must be a non-empty string")
 
-        if not name.replace("_", "a").replace("-", "a").isalnum():
+        if not re.match(r"^[a-zA-Z0-9_-]+$", name):
             raise ValueError("Tool name must contain only alphanumeric characters, hyphens, and underscores")
 
         if arguments is not None and not isinstance(arguments, dict):
@@ -386,13 +388,13 @@ class MCPTxSession:
             del self._deduplication_cache[key]
 
         # Additional safety: if cache grows too large, remove oldest entries
-        if len(self._deduplication_cache) > 1000:
-            # Sort by timestamp and remove oldest 100 entries
+        if len(self._deduplication_cache) > CACHE_MAX_SIZE:
+            # Sort by timestamp and remove oldest entries
             sorted_entries = sorted(
                 self._deduplication_cache.items(),
                 key=lambda x: x[1][1],  # Sort by timestamp
             )
-            for key, _ in sorted_entries[:100]:
+            for key, _ in sorted_entries[:CACHE_CLEANUP_COUNT]:
                 del self._deduplication_cache[key]
 
     @property

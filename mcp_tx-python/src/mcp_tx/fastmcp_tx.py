@@ -1,6 +1,6 @@
-"""FastMCP-Tx - Decorator-based API for MCP-Tx reliability features.
+"""FastMCPTx - Decorator-based API for MCP-Tx reliability features.
 
-FastMCP-Tx provides a decorator-based interface similar to FastMCP, allowing developers
+FastMCPTx provides a decorator-based interface similar to FastMCP, allowing developers
 to easily add MCP-Tx reliability features (retry, idempotency, ACK/NACK) to their tools.
 """
 
@@ -99,42 +99,16 @@ class ToolRegistry:
 
 
 class FastMCPTx:
-    """FastMCP-Tx - Decorator-based MCP-Tx reliability for MCP tools.
-
-    FastMCP-Tx wraps an existing MCP session and provides a decorator-based interface
-    for adding MCP-Tx reliability features to tool functions. Tools registered with
-    FastMCP-Tx automatically get retry logic, idempotency, and ACK/NACK handling.
-
-    Example:
-        ```python
-        from mcp_tx import FastMCPTx, RetryPolicy
-
-        # Wrap existing MCP session
-        app = FastMCPTx(mcp_session)
-
-        @app.tool()
-        async def my_tool(arg: str) -> str:
-            \"\"\"A reliable tool with automatic retry.\"\"\"
-            return f"Result: {arg}"
-
-        @app.tool(retry_policy=RetryPolicy(max_attempts=5))
-        async def critical_tool(data: dict) -> dict:
-            \"\"\"Critical tool with custom retry policy.\"\"\"
-            return {"processed": data}
-
-        # Call tools with automatic MCP-Tx reliability
-        result = await app.call_tool("my_tool", {"arg": "test"})
-        ```
-    """
+    """FastMCPTx - Decorator-based MCP-Tx reliability for MCP tools."""
 
     def __init__(
         self,
         mcp_session: Any,
         config: MCPTxConfig | None = None,
-        name: str = "FastMCP-Tx App",
+        name: str = "FastMCPTx App",
         max_tools: int = 1000,
     ) -> None:
-        """Initialize FastMCP-Tx with an MCP session.
+        """Initialize FastMCPTx with an MCP session.
 
         Args:
             mcp_session: An existing MCP session to wrap
@@ -150,7 +124,7 @@ class FastMCPTx:
         self._initialized = False
         self._init_lock = anyio.Lock()
 
-        logger.info(f"Created FastMCP-Tx app: {name}")
+        logger.info(f"Created FastMCPTx app: {name}")
 
     async def initialize(self) -> None:
         """Initialize the MCP-Tx session."""
@@ -166,7 +140,7 @@ class FastMCPTx:
             self._mcp_tx_session = MCPTxSession(self._mcp_session, self._config)
             await self._mcp_tx_session.initialize()
             self._initialized = True
-            logger.info(f"Initialized FastMCP-Tx app: {self.name}")
+            logger.info(f"Initialized FastMCPTx app: {self.name}")
 
     async def __aenter__(self) -> FastMCPTx:
         """Async context manager entry."""
@@ -177,7 +151,7 @@ class FastMCPTx:
         """Async context manager exit."""
         if self._mcp_tx_session:
             await self._mcp_tx_session.__aexit__(exc_type, exc_val, exc_tb)
-        logger.info(f"Closed FastMCP-Tx app: {self.name}")
+        logger.info(f"Closed FastMCPTx app: {self.name}")
 
     def tool(
         self,
@@ -242,7 +216,7 @@ class FastMCPTx:
     async def call_tool(
         self,
         name: str,
-        arguments: dict[str, Any],
+        arguments: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> MCPTxResult:
         """Call a registered tool with MCP-Tx reliability features.
@@ -257,20 +231,22 @@ class FastMCPTx:
 
         Raises:
             ValueError: If tool is not registered or arguments are invalid
-            RuntimeError: If FastMCP-Tx is not initialized
+            RuntimeError: If FastMCPTx is not initialized
         """
         # Input validation
         if not isinstance(name, str) or not name.strip():
             raise ValueError("Tool name must be a non-empty string")
 
+        if arguments is None:
+            arguments = {}
         if not isinstance(arguments, dict):
-            raise ValueError("Arguments must be a dictionary")
+            raise ValueError("Arguments must be a dictionary or None")
 
         if idempotency_key is not None and not isinstance(idempotency_key, str):
             raise ValueError("Idempotency key must be a string or None")
 
         if not self._initialized or not self._mcp_tx_session:
-            raise RuntimeError("FastMCP-Tx not initialized. Use 'async with app:' or call 'await app.initialize()'")
+            raise RuntimeError("FastMCPTx not initialized. Use 'async with app:' or call 'await app.initialize()'")
 
         tool_config = self._registry.get_tool(name)
         if not tool_config:

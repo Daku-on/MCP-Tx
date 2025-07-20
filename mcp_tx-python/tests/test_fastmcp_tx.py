@@ -218,7 +218,7 @@ class TestFastMCPTx:
         def test_tool():
             return "test"
 
-        with pytest.raises(RuntimeError, match="FastMCP-Tx not initialized"):
+        with pytest.raises(RuntimeError, match="FastMCPTx not initialized"):
             await app.call_tool("test_tool", {})
 
     @pytest.mark.anyio
@@ -435,11 +435,8 @@ class TestFastMCPTx:
             await fastmcptx_app.call_tool("   ", {"x": 1})
 
         # Test invalid arguments
-        with pytest.raises(ValueError, match="Arguments must be a dictionary"):
+        with pytest.raises(ValueError, match="Arguments must be a dictionary or None"):
             await fastmcptx_app.call_tool("test_tool", "not a dict")  # type: ignore
-
-        with pytest.raises(ValueError, match="Arguments must be a dictionary"):
-            await fastmcptx_app.call_tool("test_tool", None)  # type: ignore
 
         # Test invalid idempotency key
         with pytest.raises(ValueError, match="Idempotency key must be a string or None"):
