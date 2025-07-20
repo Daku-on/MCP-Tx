@@ -26,8 +26,11 @@ async def main():
             """Mock context manager exit."""
             pass
 
-        async def call_tool(self, name: str, arguments: dict) -> dict:
+        async def send_request(self, request: dict) -> dict:
             """Simulate tool calls."""
+            params = request.get("params", {})
+            name = params.get("name")
+            arguments = params.get("arguments", {})
             print(f"🔧 Calling MCP tool: {name} with {arguments}")
 
             # Simulate different responses based on tool name
@@ -38,26 +41,30 @@ async def main():
 
                 if random.random() < 0.3:  # 30% failure rate (demo only)
                     raise Exception("Simulated network error")
-                return {"status": "success", "data": f"API result for {arguments}"}
+                return {"result": {"status": "success", "data": f"API result for {arguments}"}}
 
             elif name == "file_processor":
                 filename = arguments.get("filename", "unknown")
                 return {
-                    "processed": True,
-                    "filename": filename,
-                    "size": len(filename) * 100,  # Mock file size
-                    "timestamp": datetime.now().isoformat(),
+                    "result": {
+                        "processed": True,
+                        "filename": filename,
+                        "size": len(filename) * 100,  # Mock file size
+                        "timestamp": datetime.now().isoformat(),
+                    }
                 }
 
             elif name == "database_query":
                 query = arguments.get("query", "")
                 return {
-                    "rows": [{"id": 1, "name": "Alice", "query": query}, {"id": 2, "name": "Bob", "query": query}],
-                    "count": 2,
+                    "result": {
+                        "rows": [{"id": 1, "name": "Alice", "query": query}, {"id": 2, "name": "Bob", "query": query}],
+                        "count": 2,
+                    }
                 }
 
             else:
-                return {"echo": arguments}
+                return {"result": {"echo": arguments}}
 
     # Create mock MCP session
     mcp_session = MockMCPSession()
