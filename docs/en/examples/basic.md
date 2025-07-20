@@ -481,4 +481,4 @@ async def environment_config_example():
 
 ---
 
-**Next**: [Advanced Examples](advanced.md) →
+**Next**: [Migration Guide](../migration.md) →

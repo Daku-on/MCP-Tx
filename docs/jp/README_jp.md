@@ -43,23 +43,30 @@ else:
 
 | ドキュメント | 説明 | 対象 |
 |-------------|------|------|
-| [**はじめる**](getting-started.jp.md) | 5分でRMCPを始める | 新規ユーザー |
-| [**アーキテクチャ**](architecture.jp.md) | 技術的な深掘り | 開発者 |
-| [**移行ガイド**](migration.jp.md) | MCPからRMCPへの移行 | 既存ユーザー |
-| [**FAQ**](faq.jp.md) | よくある質問と回答 | すべて |
-| [**トラブルシューティング**](troubleshooting.jp.md) | 問題解決ガイド | 運用チーム |
+| [**はじめる**](getting-started_jp.md) | 5分でRMCPを始める | 新規ユーザー |
+| [**アーキテクチャ**](architecture_jp.md) | 技術的な深掘り | 開発者 |
+| [**信頼性機能**](reliability-features_jp.md) | ACK/NACK、リトライ、冪等性 | 開発者 |
+| [**設定ガイド**](configuration_jp.md) | 詳細設定オプション | 開発者・運用 |
+| [**パフォーマンス**](performance_jp.md) | 本番最適化ガイド | 運用チーム |
+| [**移行ガイド**](migration_jp.md) | MCPからRMCPへの移行 | 既存ユーザー |
+| [**互換性**](compatibility_jp.md) | バージョン・プラットフォーム対応 | すべて |
+| [**FAQ**](faq_jp.md) | よくある質問と回答 | すべて |
+| [**トラブルシューティング**](troubleshooting_jp.md) | 問題解決ガイド | 運用チーム |
 
 ### 📋 APIリファレンス
 
 | API | 説明 |
 |-----|------|
-| [**RMCPSession**](api/rmcp-session.jp.md) | メインインターフェース |
+| [**RMCPSession**](api/rmcp-session_jp.md) | メインインターフェース |
 
 ### 💡 実用的な例
 
 | 例 | 説明 |
 |----|------|
-| [**基本的な使用方法**](examples/basic.jp.md) | 一般的な使用パターン |
+| [**基本的な使用方法**](examples/basic_jp.md) | 一般的な使用パターン |
+| [**AIエージェント**](ai-agents_jp.md) | FastRMCPで信頼性の高いAIエージェント構築 |
+| [**高度な例**](examples/advanced_jp.md) | 複雑なワークフローと統合 |
+| [**フレームワーク統合**](examples/integration_jp.md) | Django、Flask、Celery統合 |
 
 ## 使用シナリオ
 
@@ -126,7 +133,7 @@ pip install rmcp
 
 1. **[トラブルシューティングガイド](troubleshooting.jp.md)** をチェック
 2. **[FAQ](faq.jp.md)** で一般的な質問を確認
-3. **[GitHub Issues](https://github.com/takako/reliable-MCP-draft/issues)** で問題を報告
+3. **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** で問題を報告
 
 ### 📚 詳細情報
 

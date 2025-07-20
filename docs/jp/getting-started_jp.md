@@ -390,7 +390,7 @@ async def batch_processing(items):
 ### 🆘 サポート
 
 - **[トラブルシューティング](troubleshooting.jp.md)** - 問題解決ガイド
-- **[GitHub Issues](https://github.com/takako/reliable-MCP-draft/issues)** - バグ報告・機能要求
+- **[GitHub Issues](https://github.com/Daku-on/reliable-MCP-draft/issues)** - バグ報告・機能要求
 
 ---
 

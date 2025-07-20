@@ -285,10 +285,10 @@ def _sanitize_error_message(self, error: Exception) -> str:
 
 ## Next Steps
 
-- [**Configuration Guide**](configuration.md) - Customize RMCP behavior
+- [**Getting Started**](getting-started.md) - Quick start with configuration examples
 - [**API Reference**](api/rmcp-session.md) - Detailed method documentation
-- [**Performance Guide**](performance.md) - Optimization and tuning
+- [**Examples**](examples/basic.md) - Practical usage patterns
 
 ---
 
-**Previous**: [Getting Started](getting-started.md) | **Next**: [Reliability Features](reliability-features.md)
+**Previous**: [Getting Started](getting-started.md) | **Next**: [API Reference](api/rmcp-session.md)

@@ -526,7 +526,7 @@ logging.getLogger("rmcp").setLevel(logging.DEBUG)
 
 ### コミュニティリソース
 
-- **GitHub Issues**: [reliable-MCP-draft/issues](https://github.com/takako/reliable-MCP-draft/issues)
+- **GitHub Issues**: [reliable-MCP-draft/issues](https://github.com/Daku-on/reliable-MCP-draft/issues)
 - **ドキュメント**: このdocsディレクトリ
 - **例**: `docs/examples/` ディレクトリ
 

@@ -31,8 +31,8 @@ pip install rmcp
 ### Development Installation
 
 ```bash
-git clone https://github.com/reliable-mcp-draft/rmcp-python
-cd rmcp-python
+git clone https://github.com/Daku-on/reliable-MCP-draft
+cd reliable-MCP-draft/rmcp-python
 uv sync --dev
 ```
 
@@ -198,24 +198,24 @@ if __name__ == "__main__":
 
 ### Learn Core Concepts
 - [Architecture Overview](architecture.md) - Understand how RMCP works
-- [Reliability Features](reliability-features.md) - Deep dive into ACK/NACK, retry, idempotency
-- [Configuration Guide](configuration.md) - Customize RMCP for your needs
+- [Architecture Overview](architecture.md) - Deep dive into RMCP reliability features
+- [API Reference](api/rmcp-session.md) - Detailed API documentation
 
 ### Explore Examples
 - [Basic Usage Examples](examples/basic.md) - Common patterns and use cases
-- [Advanced Examples](examples/advanced.md) - Complex scenarios and optimizations
-- [Real Integration Examples](examples/integration.md) - Working with actual MCP servers
+- [Migration Guide](migration.md) - Step-by-step upgrade from plain MCP
+- [Troubleshooting](troubleshooting.md) - Common issues and solutions
 
 ### Migration from MCP
 - [Migration Guide](migration.md) - Step-by-step upgrade from plain MCP
-- [Compatibility Matrix](compatibility.md) - Ensure your setup is supported
+- [FAQ](faq.md) - Frequently asked questions
 
 ## Need Help?
 
 - 📖 Check the [FAQ](faq.md) for common questions
 - 🐛 Review [Troubleshooting](troubleshooting.md) for issues
-- 💬 [Open an issue](https://github.com/reliable-mcp-draft/rmcp-python/issues) on GitHub
-- 📧 Read the [API Reference](api/) for detailed documentation
+- 💬 [Open an issue](https://github.com/Daku-on/reliable-MCP-draft/issues) on GitHub
+- 📧 Read the [API Reference](api/rmcp-session.md) for detailed documentation
 
 ---
 

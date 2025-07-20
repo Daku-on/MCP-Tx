@@ -15,6 +15,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Pytho
 
 ### Usage Examples
 - [**Basic Examples**](examples/basic.md) - Simple tool calls and error handling
+- [**AI Agents**](ai-agents.md) - Building reliable AI agents with FastRMCP
 
 ### Migration & Compatibility
 - [**Migration from MCP**](migration.md) - Step-by-step upgrade guide
@@ -36,13 +37,13 @@ Comprehensive documentation for the Reliable Model Context Protocol (RMCP) Pytho
 
 ## 🔗 External Resources
 
-- [RMCP Specification](../../mvp-spec.md) - Protocol specification
+- [RMCP Specification](../../../mvp-spec.md) - Protocol specification
 - [Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk) - Underlying MCP implementation
-- [GitHub Repository](https://github.com/reliable-mcp-draft/rmcp-python) - Source code and issues
+- [GitHub Repository](https://github.com/Daku-on/reliable-MCP-draft) - Source code and issues
 
 ## 📝 Contributing
 
-Found an issue with the documentation? Please [open an issue](https://github.com/reliable-mcp-draft/rmcp-python/issues) or submit a pull request.
+Found an issue with the documentation? Please [open an issue](https://github.com/Daku-on/reliable-MCP-draft/issues) or submit a pull request.
 
 ---
 
