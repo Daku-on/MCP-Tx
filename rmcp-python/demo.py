@@ -20,7 +20,7 @@ from examples.basic_usage import MockMCPSession
 from mcp_tx import MCPTxConfig, MCPTxSession, RetryPolicy
 
 
-async def session_1_demo():
+async def session_1_demo() -> None:
     """Demonstrate Session 1 MVP features."""
     print("🚀 MCP-Tx Session 1 MVP Demo")
     print("=" * 50)

@@ -24,7 +24,7 @@ class MockMCPSession:
         self.failure_rate = failure_rate
         self.call_count = 0
 
-    async def initialize(self, **kwargs) -> Any:
+    async def initialize(self, **kwargs: Any) -> Any:
         """Mock initialization with MCP-Tx capability support."""
         print("🔌 Initializing MCP session...")
 
@@ -61,8 +61,12 @@ class MockMCPSession:
             }
         }
 
+    async def close(self) -> None:
+        """Mock session close method."""
+        print("🔌 Mock MCP session closed")
 
-async def basic_example():
+
+async def basic_example() -> None:
     """Demonstrate basic MCP-Tx usage."""
     print("🚀 MCP-Tx Basic Usage Example")
     print("=" * 40)
@@ -157,7 +161,7 @@ async def basic_example():
         print("✅ Session closed successfully")
 
 
-async def retry_demonstration():
+async def retry_demonstration() -> None:
     """Demonstrate retry behavior with failures."""
     print("\n" + "=" * 40)
     print("🔄 MCP-Tx Retry Demonstration")
@@ -195,7 +199,7 @@ async def retry_demonstration():
         await mcp_tx_session.close()
 
 
-async def main():
+async def main() -> None:
     """Run all examples."""
     # Set up logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
