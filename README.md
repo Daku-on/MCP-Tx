@@ -74,7 +74,7 @@ MCP-Tx's unique power lies in its ability to treat **human operators as just ano
 flowchart LR
     subgraph "MCP-Tx Client (Orchestrator)"
         direction LR
-        A[call_tool(&quot;analyze_data&quot;)] --> B[call_tool(&quot;human_approval&quot;)] --> C[call_tool(&quot;send_report&quot;)]
+        A[call_tool('analyze_data')] --> B[call_tool('human_approval')] --> C[call_tool('send_report')]
     end
 
     subgraph "MCP-Tx Servers"
