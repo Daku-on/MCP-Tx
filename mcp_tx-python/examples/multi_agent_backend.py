@@ -136,7 +136,14 @@ def perform_search(query: str, num_results: int = 5) -> list[dict[str, Any]]:
 async def crawl_news(research_id: str, company: str) -> dict[str, Any]:
     """Crawls recent news articles for a given company."""
     logger.info(f"[{research_id}] Starting real news crawl for {company}...")
-    query = f"latest news and announcements for {company}"
+
+    # Get language preference and adjust search query
+    language = _research_tasks_storage.get(research_id, {}).get("language", "en")
+    if language == "ja":
+        query = f"{company} 最新ニュース 発表 日本語"
+    else:
+        query = f"latest news and announcements for {company}"
+
     search_results = await anyio.to_thread.run_sync(perform_search, query, 5)
     logger.info(f"[{research_id}] Finished news crawl for {company}.")
     return {"company": company, "news_articles": search_results}
@@ -146,7 +153,14 @@ async def crawl_news(research_id: str, company: str) -> dict[str, Any]:
 async def analyze_financials(research_id: str, company: str) -> dict[str, Any]:
     """Analyzes quarterly financial reports for a given company."""
     logger.info(f"[{research_id}] Starting real financial analysis for {company}...")
-    query = f"{company} quarterly financial report Q2 2025"
+
+    # Get language preference and adjust search query
+    language = _research_tasks_storage.get(research_id, {}).get("language", "en")
+    if language == "ja":
+        query = f"{company} 四半期決算 財務報告書 2025年 日本語"
+    else:
+        query = f"{company} quarterly financial report Q2 2025"
+
     search_results = await anyio.to_thread.run_sync(perform_search, query, 3)
     logger.info(f"[{research_id}] Finished financial analysis for {company}.")
     return {"company": company, "financial_reports": search_results}
@@ -156,7 +170,14 @@ async def analyze_financials(research_id: str, company: str) -> dict[str, Any]:
 async def scan_social_media(research_id: str, company: str) -> dict[str, Any]:
     """Scans social media for public sentiment about a given company."""
     logger.info(f"[{research_id}] Starting real social media scan for {company}...")
-    query = f"social media sentiment analysis for {company} on Twitter and Reddit"
+
+    # Get language preference and adjust search query
+    language = _research_tasks_storage.get(research_id, {}).get("language", "en")
+    if language == "ja":
+        query = f"{company} ソーシャルメディア 評判 感情分析 Twitter Reddit 日本語"
+    else:
+        query = f"social media sentiment analysis for {company} on Twitter and Reddit"
+
     search_results = await anyio.to_thread.run_sync(perform_search, query, 4)
     logger.info(f"[{research_id}] Finished social media scan for {company}.")
     return {"company": company, "social_media_mentions": search_results}
@@ -169,30 +190,62 @@ async def synthesize_report(research_id: str, results: list[dict[str, Any]]) -> 
     if not openai_client:
         raise MCPTxError("OpenAI client not initialized.", "CLIENT_ERROR", False)
 
+    # Get language preference for this research task
+    language = _research_tasks_storage.get(research_id, {}).get("language", "en")
+    is_japanese = language == "ja"
+
     # Consolidate search results into a structured prompt
-    prompt_content = "Please generate a market trend report based on the following search results:\n\n"
+    if is_japanese:
+        prompt_content = "以下の検索結果に基づいて市場動向レポートを生成してください:\n\n"
+    else:
+        prompt_content = "Please generate a market trend report based on the following search results:\n\n"
+
     for result in results:
         company = result.get("company", "Unknown")
-        prompt_content += f"--- Data for {company} ---\n"
+        if is_japanese:
+            prompt_content += f"--- {company}のデータ ---\n"
+        else:
+            prompt_content += f"--- Data for {company} ---\n"
         for key, value in result.items():
             if key != "company" and isinstance(value, list):
-                prompt_content += f"\n**{key.replace('_', ' ').title()}:**\n"
+                if is_japanese:
+                    section_name = {
+                        "news_articles": "ニュース記事",
+                        "financial_reports": "財務レポート",
+                        "social_media_mentions": "ソーシャルメディア",
+                    }.get(key, key.replace("_", " ").title())
+                else:
+                    section_name = key.replace("_", " ").title()
+                prompt_content += f"\n**{section_name}:**\n"
                 for item in value:
-                    prompt_content += f"- Title: {item.get('title', 'N/A')}\n"
-                    prompt_content += f"  Snippet: {item.get('snippet', 'N/A')}\n"
+                    if is_japanese:
+                        prompt_content += f"- タイトル: {item.get('title', 'N/A')}\n"
+                        prompt_content += f"  概要: {item.get('snippet', 'N/A')}\n"
+                    else:
+                        prompt_content += f"- Title: {item.get('title', 'N/A')}\n"
+                        prompt_content += f"  Snippet: {item.get('snippet', 'N/A')}\n"
         prompt_content += "\n"
 
-    prompt_content += (
-        "\n--- Instructions ---\n"
-        "Generate a concise, well-structured markdown report. For each company, provide a summary of the findings "
-        "from the news, financial reports, and social media. Conclude with an overall market summary."
-    )
+    if is_japanese:
+        prompt_content += (
+            "\n--- 指示 ---\n"
+            "簡潔で構造化されたMarkdownレポートを生成してください。各企業について、ニュース、財務レポート、"
+            "ソーシャルメディアからの調査結果の要約を提供し、全体的な市場動向の分析で締めくくってください。"
+        )
+        system_prompt = "あなたは金融アナリストAIです。日本語で専門的な市場分析レポートを作成してください。"
+    else:
+        prompt_content += (
+            "\n--- Instructions ---\n"
+            "Generate a concise, well-structured markdown report. For each company, provide a summary of the findings "
+            "from the news, financial reports, and social media. Conclude with an overall market summary."
+        )
+        system_prompt = "You are a financial analyst AI."
 
     try:
         response = await openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are a financial analyst AI."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt_content},
             ],
             temperature=0.7,
@@ -377,11 +430,22 @@ def _ensure_background_loop() -> asyncio.AbstractEventLoop:
 
 
 # --- Public API for Frontend ---
+def get_language_preference() -> str:
+    """Get language preference from Streamlit session state."""
+    try:
+        return st.session_state.get("language", "en")
+    except Exception:
+        # Not in Streamlit context or session state not available
+        return "en"
+
+
 def start_research(research_id: str, companies: list[str]) -> None:
     if research_id in _research_tasks_storage:
         return
+
+    language = get_language_preference()
     with _tasks_lock:
-        _research_tasks_storage[research_id] = {"status": "starting", "companies": companies}
+        _research_tasks_storage[research_id] = {"status": "starting", "companies": companies, "language": language}
 
     # Use asyncio.run_coroutine_threadsafe to avoid event loop conflicts
     loop = _ensure_background_loop()
