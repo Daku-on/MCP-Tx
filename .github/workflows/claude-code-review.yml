@@ -3,10 +3,11 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, labeled]
+  workflow_dispatch:
 
 jobs:
   claude_review:
-    if: contains(github.event.pull_request.labels.*.name, 'claude-review')
+    if: contains(github.event.pull_request.labels.*.name, 'claude-review') || github.event_name == 'workflow_dispatch'
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
@@ -70,4 +71,3 @@ jobs:
           # if: |
           #   !contains(github.event.pull_request.title, '[skip-review]') &&
           #   !contains(github.event.pull_request.title, '[WIP]')
-

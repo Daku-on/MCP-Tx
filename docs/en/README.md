@@ -39,7 +39,7 @@ Comprehensive documentation for the Reliable Model Context Protocol (MCP-Tx) Pyt
 
 - [MCP-Tx Specification](../../../mvp-spec.md) - Protocol specification
 - [Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk) - Underlying MCP implementation
-- [GitHub Repository](https://github.com/Daku-on/reliable-MCP-draft) - Source code and issues
+- [GitHub Repository](https://github.com/Daku-on/MCP-Tx) - Source code and issues
 
 ## 📝 Contributing
 
