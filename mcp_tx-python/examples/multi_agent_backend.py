@@ -1,5 +1,6 @@
 """Multi-Agent Research Backend using MCP-Tx with real AI services."""
 
+import asyncio
 import logging
 import os
 import threading
@@ -28,14 +29,15 @@ openai_client: AsyncOpenAI | None = None
 serpapi_key: str | None = None
 try:
     openai_api_key = os.environ["OPENAI_API_KEY"]
-    if openai_api_key:
+    if openai_api_key and openai_api_key.strip():
         openai_client = AsyncOpenAI(api_key=openai_api_key)
     else:
         logger.error("CRITICAL: OPENAI_API_KEY is set but empty. Please check your .env file.")
 
     serpapi_key = os.environ.get("SERPAPI_KEY")
-    if not serpapi_key:
-        logger.warning("SERPAPI_KEY not found. Web search functionality will be limited.")
+    if not serpapi_key or not serpapi_key.strip():
+        serpapi_key = None
+        logger.warning("SERPAPI_KEY not found or empty. Web search functionality will be limited.")
 except KeyError:
     logger.error("CRITICAL: Missing environment variable OPENAI_API_KEY. Please check your .env file.")
 
@@ -92,9 +94,10 @@ _tasks_lock = threading.Lock()
 try:
     if "research_tasks" not in st.session_state:
         st.session_state.research_tasks = _research_tasks_storage
-except Exception:
+        logger.info("Successfully initialized Streamlit session state with research_tasks")
+except Exception as e:
     # Not in Streamlit context, use global storage directly
-    pass
+    logger.debug(f"Not in Streamlit context, using global storage directly: {type(e).__name__}")
 
 
 # --- Helper for Web Search ---
@@ -199,8 +202,13 @@ async def synthesize_report(research_id: str, results: list[dict[str, Any]]) -> 
         logger.info(f"[{research_id}] OpenAI report synthesis complete.")
         return {"draft_report": report_content, "created_at": datetime.utcnow().isoformat()}
     except Exception as e:
-        logger.error(f"OpenAI API call failed: {e}")
-        raise MCPTxError(f"OpenAI API call failed: {e}", "API_ERROR", True)
+        error_msg = f"OpenAI API call failed for research {research_id}"
+        if hasattr(e, "response"):
+            # OpenAI specific error with response details
+            logger.error(f"{error_msg}: {type(e).__name__} - {e}")
+        else:
+            logger.error(f"{error_msg}: {type(e).__name__} - {e}")
+        raise MCPTxError(f"{error_msg}: {e!s}", "API_ERROR", True) from e
 
 
 @app.tool(timeout_ms=3600000)
@@ -212,11 +220,29 @@ async def human_approval(research_id: str, draft_report: str) -> dict[str, Any]:
         _research_tasks_storage[research_id]["draft_report"] = draft_report
         approval_event = threading.Event()
         _research_tasks_storage[research_id]["approval_event"] = approval_event
-    await anyio.to_thread.run_sync(approval_event.wait)
-    if _research_tasks_storage[research_id].get("approval_status") == "rejected":
-        raise Exception("Report rejected by user.")
-    logger.info(f"[{research_id}] Human approval received.")
-    return {"approved": True, "approved_at": datetime.utcnow().isoformat()}
+    # Wait for approval with explicit timeout handling
+    try:
+        # The timeout is handled by the MCP-Tx decorator, but we add logging
+        await anyio.to_thread.run_sync(approval_event.wait)
+
+        # Validate state after waiting
+        with _tasks_lock:
+            task = _research_tasks_storage.get(research_id)
+            if not task:
+                raise RuntimeError(f"Task {research_id} disappeared during approval wait")
+
+            approval_status = task.get("approval_status")
+            if approval_status == "rejected":
+                logger.info(f"[{research_id}] Report rejected by user")
+                raise Exception("Report rejected by user.")
+            elif approval_status != "approved":
+                raise RuntimeError(f"Invalid approval status: {approval_status}")
+
+        logger.info(f"[{research_id}] Human approval received.")
+        return {"approved": True, "approved_at": datetime.utcnow().isoformat()}
+    except Exception as e:
+        logger.error(f"[{research_id}] Error during approval wait: {e}")
+        raise
 
 
 @app.tool()
@@ -310,11 +336,44 @@ async def _run_research_flow(research_id: str, companies: list[str]) -> None:
             _research_tasks_storage[research_id]["status"] = "completed"
             _research_tasks_storage[research_id]["final_report"] = finalization_result.result["final_report"]
 
+    except asyncio.CancelledError:
+        logger.warning(f"[{research_id}] Research workflow was cancelled")
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["status"] = "cancelled"
+            _research_tasks_storage[research_id]["error"] = "Workflow cancelled"
+        raise
     except Exception as e:
-        logger.error(f"[{research_id}] Research workflow failed: {e}")
+        current_status = _research_tasks_storage.get(research_id, {}).get("status", "unknown")
+        error_context = f"Research workflow failed at stage: {current_status}"
+        logger.error(f"[{research_id}] {error_context}: {type(e).__name__} - {e}", exc_info=True)
         with _tasks_lock:
             _research_tasks_storage[research_id]["status"] = "failed"
-            _research_tasks_storage[research_id]["error"] = str(e)
+            _research_tasks_storage[research_id]["error"] = f"{type(e).__name__}: {e!s}"
+            _research_tasks_storage[research_id]["error_context"] = error_context
+
+
+# --- Async Task Runner ---
+_background_loop: asyncio.AbstractEventLoop | None = None
+_background_thread: threading.Thread | None = None
+
+
+def _ensure_background_loop() -> asyncio.AbstractEventLoop:
+    """Ensure we have a background event loop for running async tasks."""
+    global _background_loop, _background_thread
+
+    if _background_loop is None or not _background_loop.is_running():
+
+        def run_loop(loop: asyncio.AbstractEventLoop) -> None:
+            asyncio.set_event_loop(loop)
+            loop.run_forever()
+
+        _background_loop = asyncio.new_event_loop()
+        _background_thread = threading.Thread(
+            target=run_loop, args=(_background_loop,), daemon=True, name="mcp-tx-background"
+        )
+        _background_thread.start()
+
+    return _background_loop
 
 
 # --- Public API for Frontend ---
@@ -323,8 +382,10 @@ def start_research(research_id: str, companies: list[str]) -> None:
         return
     with _tasks_lock:
         _research_tasks_storage[research_id] = {"status": "starting", "companies": companies}
-    thread = threading.Thread(target=lambda: anyio.run(_run_research_flow, research_id, companies), daemon=True)
-    thread.start()
+
+    # Use asyncio.run_coroutine_threadsafe to avoid event loop conflicts
+    loop = _ensure_background_loop()
+    asyncio.run_coroutine_threadsafe(_run_research_flow(research_id, companies), loop)
 
 
 def get_research_status(research_id: str) -> dict[str, Any]:
