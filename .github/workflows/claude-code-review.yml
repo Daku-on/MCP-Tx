@@ -1,16 +1,13 @@
 name: Claude Code Review
 
 on:
+  pull_request:
+    types: [opened, synchronize, labeled]
   workflow_dispatch:
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
-  claude-review:
+  claude_review:
+    if: contains(github.event.pull_request.labels.*.name, 'claude-review') || github.event_name == 'workflow_dispatch'
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
@@ -74,4 +71,3 @@ jobs:
           # if: |
           #   !contains(github.event.pull_request.title, '[skip-review]') &&
           #   !contains(github.event.pull_request.title, '[WIP]')
-
