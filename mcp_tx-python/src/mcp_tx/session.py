@@ -172,8 +172,8 @@ class MCPTxSession:
         if idempotency_key is not None and (not idempotency_key or not idempotency_key.strip()):
             raise ValueError("Idempotency key must be a non-empty string if provided")
 
-        if timeout_ms is not None and (timeout_ms <= 0 or timeout_ms > 600000):  # Max 10 minutes
-            raise ValueError("Timeout must be between 1ms and 600,000ms (10 minutes)")
+        if timeout_ms is not None and (timeout_ms <= 0 or timeout_ms > 7200000):  # Max 2 hours
+            raise ValueError("Timeout must be between 1ms and 7,200,000ms (2 hours)")
 
         # Use provided or default retry policy
         effective_retry_policy = retry_policy or self.config.retry_policy
