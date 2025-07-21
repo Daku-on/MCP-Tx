@@ -83,9 +83,18 @@ local_session = LocalExecutionSession()
 app = FastMCPTx(local_session, config=config, name="MultiAgentResearchApp")
 local_session.set_app(app)
 
-# --- State Management (using Streamlit's session state) ---
-if "research_tasks" not in st.session_state:
-    st.session_state.research_tasks = {}
+# --- State Management ---
+# Use a global dictionary for thread-safe access outside Streamlit's main thread
+_research_tasks_storage: dict[str, dict[str, Any]] = {}
+_tasks_lock = threading.Lock()
+
+# Initialize Streamlit session state if in main thread
+try:
+    if "research_tasks" not in st.session_state:
+        st.session_state.research_tasks = _research_tasks_storage
+except Exception:
+    # Not in Streamlit context, use global storage directly
+    pass
 
 
 # --- Helper for Web Search ---
@@ -198,12 +207,13 @@ async def synthesize_report(research_id: str, results: list[dict[str, Any]]) -> 
 async def human_approval(research_id: str, draft_report: str) -> dict[str, Any]:
     """Waits for a human to approve the draft report."""
     logger.info(f"[{research_id}] Waiting for human approval...")
-    st.session_state.research_tasks[research_id]["status"] = "waiting_for_approval"
-    st.session_state.research_tasks[research_id]["draft_report"] = draft_report
-    approval_event = threading.Event()
-    st.session_state.research_tasks[research_id]["approval_event"] = approval_event
+    with _tasks_lock:
+        _research_tasks_storage[research_id]["status"] = "waiting_for_approval"
+        _research_tasks_storage[research_id]["draft_report"] = draft_report
+        approval_event = threading.Event()
+        _research_tasks_storage[research_id]["approval_event"] = approval_event
     await anyio.to_thread.run_sync(approval_event.wait)
-    if st.session_state.research_tasks[research_id].get("approval_status") == "rejected":
+    if _research_tasks_storage[research_id].get("approval_status") == "rejected":
         raise Exception("Report rejected by user.")
     logger.info(f"[{research_id}] Human approval received.")
     return {"approved": True, "approved_at": datetime.utcnow().isoformat()}
@@ -222,7 +232,8 @@ async def _run_research_flow(research_id: str, companies: list[str]) -> None:
     """The main asynchronous research workflow."""
     try:
         await app.initialize()
-        st.session_state.research_tasks[research_id]["status"] = "in_progress"
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["status"] = "in_progress"
 
         # Step 1: Run specialized agents in parallel
         agent_results: list[dict[str, Any]] = []
@@ -266,7 +277,8 @@ async def _run_research_flow(research_id: str, companies: list[str]) -> None:
             logger.error(f"[{research_id}] One or more agents failed: {e}")
             raise
 
-        st.session_state.research_tasks[research_id]["agent_results"] = agent_results
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["agent_results"] = agent_results
 
         # Step 2: Synthesize the report
         synthesis_result = await app.call_tool(
@@ -283,56 +295,64 @@ async def _run_research_flow(research_id: str, companies: list[str]) -> None:
             idempotency_key=f"{research_id}-approval",
         )
 
-        st.session_state.research_tasks[research_id]["status"] = "publishing"
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["status"] = "publishing"
 
         # Step 4: Finalize the report
-        final_report_content = st.session_state.research_tasks[research_id].get("final_report_content", draft_report)
+        final_report_content = _research_tasks_storage[research_id].get("final_report_content", draft_report)
         finalization_result = await app.call_tool(
             "finalize_report",
             {"research_id": research_id, "final_report": final_report_content},
             idempotency_key=f"{research_id}-finalize",
         )
 
-        st.session_state.research_tasks[research_id]["status"] = "completed"
-        st.session_state.research_tasks[research_id]["final_report"] = finalization_result.result["final_report"]
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["status"] = "completed"
+            _research_tasks_storage[research_id]["final_report"] = finalization_result.result["final_report"]
 
     except Exception as e:
         logger.error(f"[{research_id}] Research workflow failed: {e}")
-        st.session_state.research_tasks[research_id]["status"] = "failed"
-        st.session_state.research_tasks[research_id]["error"] = str(e)
+        with _tasks_lock:
+            _research_tasks_storage[research_id]["status"] = "failed"
+            _research_tasks_storage[research_id]["error"] = str(e)
 
 
 # --- Public API for Frontend ---
 def start_research(research_id: str, companies: list[str]) -> None:
-    if research_id in st.session_state.research_tasks:
+    if research_id in _research_tasks_storage:
         return
-    st.session_state.research_tasks[research_id] = {"status": "starting", "companies": companies}
+    with _tasks_lock:
+        _research_tasks_storage[research_id] = {"status": "starting", "companies": companies}
     thread = threading.Thread(target=lambda: anyio.run(_run_research_flow, research_id, companies), daemon=True)
     thread.start()
 
 
 def get_research_status(research_id: str) -> dict[str, Any]:
-    return st.session_state.research_tasks.get(research_id, {"status": "not_found"})
+    with _tasks_lock:
+        return _research_tasks_storage.get(research_id, {"status": "not_found"})
 
 
 def provide_approval(research_id: str, final_report_content: str, approved: bool) -> dict[str, str]:
     logger.info(f"[{research_id}] 'provide_approval' called. Approved: {approved}")
-    task = st.session_state.research_tasks.get(research_id)
-    if task and task["status"] == "waiting_for_approval":
-        logger.info(f"[{research_id}] Task found and is in 'waiting_for_approval' state.")
-        task["approval_status"] = "approved" if approved else "rejected"
-        if approved:
-            task["status"] = "publishing"
-        task["final_report_content"] = final_report_content
-        approval_event = task.get("approval_event")
-        if approval_event:
-            logger.info(f"[{research_id}] Setting approval event.")
-            approval_event.set()
-        else:
-            logger.error(f"[{research_id}] CRITICAL: approval_event not found.")
-        return {"status": "approval_received"}
-    logger.warning(f"[{research_id}] 'provide_approval' failed. State: {task.get('status') if task else 'Not Found'}")
-    return {"status": "approval_failed"}
+    with _tasks_lock:
+        task = _research_tasks_storage.get(research_id)
+        if task and task["status"] == "waiting_for_approval":
+            logger.info(f"[{research_id}] Task found and is in 'waiting_for_approval' state.")
+            task["approval_status"] = "approved" if approved else "rejected"
+            if approved:
+                task["status"] = "publishing"
+            task["final_report_content"] = final_report_content
+            approval_event = task.get("approval_event")
+            if approval_event:
+                logger.info(f"[{research_id}] Setting approval event.")
+                approval_event.set()
+            else:
+                logger.error(f"[{research_id}] CRITICAL: approval_event not found.")
+            return {"status": "approval_received"}
+        logger.warning(
+            f"[{research_id}] 'provide_approval' failed. State: {task.get('status') if task else 'Not Found'}"
+        )
+        return {"status": "approval_failed"}
 
 
 if __name__ == "__main__":
