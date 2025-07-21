@@ -305,7 +305,7 @@ async def test_input_validation():
         await mcp_tx_session.call_tool("test_tool", {}, timeout_ms=0)
 
     with pytest.raises(ValueError, match="Timeout must be between"):
-        await mcp_tx_session.call_tool("test_tool", {}, timeout_ms=700000)
+        await mcp_tx_session.call_tool("test_tool", {}, timeout_ms=8000000)
 
     # Test invalid idempotency key
     with pytest.raises(ValueError, match="non-empty string"):

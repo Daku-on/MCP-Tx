@@ -2,14 +2,14 @@
 Streamlit Frontend for the Multi-Agent Research Assistant
 """
 
-import streamlit as st
 import time
 import uuid
-from datetime import datetime
+
+import streamlit as st
 
 # This imports the backend functions. In a real distributed setup,
 # this would be an API client.
-from multi_agent_backend import start_research, get_research_status, provide_approval
+from multi_agent_backend import get_research_status, provide_approval, start_research
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -92,10 +92,12 @@ def render_approval_view(status: dict):
 
 def render_completion_view(status: dict):
     st.header("4. Research Complete")
-    st.success("The research task has been successfully completed and published.")
+    st.success("The research task has been successfully completed.")
 
-    final_url = status.get("final_url", "#")
-    st.markdown(f"**Final Report URL:** [{final_url}]({final_url})")
+    final_report = status.get("final_report", "No final report available.")
+
+    with st.container(border=True):
+        st.markdown(final_report)
 
     if st.button("🔄 Start Another Research Task"):
         st.session_state.research_id = None
@@ -116,7 +118,7 @@ def main():
         status = get_research_status(research_id)
         st.session_state.last_status = status
 
-        if status["status"] in ["starting", "in_progress"]:
+        if status["status"] in ["starting", "in_progress", "publishing"]:
             render_progress_view(status)
             time.sleep(2)
             st.rerun()
