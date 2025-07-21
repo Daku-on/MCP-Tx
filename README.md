@@ -79,8 +79,8 @@ flowchart LR
 
     subgraph "MCP-Tx Servers"
         direction TB
-        Server1[Automated Server (AI/API)]
-        Server2[Human Operator (via UI)]
+        Server1["Automated Server (AI/API)"]
+        Server2["Human Operator (via UI)"]
     end
 
     A -- MCP-Tx Request --> Server1
